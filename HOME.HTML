@@ -8,13 +8,17 @@
     <style>
       @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap");
       :root {
-        --orange: #ed6417;
-        --cream: #fff8ed;
-        --ink: #171612;
-        --muted: #777268;
-        --line: #eee6da;
-        --paper: #fff;
-        --shadow: 0 12px 36px #38240f1f;
+        /* Warm 60-30-10 restaurant palette: neutral base, espresso, appetite accent. */
+        --orange: #b93f1d;
+        --orange-bright: #f29a52;
+        --orange-soft: #fce8d8;
+        --cream: #fff8ee;
+        --ink: #271812;
+        --muted: #71675f;
+        --line: #eadfd3;
+        --paper: #fffdf9;
+        --success: #28734d;
+        --shadow: 0 12px 36px #3d21151f;
       }
       * {
         box-sizing: border-box;
@@ -58,7 +62,7 @@
         font-size: 22px;
       }
       .icon-btn:hover {
-        background: #fff0df;
+        background: var(--orange-soft);
       }
       .menu,
       .menu:before,
@@ -131,7 +135,7 @@
         min-height: 58px;
         background: white;
         box-shadow: 0 8px 25px #4d361f14;
-        border: 1px solid #f5ede3;
+        border: 1px solid var(--line);
         border-radius: 18px;
         display: flex;
         align-items: center;
@@ -179,7 +183,7 @@
         border-radius: 28px;
         overflow: hidden;
         position: relative;
-        background: #17130f;
+        background: #24130d;
         color: white;
         display: flex;
         align-items: center;
@@ -192,12 +196,12 @@
         background:
           linear-gradient(
             90deg,
-            #100d0a 0%,
-            #100d0af0 37%,
-            #100d0a47 74%,
-            #100d0a0d
+            #24130d 0%,
+            #24130df2 37%,
+            #24130d5c 74%,
+            #24130d14
           ),
-          url("https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1400&q=85")
+          url("001.jpg")
             center/cover;
       }
       .hero-copy {
@@ -222,7 +226,7 @@
         margin: 16px 0 14px;
       }
       .hero h1 em {
-        color: #ff812d;
+        color: var(--orange-bright);
         font-style: normal;
       }
       .hero p {
@@ -296,7 +300,7 @@
       .category:hover .cat-icon,
       .category.active .cat-icon {
         border-color: var(--orange);
-        background: #fff0df;
+        background: var(--orange-soft);
         transform: translateY(-3px);
       }
       .category span:last-child {
@@ -307,6 +311,31 @@
         align-items: end;
         justify-content: space-between;
         margin-bottom: 18px;
+      }
+      .discover-tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 4px 0 18px;
+        scrollbar-width: none;
+      }
+      .discover-tabs::-webkit-scrollbar {
+        display: none;
+      }
+      .discover-tab {
+        flex: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--ink);
+        padding: 10px 14px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      .discover-tab.active {
+        border-color: var(--orange);
+        background: var(--orange);
+        color: white;
       }
       .heading h2 {
         margin: 0;
@@ -384,7 +413,7 @@
         font-size: 18px;
       }
       .save.saved {
-        color: #e44934;
+        color: var(--orange);
       }
       .distance {
         position: absolute;
@@ -411,7 +440,7 @@
         flex: none;
         font-size: 12px;
         font-weight: 800;
-        color: #7c5a00;
+        color: #765000;
       }
       .meta {
         color: var(--muted);
@@ -429,7 +458,7 @@
         font-size: 13px;
       }
       .open-status {
-        color: #278653;
+        color: var(--success);
         font-size: 11px;
         font-weight: 800;
       }
@@ -456,15 +485,15 @@
         align-items: center;
         position: relative;
         overflow: hidden;
-        background: #16110d;
+        background: #24130d;
       }
       .offer:before {
         content: "";
         position: absolute;
         inset: 0;
         background:
-          linear-gradient(90deg, #16110d 0 45%, transparent 75%),
-          url("https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1300&q=85")
+          linear-gradient(90deg, #24130d 0 45%, transparent 75%),
+          url("002.jpg")
             right center/60% auto no-repeat;
       }
       .offer-copy {
@@ -472,7 +501,7 @@
         z-index: 1;
       }
       .offer small {
-        color: #ff8a37;
+        color: var(--orange-bright);
         font-weight: 800;
       }
       .offer h2 {
@@ -605,8 +634,8 @@
         background: var(--ink);
       }
       .direction {
-        background: #fff0df;
-        color: #b54208;
+        background: var(--orange-soft);
+        color: var(--orange);
       }
       .form-grid {
         display: grid;
@@ -633,7 +662,7 @@
         border: 1px solid var(--line);
         border-radius: 12px;
         padding: 12px;
-        background: #fffaf4;
+        background: var(--cream);
       }
       .filter-section {
         padding: 15px 0;
@@ -701,6 +730,67 @@
       .menu-item small {
         display: block;
         color: var(--muted);
+      }
+      .menu-item.unavailable {
+        opacity: 0.68;
+        background: var(--cream);
+      }
+      .availability-badge {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: #f5d8d1;
+        color: #8e2f1a;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .add-item:disabled {
+        cursor: not-allowed;
+        background: var(--muted);
+      }
+      .owner-section {
+        margin: 20px 0;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+      }
+      .owner-section h3 {
+        margin: 0 0 6px;
+      }
+      .owner-section > p {
+        margin: 0 0 14px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .owner-food {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .owner-food small {
+        display: block;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .danger-button {
+        align-self: center;
+        border: 1px solid #e5b8ae;
+        border-radius: 10px;
+        background: transparent;
+        color: #9b321c;
+        padding: 8px 10px;
+        font-weight: 800;
+      }
+      .check-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+        font-size: 12px;
+        font-weight: 700;
       }
       .add-item {
         width: 32px;
@@ -799,7 +889,7 @@
         width: 34px;
         height: 34px;
         border-radius: 11px;
-        background: #fff0df;
+        background: var(--orange-soft);
         color: var(--orange);
         display: grid;
         place-items: center;
@@ -853,11 +943,15 @@
         color: var(--muted);
       }
       body.dark {
-        --cream: #12120f;
-        --ink: #f7f3eb;
-        --muted: #b2ada4;
-        --line: #393831;
-        --paper: #20201b;
+        --cream: #17100d;
+        --ink: #fff8ee;
+        --muted: #c0b4aa;
+        --line: #48362e;
+        --paper: #241a16;
+        --orange: #e56f3f;
+        --orange-bright: #ffad68;
+        --orange-soft: #43271d;
+        --success: #69bd8e;
         --shadow: 0 12px 36px #0006;
       }
       body.dark .search-box,
@@ -903,8 +997,8 @@
         }
         .hero:before {
           background:
-            linear-gradient(90deg, #100d0a 0%, #100d0ae0 54%, #100d0a1a),
-            url("https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=85")
+            linear-gradient(90deg, #24130d 0%, #24130de8 54%, #24130d24),
+            url("001.jpg")
               62% center/cover;
         }
         .hero-copy {
@@ -1007,8 +1101,12 @@
           ><input
             id="searchInput"
             type="search"
-            placeholder="Search restaurants or cuisines..."
+            list="locationSuggestions"
+            autocomplete="off"
+            aria-label="Search by restaurant, cuisine, or location"
+            placeholder="Search restaurant, cuisine, or location..."
         /></label>
+        <datalist id="locationSuggestions"></datalist>
         <button
           class="filter-btn"
           id="filterButton"
@@ -1037,9 +1135,16 @@
         aria-label="Cuisine filters"
       ></section>
       <section id="discover">
+        <div class="discover-tabs" id="discoverTabs" aria-label="Discover restaurants">
+          <button class="discover-tab active" data-discovery="popular">Popular</button>
+          <button class="discover-tab" data-discovery="available">Available now</button>
+          <button class="discover-tab" data-discovery="nearby">Nearby</button>
+          <button class="discover-tab" data-discovery="rated">Top rated</button>
+          <button class="discover-tab" data-discovery="offers">Offers</button>
+        </div>
         <div class="heading">
           <div>
-            <h2>Popular near you</h2>
+            <h2 id="discoverTitle">Popular near you</h2>
             <p id="resultCount"></p>
           </div>
           <button class="view-all" id="viewAll">View All <span>→</span></button>
@@ -1421,10 +1526,52 @@
         localStorage.getItem("fork-profile") ||
           '{"name":"Guest","phone":"","email":""}',
       );
+      const defaultOwnerRestaurant = {
+        restaurantId: 1,
+        address: "Haile Selassie Road, Masaki",
+        mapUrl: "",
+        opensAt: "08:00",
+        closesAt: "22:00",
+        facilities: ["Wi-Fi", "Parking", "Playing ground"],
+        menu: [
+          {
+            id: 1,
+            name: "Chef's special",
+            ingredients: "Fresh vegetables, local spices, chef's sauce",
+            price: 28000,
+            startsAt: "11:00",
+            endsAt: "22:00",
+            inStock: true,
+          },
+          {
+            id: 2,
+            name: "Breakfast platter",
+            ingredients: "Eggs, toast, fruit, potatoes",
+            price: 21000,
+            startsAt: "07:00",
+            endsAt: "11:00",
+            inStock: true,
+          },
+          {
+            id: 3,
+            name: "Family platter",
+            ingredients: "Grilled meat, rice, vegetables, sauces",
+            price: 56000,
+            startsAt: "12:00",
+            endsAt: "21:00",
+            inStock: false,
+          },
+        ],
+      };
+      let ownerRestaurant = JSON.parse(
+        localStorage.getItem("fork-owner-restaurant") ||
+          JSON.stringify(defaultOwnerRestaurant),
+      );
       let visitHistory = JSON.parse(
         localStorage.getItem("fork-history") || "[]",
       );
       let active = "All",
+        discoveryMode = "popular",
         savedOnly = false,
         filters = {
           budget: 0,
@@ -1437,8 +1584,16 @@
         };
       const grid = document.getElementById("restaurantGrid"),
         search = document.getElementById("searchInput"),
+        locationSuggestions = document.getElementById("locationSuggestions"),
         modal = document.getElementById("modal"),
         toast = document.getElementById("toast");
+      function updateLocationSuggestions() {
+        const areas = [...new Set(restaurants.map((r) => r.area).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b));
+        locationSuggestions.innerHTML = areas
+          .map((area) => `<option value="${area}"></option>`)
+          .join("");
+      }
       async function loadRestaurants() {
         try {
           const response = await fetch("/api/restaurants");
@@ -1464,6 +1619,7 @@
               description: item.description || fallback.description || "",
             };
           });
+          updateLocationSuggestions();
           renderCategories();
           render();
         } catch (error) {
@@ -1493,18 +1649,63 @@
       function card(r) {
         return `<article class="card" onclick="openRestaurant(${r.id})"><div class="photo" style="background-image:url('${r.photo}')"><span class="tag">${r.tag}</span><button class="save ${saved.has(r.id) ? "saved" : ""}" onclick="toggleSaved(event,${r.id})">${saved.has(r.id) ? "♥" : "♡"}</button><span class="distance">⌖ ${r.distance} km · ${r.area}</span></div><div class="card-body"><div class="title-line"><h3>${r.name}</h3><span class="rating">★ ${r.rating}</span></div><p class="meta">${r.cuisine} · ${r.area}</p><div class="card-foot"><span class="price">${r.price} per person</span><span class="open-status">OPEN NOW</span></div></div></article>`;
       }
+      function restaurantIsAvailable(r) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        if (Number(r.id) === Number(ownerRestaurant.restaurantId))
+          return timeIsWithin(
+            currentTime,
+            ownerRestaurant.opensAt,
+            ownerRestaurant.closesAt,
+          );
+        const serviceHours = {
+          Breakfast: ["06:00", "11:30"],
+          Lunch: ["11:00", "16:30"],
+          Dinner: ["17:00", "23:30"],
+          "Late night": ["18:00", "02:00"],
+        };
+        const hours = serviceHours[r.open];
+        return hours ? timeIsWithin(currentTime, hours[0], hours[1]) : true;
+      }
       function render() {
-        const q = search.value.trim().toLowerCase();
+        const rawQuery = search.value.trim();
+        const searchTerms = rawQuery
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, " ")
+          .split(/\s+/)
+          .filter(
+            (term) =>
+              term &&
+              !["restaurant", "restaurants", "in", "near", "at"].includes(
+                term,
+              ),
+          );
         const budgetMatch = (r) =>
           !filters.budget ||
           (filters.budget === 200001
             ? r.cost > 200000
             : r.cost < filters.budget);
+        const offerTags = ["bestseller", "popular", "great value", "local favorite"];
+        const modeMatch = (r) =>
+          discoveryMode === "nearby"
+            ? r.distance <= 5
+            : discoveryMode === "rated"
+              ? r.rating >= 4.7
+              : discoveryMode === "offers"
+                ? offerTags.includes(String(r.tag).toLowerCase())
+                : discoveryMode === "available"
+                  ? restaurantIsAvailable(r)
+                  : true;
         const list = restaurants.filter(
           (r) =>
+            modeMatch(r) &&
             (active === "All" || r.cuisine === active) &&
             (!savedOnly || saved.has(r.id)) &&
-            `${r.name} ${r.cuisine} ${r.area}`.toLowerCase().includes(q) &&
+            searchTerms.every((term) =>
+              `${r.name} ${r.cuisine} ${r.area} Dar es Salaam Tanzania`
+                .toLowerCase()
+                .includes(term),
+            ) &&
             budgetMatch(r) &&
             (filters.location === "All" || r.area === filters.location) &&
             (filters.food === "All" || r.cuisine === filters.food) &&
@@ -1513,9 +1714,32 @@
             (filters.facility === "All" ||
               r.facilities.includes(filters.facility)) &&
             (filters.diet === "All" || r.diet.includes(filters.diet)),
+        ).sort((a, b) =>
+          discoveryMode === "nearby"
+            ? a.distance - b.distance
+            : b.rating - a.rating,
         );
-        document.getElementById("resultCount").textContent =
-          `${list.length} place${list.length === 1 ? "" : "s"} found`;
+        const titles = {
+          popular: "Popular near you",
+          available: "Available now",
+          nearby: "Restaurants nearby",
+          rated: "Top-rated restaurants",
+          offers: "Offers and great value",
+        };
+        document.getElementById("discoverTitle").textContent =
+          titles[discoveryMode];
+        document.querySelectorAll(".discover-tab").forEach((button) =>
+          button.classList.toggle(
+            "active",
+            button.dataset.discovery === discoveryMode,
+          ),
+        );
+        const matchedArea = [...new Set(restaurants.map((r) => r.area))].find(
+          (area) => area.toLowerCase() === rawQuery.toLowerCase(),
+        );
+        document.getElementById("resultCount").textContent = matchedArea
+          ? `${list.length} restaurant${list.length === 1 ? "" : "s"} in ${matchedArea}`
+          : `${list.length} restaurant${list.length === 1 ? "" : "s"} found`;
         grid.innerHTML = list.length
           ? list.map(card).join("")
           : '<div class="empty"><strong>No restaurants match</strong>Try clearing one or more filters.</div>';
@@ -1538,8 +1762,16 @@
       };
       window.openRestaurant = (id) => {
         const r = restaurants.find((item) => item.id === id);
+        const isOwnerManaged =
+          Number(id) === Number(ownerRestaurant.restaurantId);
+        const facilities = isOwnerManaged
+          ? ownerRestaurant.facilities
+          : r.facilities;
+        const operationalDetails = isOwnerManaged
+          ? `<p><strong>Hours:</strong> ${ownerRestaurant.opensAt}–${ownerRestaurant.closesAt}<br><strong>Location:</strong> ${escapeHTML(ownerRestaurant.address)}<br><strong>Facilities:</strong> ${facilities.map(escapeHTML).join(", ")}</p>`
+          : `<p><strong>Facilities:</strong> ${facilities.map(escapeHTML).join(", ")}</p>`;
         document.getElementById("dialog").innerHTML =
-          `<button class="close" onclick="closeModal()">×</button><div class="dialog-image" style="background-image:url('${r.photo}')"></div><div class="dialog-copy"><div class="title-line"><h2>${r.name}</h2><span class="rating">★ ${r.rating}</span></div><p>${r.cuisine} · ${r.area} · ${r.distance} km away</p><p>${r.description}</p><div class="actions"><button class="primary" onclick="openReservation(${r.id})">📅 Reserve</button><button class="secondary" onclick="openOrder(${r.id})">🛍 Order</button><button class="direction" onclick="getDirections(${r.id})">⌖ Visit</button></div></div>`;
+          `<button class="close" onclick="closeModal()">×</button><div class="dialog-image" style="background-image:url('${r.photo}')"></div><div class="dialog-copy"><div class="title-line"><h2>${r.name}</h2><span class="rating">★ ${r.rating}</span></div><p>${r.cuisine} · ${r.area} · ${r.distance} km away</p><p>${r.description}</p>${operationalDetails}<div class="actions"><button class="primary" onclick="openReservation(${r.id})">📅 Reserve</button><button class="secondary" onclick="openOrder(${r.id})">🛍 Order</button><button class="direction" onclick="getDirections(${r.id})">⌖ Visit</button></div></div>`;
         modal.classList.add("open");
         document.body.style.overflow = "hidden";
       };
@@ -1551,25 +1783,44 @@
         document.getElementById("dialog").innerHTML =
           `<button class="close" onclick="closeModal()">×</button><div class="dialog-copy"><button class="flow-back" onclick="openRestaurant(${id})">← Back to restaurant</button><h2>Reserve a table</h2><p>${r.name} · ${r.area}</p><form onsubmit="confirmReservation(event,'${r.name}')"><div class="form-grid"><div class="form-field full"><label>YOUR NAME</label><input required placeholder="Enter your name"></div><div class="form-field"><label>DATE</label><input required type="date" min="${tomorrow}" value="${tomorrow}"></div><div class="form-field"><label>TIME</label><select required><option>6:00 PM</option><option>7:00 PM</option><option>8:00 PM</option><option>9:00 PM</option></select></div><div class="form-field"><label>GUESTS</label><select required><option>1 guest</option><option selected>2 guests</option><option>3 guests</option><option>4 guests</option><option>5+ guests</option></select></div><div class="form-field"><label>PHONE</label><input required type="tel" placeholder="Phone number"></div></div><button class="confirm" type="submit">Confirm reservation</button></form></div>`;
       };
+      function timeIsWithin(now, start, end) {
+        if (!start || !end) return true;
+        if (start <= end) return now >= start && now <= end;
+        return now >= start || now <= end;
+      }
+      function foodIsAvailable(food, restaurant = ownerRestaurant) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        return (
+          food.inStock !== false &&
+          timeIsWithin(currentTime, restaurant.opensAt, restaurant.closesAt) &&
+          timeIsWithin(currentTime, food.startsAt, food.endsAt)
+        );
+      }
+      function defaultMenu() {
+        return [
+          { id: 1, name: "Chef's special", ingredients: "Fresh signature plate", price: 28000, startsAt: "00:00", endsAt: "23:59", inStock: true },
+          { id: 2, name: "House favorite", ingredients: "Most ordered meal", price: 21000, startsAt: "00:00", endsAt: "23:59", inStock: true },
+          { id: 3, name: "Family platter", ingredients: "Perfect for sharing", price: 56000, startsAt: "00:00", endsAt: "23:59", inStock: true },
+        ];
+      }
       window.openOrder = (id) => {
         const r = restaurants.find((item) => item.id === id);
-        const menu = [
-          ["Chef's special", "Fresh signature plate", "TSh 28,000"],
-          ["House favorite", "Most ordered meal", "TSh 21,000"],
-          ["Family platter", "Perfect for sharing", "TSh 56,000"],
-        ];
+        const usesOwnerMenu = Number(id) === Number(ownerRestaurant.restaurantId);
+        const menu = usesOwnerMenu ? ownerRestaurant.menu : defaultMenu();
         document.getElementById("dialog").innerHTML =
-          `<button class="close" onclick="closeModal()">×</button><div class="dialog-copy"><button class="flow-back" onclick="openRestaurant(${id})">← Back to restaurant</button><h2>Order from ${r.name}</h2><p>Choose items for pickup or delivery.</p><div class="menu-list">${menu.map((item, index) => `<div class="menu-item"><div><strong>${item[0]}</strong><small>${item[1]}</small></div><b>${item[2]}</b><button class="add-item" onclick="addToOrder(this,${index})">+</button></div>`).join("")}</div><button class="confirm" onclick="finishOrder('${r.name}')">View order · <span id="orderCount">0 items</span></button></div>`;
+          `<button class="close" onclick="closeModal()">×</button><div class="dialog-copy"><button class="flow-back" onclick="openRestaurant(${id})">← Back to restaurant</button><h2>Order from ${r.name}</h2><p>All foods are shown. Availability follows restaurant hours, serving times, and stock.</p><div class="menu-list">${menu.map((item, index) => { const available = usesOwnerMenu ? foodIsAvailable(item) : true; return `<div class="menu-item ${available ? "" : "unavailable"}"><div><strong>${item.name}</strong><small>${item.ingredients}</small><small>Served ${item.startsAt}–${item.endsAt}</small>${available ? "" : '<span class="availability-badge">Unavailable</span>'}</div><b>TSh ${Number(item.price).toLocaleString()}</b><button class="add-item" ${available ? `onclick="addToOrder(this,${index})"` : 'disabled aria-label="Food unavailable"'}>${available ? "+" : "×"}</button></div>`; }).join("")}</div><button class="confirm" onclick="finishOrder('${r.name}')">View order · <span id="orderCount">0 items</span></button></div>`;
       };
       window.addToOrder = (button) => {
         button.textContent = "✓";
         button.disabled = true;
-        const count = document.querySelectorAll(".add-item:disabled").length;
+        button.dataset.added = "true";
+        const count = document.querySelectorAll(".add-item[data-added='true']").length;
         document.getElementById("orderCount").textContent =
           `${count} item${count === 1 ? "" : "s"}`;
       };
       window.finishOrder = (name) => {
-        const count = document.querySelectorAll(".add-item:disabled").length;
+        const count = document.querySelectorAll(".add-item[data-added='true']").length;
         if (!count) return showToast("Add at least one menu item");
         closeModal();
         showToast(`Order started with ${name}`);
@@ -1589,8 +1840,18 @@
         });
         visitHistory = visitHistory.slice(0, 20);
         localStorage.setItem("fork-history", JSON.stringify(visitHistory));
+        if (
+          Number(id) === Number(ownerRestaurant.restaurantId) &&
+          ownerRestaurant.mapUrl
+        ) {
+          window.open(ownerRestaurant.mapUrl, "_blank", "noopener");
+          showToast("Opening directions");
+          return;
+        }
         const destination = encodeURIComponent(
-          `${r.name}, ${r.area}, Dar es Salaam`,
+          Number(id) === Number(ownerRestaurant.restaurantId)
+            ? `${r.name}, ${ownerRestaurant.address}`
+            : `${r.name}, ${r.area}, Dar es Salaam`,
         );
         window.open(
           `https://www.google.com/maps/search/?api=1&query=${destination}`,
@@ -1606,9 +1867,93 @@
       window.openMenu = () => {
         const sw = settings.language === "sw";
         document.getElementById("dialog").innerHTML =
-          `<button class="close" onclick="closeModal()">×</button><div class="menu-panel"><div class="menu-head"><div class="avatar">${(userProfile.name || "G").charAt(0).toUpperCase()}</div><div><h2>${userProfile.name || "Guest"}</h2><p>${sw ? "Mipangilio ya akaunti" : "Account and preferences"}</p></div></div><div class="menu-options"><button class="menu-option" onclick="toggleDarkMode()"><span class="option-icon">◐</span><span>${sw ? "Hali ya giza" : "Dark mode"}<small>${sw ? "Badilisha mwonekano wa programu" : "Change the app appearance"}</small></span><span class="switch ${settings.dark ? "on" : ""}"><i></i></span></button><button class="menu-option" onclick="toggleLanguage()"><span class="option-icon">文</span><span>${sw ? "Badili kwenda Kiingereza" : "Change to Swahili"}<small>${sw ? "Lugha ya sasa: Kiswahili" : "Current language: English"}</small></span><span class="chevron">›</span></button><button class="menu-option" onclick="openHistory()"><span class="option-icon">↻</span><span>${sw ? "Historia ya ziara" : "Visit history"}<small>${visitHistory.length} ${sw ? "ziara zilizopita" : "previous visits"}</small></span><span class="chevron">›</span></button><button class="menu-option" onclick="openProfile()"><span class="option-icon">♙</span><span>${sw ? "Wasifu" : "Profile"}<small>${sw ? "Hariri taarifa zako" : "Edit your personal details"}</small></span><span class="chevron">›</span></button></div></div>`;
+          `<button class="close" onclick="closeModal()">×</button><div class="menu-panel"><div class="menu-head"><div class="avatar">${(userProfile.name || "G").charAt(0).toUpperCase()}</div><div><h2>${userProfile.name || "Guest"}</h2><p>${sw ? "Mipangilio ya akaunti" : "Account and preferences"}</p></div></div><div class="menu-options"><button class="menu-option" onclick="openOwnerDashboard()"><span class="option-icon">♨</span><span>Restaurant dashboard<small>Manage menu, facilities, location and hours</small></span><span class="chevron">›</span></button><button class="menu-option" onclick="toggleDarkMode()"><span class="option-icon">◐</span><span>${sw ? "Hali ya giza" : "Dark mode"}<small>${sw ? "Badilisha mwonekano wa programu" : "Change the app appearance"}</small></span><span class="switch ${settings.dark ? "on" : ""}"><i></i></span></button><button class="menu-option" onclick="toggleLanguage()"><span class="option-icon">文</span><span>${sw ? "Badili kwenda Kiingereza" : "Change to Swahili"}<small>${sw ? "Lugha ya sasa: Kiswahili" : "Current language: English"}</small></span><span class="chevron">›</span></button><button class="menu-option" onclick="openHistory()"><span class="option-icon">↻</span><span>${sw ? "Historia ya ziara" : "Visit history"}<small>${visitHistory.length} ${sw ? "ziara zilizopita" : "previous visits"}</small></span><span class="chevron">›</span></button><button class="menu-option" onclick="openProfile()"><span class="option-icon">♙</span><span>${sw ? "Wasifu" : "Profile"}<small>${sw ? "Hariri taarifa zako" : "Edit your personal details"}</small></span><span class="chevron">›</span></button></div></div>`;
         modal.classList.add("open");
         document.body.style.overflow = "hidden";
+      };
+      function escapeHTML(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
+      window.openOwnerDashboard = () => {
+        const restaurantOptions = restaurants
+          .map(
+            (r) =>
+              `<option value="${r.id}" ${Number(r.id) === Number(ownerRestaurant.restaurantId) ? "selected" : ""}>${escapeHTML(r.name)} · ${escapeHTML(r.area)}</option>`,
+          )
+          .join("");
+        const foods = ownerRestaurant.menu.length
+          ? ownerRestaurant.menu
+              .map(
+                (food) =>
+                  `<div class="owner-food"><div><strong>${escapeHTML(food.name)}</strong><small>${escapeHTML(food.ingredients)}</small><small>TSh ${Number(food.price).toLocaleString()} · ${food.startsAt}–${food.endsAt} · ${food.inStock ? "In stock" : "Manually unavailable"}</small></div><div><button class="danger-button" onclick="toggleFoodStock(${food.id})">${food.inStock ? "Mark unavailable" : "Mark available"}</button><button class="danger-button" onclick="removeOwnerFood(${food.id})">Remove</button></div></div>`,
+              )
+              .join("")
+          : '<div class="empty"><strong>No food uploaded</strong>Add the first menu item below.</div>';
+        document.getElementById("dialog").innerHTML =
+          `<button class="close" onclick="closeModal()">×</button><div class="dialog-copy"><button class="flow-back" onclick="openMenu()">← Back to account</button><h2>Restaurant dashboard</h2><p>Information saved here controls what customers see and can order.</p><section class="owner-section"><h3>Restaurant information</h3><p>Add facilities, map location, and normal working hours.</p><form onsubmit="saveOwnerRestaurant(event)"><div class="form-grid"><div class="form-field full"><label>YOUR RESTAURANT</label><select name="restaurantId">${restaurantOptions}</select></div><div class="form-field full"><label>ADDRESS / LOCATION</label><input name="address" required value="${escapeHTML(ownerRestaurant.address)}" placeholder="Street, area, city"></div><div class="form-field full"><label>GOOGLE MAPS LINK (OPTIONAL)</label><input name="mapUrl" type="url" value="${escapeHTML(ownerRestaurant.mapUrl)}" placeholder="https://maps.google.com/..."></div><div class="form-field"><label>OPENS AT</label><input name="opensAt" type="time" required value="${ownerRestaurant.opensAt}"></div><div class="form-field"><label>CLOSES AT</label><input name="closesAt" type="time" required value="${ownerRestaurant.closesAt}"></div><div class="form-field full"><label>FACILITIES (SEPARATE WITH COMMAS)</label><input name="facilities" required value="${escapeHTML(ownerRestaurant.facilities.join(", "))}" placeholder="Wi-Fi, parking, playing ground"></div></div><button class="confirm">Save restaurant information</button></form></section><section class="owner-section"><h3>Uploaded foods</h3><p>Customers see every item. Items outside their serving time or out of stock show an Unavailable badge.</p>${foods}</section><section class="owner-section"><h3>Add food</h3><form onsubmit="addOwnerFood(event)"><div class="form-grid"><div class="form-field full"><label>FOOD NAME</label><input name="name" required placeholder="e.g. Chicken biryani"></div><div class="form-field full"><label>INGREDIENTS</label><input name="ingredients" required placeholder="Rice, chicken, spices..."></div><div class="form-field full"><label>PRICE (TSh)</label><input name="price" required type="number" min="0" step="500" placeholder="25000"></div><div class="form-field"><label>SERVED FROM</label><input name="startsAt" required type="time"></div><div class="form-field"><label>SERVED UNTIL</label><input name="endsAt" required type="time"></div><label class="check-row full"><input name="inStock" type="checkbox" checked> Available in stock now</label></div><button class="confirm">Upload food</button></form></section></div>`;
+        modal.classList.add("open");
+        document.body.style.overflow = "hidden";
+      };
+      function saveOwnerData() {
+        localStorage.setItem(
+          "fork-owner-restaurant",
+          JSON.stringify(ownerRestaurant),
+        );
+      }
+      window.saveOwnerRestaurant = (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        ownerRestaurant.restaurantId = Number(data.get("restaurantId"));
+        ownerRestaurant.address = String(data.get("address")).trim();
+        ownerRestaurant.mapUrl = String(data.get("mapUrl")).trim();
+        ownerRestaurant.opensAt = String(data.get("opensAt"));
+        ownerRestaurant.closesAt = String(data.get("closesAt"));
+        ownerRestaurant.facilities = String(data.get("facilities"))
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+        const restaurant = restaurants.find(
+          (item) => Number(item.id) === ownerRestaurant.restaurantId,
+        );
+        if (restaurant) restaurant.facilities = ownerRestaurant.facilities;
+        saveOwnerData();
+        showToast("Restaurant information saved");
+        openOwnerDashboard();
+      };
+      window.addOwnerFood = (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        ownerRestaurant.menu.push({
+          id: Date.now(),
+          name: String(data.get("name")).trim(),
+          ingredients: String(data.get("ingredients")).trim(),
+          price: Number(data.get("price")),
+          startsAt: String(data.get("startsAt")),
+          endsAt: String(data.get("endsAt")),
+          inStock: data.get("inStock") === "on",
+        });
+        saveOwnerData();
+        showToast("Food uploaded to the menu");
+        openOwnerDashboard();
+      };
+      window.toggleFoodStock = (foodId) => {
+        const food = ownerRestaurant.menu.find((item) => item.id === foodId);
+        if (!food) return;
+        food.inStock = !food.inStock;
+        saveOwnerData();
+        openOwnerDashboard();
+      };
+      window.removeOwnerFood = (foodId) => {
+        ownerRestaurant.menu = ownerRestaurant.menu.filter(
+          (item) => item.id !== foodId,
+        );
+        saveOwnerData();
+        showToast("Food removed");
+        openOwnerDashboard();
       };
       window.toggleDarkMode = () => {
         settings.dark = !settings.dark;
@@ -1844,6 +2189,13 @@
           () => showToast("Allow location access to search nearby"),
         );
       }
+      document.getElementById("discoverTabs").onclick = (event) => {
+        const button = event.target.closest("[data-discovery]");
+        if (!button) return;
+        discoveryMode = button.dataset.discovery;
+        savedOnly = false;
+        render();
+      };
       document.getElementById("categories").onclick = (e) => {
         const button = e.target.closest("[data-cuisine]");
         if (!button) return;
@@ -1853,11 +2205,13 @@
         render();
       };
       search.oninput = render;
+      updateLocationSuggestions();
       document.getElementById("menuButton").onclick = openMenu;
       document.getElementById("explore").onclick = () =>
         document.getElementById("discover").scrollIntoView();
       document.getElementById("viewAll").onclick = () => {
         active = "All";
+        discoveryMode = "popular";
         savedOnly = false;
         search.value = "";
         filters = {
