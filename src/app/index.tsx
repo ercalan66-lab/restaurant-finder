@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
-import { FlatList, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import * as Linking from 'expo-linking';
+import { router, type Href } from 'expo-router';
+import Storage from 'expo-sqlite/kv-store';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, FlatList, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Cuisine = 'All' | 'African' | 'Italian' | 'Asian' | 'Indian' | 'Cafe';
@@ -11,6 +14,7 @@ const cuisines: { name: Cuisine; icon: string }[] = [
   { name: 'All', icon: '🍽️' }, { name: 'African', icon: '🥘' }, { name: 'Italian', icon: '🍕' },
   { name: 'Asian', icon: '🍣' }, { name: 'Indian', icon: '🍛' }, { name: 'Cafe', icon: '☕' },
 ];
+const SAVED_STORAGE_KEY = 'fork-saved-restaurants';
 const restaurants: Restaurant[] = [
   { id: 1, name: 'The Baobab Table', cuisine: 'African', area: 'Masaki', price: 'TSh 45,000', rating: 4.9, distance: 0.8, tag: 'Bestseller', photo: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85', description: 'A vibrant celebration of East African cooking with fragrant rice, charcoal-grilled seafood, and generous sharing plates.' },
   { id: 2, name: 'Olive & Ember', cuisine: 'Italian', area: 'Oyster Bay', price: 'TSh 85,000', rating: 4.8, distance: 1.4, tag: 'Hot spot', photo: 'https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=900&q=85', description: 'Seasonal antipasti, blistered sourdough pizza, and handmade pasta in a relaxed garden setting.' },
@@ -36,28 +40,50 @@ export default function HomeScreen() {
   const [savedOnly, setSavedOnly] = useState(false);
   const [selected, setSelected] = useState<Restaurant | null>(null);
 
+  useEffect(() => {
+    let active = true;
+    Storage.getItem(SAVED_STORAGE_KEY)
+      .then((value) => {
+        if (active && value) setSaved(new Set(JSON.parse(value) as number[]));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
   const visibleRestaurants = useMemo(() => restaurants.filter((restaurant) => {
     const text = `${restaurant.name} ${restaurant.cuisine} ${restaurant.area}`.toLowerCase();
     return (activeCuisine === 'All' || restaurant.cuisine === activeCuisine) && (!savedOnly || saved.has(restaurant.id)) && text.includes(query.trim().toLowerCase());
   }), [activeCuisine, query, saved, savedOnly]);
 
   const toggleSaved = (id: number) => setSaved((current) => {
-    const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next;
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    void Storage.setItem(SAVED_STORAGE_KEY, JSON.stringify([...next]));
+    return next;
   });
   const showAll = () => { setActiveCuisine('All'); setSavedOnly(false); setQuery(''); };
+  const openDirections = async (restaurant: Restaurant) => {
+    const destination = encodeURIComponent(`${restaurant.name}, ${restaurant.area}, Dar es Salaam`);
+    try {
+      await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${destination}`);
+    } catch {
+      Alert.alert('Directions unavailable', 'We could not open maps on this device.');
+    }
+  };
+  const showMessage = (title: string, message: string) => Alert.alert(title, message);
 
   const header = <>
     <View style={styles.topbar}>
-      <Pressable accessibilityLabel="Open menu" hitSlop={10} style={styles.headerButton}><View style={styles.menuLine} /><View style={styles.menuLine} /><View style={styles.menuLine} /></Pressable>
+      <Pressable accessibilityLabel="Open menu" hitSlop={10} onPress={() => showMessage('Your account', 'Profile, language, and appearance settings will be available here.')} style={styles.headerButton}><View style={styles.menuLine} /><View style={styles.menuLine} /><View style={styles.menuLine} /></Pressable>
       <Brand />
       <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Notifications" style={styles.headerButton}><Text style={styles.headerIcon}>♢</Text><View style={styles.countBadge}><Text style={styles.countText}>2</Text></View></Pressable>
+        <Pressable accessibilityLabel="Notifications" onPress={() => showMessage('Notifications', 'You have 2 restaurant updates waiting for you.')} style={styles.headerButton}><Text style={styles.headerIcon}>🔔</Text><View style={styles.countBadge}><Text style={styles.countText}>2</Text></View></Pressable>
         <Pressable accessibilityLabel="Show saved restaurants" onPress={() => setSavedOnly((value) => !value)} style={styles.headerButton}><Text style={[styles.headerIcon, savedOnly && styles.orangeText]}>{savedOnly ? '♥' : '♡'}</Text><View style={styles.countBadge}><Text style={styles.countText}>{saved.size}</Text></View></Pressable>
       </View>
     </View>
     <View style={styles.searchRow}>
       <View style={styles.searchBox}><Text style={styles.searchIcon}>⌕</Text><TextInput accessibilityLabel="Search restaurants or cuisines" onChangeText={setQuery} placeholder="Search restaurants or cuisines..." placeholderTextColor="#8A847B" returnKeyType="search" style={styles.searchInput} value={query} /></View>
-      <Pressable accessibilityLabel="Filter restaurants" style={styles.filterButton}><Text style={styles.filterIcon}>☷</Text></Pressable>
+      <Pressable accessibilityLabel="Filter restaurants" onPress={() => showMessage('Filters', 'Use search and cuisines now. Budget, rating, and distance filters are coming next.')} style={styles.filterButton}><Text style={styles.filterIcon}>☷</Text></Pressable>
     </View>
     <ImageBackground imageStyle={styles.heroImage} source={{ uri: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1400&q=85' }} style={styles.hero}>
       <View style={styles.heroOverlay} /><View style={styles.heroContent}>
@@ -79,13 +105,13 @@ export default function HomeScreen() {
       data={visibleRestaurants} key={columns} keyExtractor={(item) => String(item.id)} ListHeaderComponent={header} numColumns={columns} showsVerticalScrollIndicator={false}
       ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>No restaurants match</Text><Text style={styles.emptyCopy}>Try another search or clear the current filters.</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>Clear filters</Text></Pressable></View>}
       ListFooterComponent={<ImageBackground imageStyle={styles.offerImage} source={{ uri: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=85' }} style={styles.offer}><View style={styles.offerOverlay} /><View style={styles.offerCopy}><Text style={styles.offerEyebrow}>PICK OF THE WEEK</Text><Text style={styles.offerTitle}>Dinner plans,{`\n`}sorted.</Text><Text style={styles.offerCaption}>Top-rated tables less than 2 km away.</Text></View></ImageBackground>}
-      renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => setSelected(item)} style={styles.card}>
+      renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => router.push(`/restaurant/${item.id}` as Href)} style={styles.card}>
         <ImageBackground source={{ uri: item.photo }} style={styles.cardPhoto}><View style={styles.photoShade} /><Text style={styles.tag}>{item.tag.toUpperCase()}</Text><Pressable accessibilityLabel={`${saved.has(item.id) ? 'Remove' : 'Add'} saved restaurant`} hitSlop={8} onPress={() => toggleSaved(item.id)} style={styles.saveButton}><Text style={[styles.saveIcon, saved.has(item.id) && styles.orangeText]}>{saved.has(item.id) ? '♥' : '♡'}</Text></Pressable><Text style={styles.distance}>⌖ {item.distance} km · {item.area}</Text></ImageBackground>
         <View style={styles.cardBody}><View style={styles.titleLine}><Text numberOfLines={1} style={styles.cardTitle}>{item.name}</Text><Text style={styles.rating}>★ {item.rating}</Text></View><Text style={styles.meta}>{item.cuisine} · {item.area}</Text><View style={styles.cardFooter}><Text style={styles.price}>{item.price}</Text><Text style={styles.open}>OPEN NOW</Text></View><Text style={styles.perPerson}>per person</Text></View>
       </Pressable>}
     />
-    <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]}>{[['⌂', 'Home'], ['◇', 'Discover'], ['⌖', 'Visit'], ['♡', 'Saved'], ['♙', 'Profile']].map(([icon, label], index) => <Pressable key={label} onPress={label === 'Saved' ? () => setSavedOnly(true) : label === 'Home' || label === 'Discover' ? showAll : undefined} style={[styles.navItem, index === 2 && styles.mainNavItem]}><Text style={[styles.navIcon, index === 0 && styles.orangeText, index === 2 && styles.mainNavIcon]}>{icon}</Text>{index !== 2 && <Text style={[styles.navLabel, index === 0 && styles.orangeText]}>{label}</Text>}</Pressable>)}</View>
-    <Modal animationType="slide" onRequestClose={() => setSelected(null)} transparent visible={selected !== null}><Pressable onPress={() => setSelected(null)} style={styles.modalBackdrop}><Pressable onPress={(event) => event.stopPropagation()} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>{selected && <><ImageBackground source={{ uri: selected.photo }} style={styles.sheetImage}><View style={styles.photoShade} /><Pressable accessibilityLabel="Close restaurant details" onPress={() => setSelected(null)} style={styles.closeButton}><Text style={styles.closeText}>×</Text></Pressable></ImageBackground><View style={styles.sheetCopy}><View style={styles.titleLine}><Text style={styles.sheetTitle}>{selected.name}</Text><Text style={styles.rating}>★ {selected.rating}</Text></View><Text style={styles.sheetMeta}>{selected.cuisine} · {selected.area} · {selected.distance} km away</Text><Text style={styles.sheetDescription}>{selected.description}</Text><View style={styles.sheetActions}><Pressable style={styles.primaryAction}><Text style={styles.primaryActionText}>Reserve a table</Text></Pressable><Pressable onPress={() => toggleSaved(selected.id)} style={styles.secondaryAction}><Text style={styles.secondaryActionText}>{saved.has(selected.id) ? '♥ Saved' : '♡ Save'}</Text></Pressable></View></View></>}</Pressable></Pressable></Modal>
+    <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]}>{[['⌂', 'Home'], ['◇', 'Discover'], ['⌖', 'Visit'], ['♡', 'Saved'], ['♙', 'Profile']].map(([icon, label], index) => <Pressable key={label} onPress={label === 'Saved' ? () => setSavedOnly(true) : label === 'Home' || label === 'Discover' ? showAll : label === 'Visit' ? () => selected ? openDirections(selected) : showMessage('Choose a restaurant', 'Open a restaurant first, then tap Directions.') : () => showMessage('Your profile', 'Profile editing will be added in the next functional pass.')} style={[styles.navItem, index === 2 && styles.mainNavItem]}><Text style={[styles.navIcon, index === 0 && styles.orangeText, index === 2 && styles.mainNavIcon]}>{icon}</Text>{index !== 2 && <Text style={[styles.navLabel, index === 0 && styles.orangeText]}>{label}</Text>}</Pressable>)}</View>
+    <Modal animationType="slide" onRequestClose={() => setSelected(null)} transparent visible={selected !== null}><Pressable onPress={() => setSelected(null)} style={styles.modalBackdrop}><Pressable onPress={(event) => event.stopPropagation()} style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>{selected && <><ImageBackground source={{ uri: selected.photo }} style={styles.sheetImage}><View style={styles.photoShade} /><Pressable accessibilityLabel="Close restaurant details" onPress={() => setSelected(null)} style={styles.closeButton}><Text style={styles.closeText}>×</Text></Pressable></ImageBackground><View style={styles.sheetCopy}><View style={styles.titleLine}><Text style={styles.sheetTitle}>{selected.name}</Text><Text style={styles.rating}>★ {selected.rating}</Text></View><Text style={styles.sheetMeta}>{selected.cuisine} · {selected.area} · {selected.distance} km away</Text><Text style={styles.sheetDescription}>{selected.description}</Text><View style={styles.sheetActions}><Pressable onPress={() => showMessage('Reservation started', `We are preparing a table request for ${selected.name}.`)} style={styles.primaryAction}><Text style={styles.primaryActionText}>Reserve a table</Text></Pressable><Pressable onPress={() => openDirections(selected)} style={styles.secondaryAction}><Text style={styles.secondaryActionText}>Directions</Text></Pressable><Pressable onPress={() => toggleSaved(selected.id)} style={styles.secondaryAction}><Text style={styles.secondaryActionText}>{saved.has(selected.id) ? '♥ Saved' : '♡ Save'}</Text></Pressable></View></View></>}</Pressable></Pressable></Modal>
   </SafeAreaView>;
 }
 
