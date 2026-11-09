@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, type Href, useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -53,6 +53,14 @@ export default function RestaurantDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.description}>{restaurant.description}</Text>
+          <View style={styles.bookingActions}>
+            <Pressable onPress={() => router.push(`/reservation/${restaurant.id}` as Href)} style={styles.primaryButton}>
+              <Text style={styles.primaryButtonText}>Reserve a table</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push(`/order/${restaurant.id}` as Href)} style={styles.orderButton}>
+              <Text style={styles.orderButtonText}>Order food</Text>
+            </Pressable>
+          </View>
           <View style={styles.quickActions}>
             <Pressable onPress={() => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.')} style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Call restaurant</Text>
@@ -133,10 +141,13 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#171612', fontSize: 24, fontWeight: '900' },
   sectionCaption: { color: '#777268', fontSize: 12, marginTop: 4, marginBottom: 14 },
   quickActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  bookingActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   primaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: ORANGE },
   primaryButtonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
   secondaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderWidth: 1, borderColor: '#E6DCCE', backgroundColor: '#FFF' },
   secondaryButtonText: { color: '#171612', fontSize: 13, fontWeight: '900' },
+  orderButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: '#171612' },
+  orderButtonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
   gallery: { gap: 10, paddingRight: 18 },
   environmentPhoto: { width: 260, height: 180, borderRadius: 18, backgroundColor: '#DDD4C9' },
   environmentPhotoFirst: { width: 300 },
