@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { getGuestProfile, saveGuestProfile, saveReservation } from '@/data/guest-storage';
 import { getRestaurantDetail } from '@/data/restaurant-details';
+import { goBackOrReplace } from '@/utils/navigation';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -58,7 +59,7 @@ export default function ReservationScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => router.back()}><Text style={styles.back}>‹ Restaurant details</Text></Pressable>
+          <Pressable onPress={() => goBackOrReplace(`/restaurant/${restaurant.id}`)}><Text style={styles.back}>‹ Restaurant details</Text></Pressable>
           <Text style={styles.eyebrow}>RESERVATION</Text><Text style={styles.title}>Book a table</Text><Text style={styles.subtitle}>{restaurant.name} · {restaurant.area}</Text>
           <Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" onChangeText={setName} placeholder="Full name" style={styles.input} value={name} />
           <Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="+255..." style={styles.input} value={phone} />

@@ -1,10 +1,13 @@
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, type Href, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getRestaurantDetail } from '@/data/restaurant-details';
+import { getOwnerRestaurant, isMenuItemAvailable, type OwnerRestaurant } from '@/data/owner-storage';
+import { goBackOrReplace } from '@/utils/navigation';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -13,12 +16,17 @@ export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const restaurant = getRestaurantDetail(id);
+  const [ownerRestaurant, setOwnerRestaurant] = useState<OwnerRestaurant | null>(null);
+
+  useEffect(() => {
+    getOwnerRestaurant().then(setOwnerRestaurant).catch(() => setOwnerRestaurant(null));
+  }, []);
 
   if (!restaurant) {
     return (
       <SafeAreaView style={styles.centered}>
         <Text style={styles.missingTitle}>Restaurant not found</Text>
-        <Pressable onPress={() => router.back()} style={styles.primaryButton}>
+        <Pressable onPress={() => goBackOrReplace('/')} style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>Back to restaurants</Text>
         </Pressable>
       </SafeAreaView>
@@ -34,6 +42,8 @@ export default function RestaurantDetailScreen() {
   };
 
   const destination = encodeURIComponent(`${restaurant.name}, ${restaurant.address}, Dar es Salaam`);
+  const usesOwnerMenu = ownerRestaurant?.name.trim().toLowerCase() === restaurant.name.trim().toLowerCase()
+    && ownerRestaurant.menu.length > 0;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -41,7 +51,7 @@ export default function RestaurantDetailScreen() {
         <View style={styles.heroWrap}>
           <Image contentFit="cover" source={restaurant.environmentPhotos[0]} style={styles.heroImage} transition={250} />
           <View style={styles.heroShade} />
-          <Pressable accessibilityLabel="Back" onPress={() => router.back()} style={styles.backButton}>
+          <Pressable accessibilityLabel="Back" onPress={() => goBackOrReplace('/')} style={styles.backButton}>
             <Text style={styles.backIcon}>‹</Text>
           </Pressable>
           <View style={styles.heroCopy}>
@@ -83,20 +93,25 @@ export default function RestaurantDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Menu & food</Text>
-          <Text style={styles.sectionCaption}>Popular dishes and current sample prices.</Text>
+          <Text style={styles.sectionCaption}>{usesOwnerMenu ? 'Current foods, ingredients, prices, and availability.' : 'Popular dishes and current sample prices.'}</Text>
           <View style={styles.menuList}>
-            {restaurant.menu.map((item) => (
-              <View key={item.name} style={styles.menuCard}>
-                <Image contentFit="cover" source={item.photo} style={styles.foodPhoto} transition={200} />
+            {(usesOwnerMenu ? ownerRestaurant.menu : restaurant.menu).map((item) => {
+              const managed = 'ingredients' in item;
+              const available = managed ? isMenuItemAvailable(item, ownerRestaurant!) : true;
+              return (
+              <View key={item.name} style={[styles.menuCard, !available && styles.menuCardUnavailable]}>
+                {managed ? <View style={styles.foodPlaceholder}><Text style={styles.foodPlaceholderIcon}>🍽️</Text></View> : <Image contentFit="cover" source={item.photo} style={styles.foodPhoto} transition={200} />}
                 <View style={styles.menuCopy}>
                   <View style={styles.menuTitleRow}>
                     <Text style={styles.menuName}>{item.name}</Text>
-                    <Text style={styles.menuPrice}>{item.price}</Text>
+                    <Text style={styles.menuPrice}>{managed ? `TSh ${item.price.toLocaleString()}` : item.price}</Text>
                   </View>
-                  <Text style={styles.menuDescription}>{item.description}</Text>
+                  <Text style={styles.menuDescription}>{managed ? item.ingredients : item.description}</Text>
+                  {managed && <Text style={styles.servingTime}>Served {item.availableFrom}–{item.availableUntil}</Text>}
+                  {!available && <Text style={styles.unavailableBadge}>UNAVAILABLE</Text>}
                 </View>
               </View>
-            ))}
+            );})}
           </View>
         </View>
 
@@ -153,12 +168,17 @@ const styles = StyleSheet.create({
   environmentPhotoFirst: { width: 300 },
   menuList: { gap: 13 },
   menuCard: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF' },
+  menuCardUnavailable: { opacity: 0.68, backgroundColor: '#FFF8ED' },
   foodPhoto: { width: '100%', height: 190, backgroundColor: '#DDD4C9' },
+  foodPlaceholder: { width: '100%', height: 130, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4E9DC' },
+  foodPlaceholderIcon: { fontSize: 42 },
   menuCopy: { padding: 14 },
   menuTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   menuName: { flex: 1, color: '#171612', fontSize: 16, fontWeight: '900' },
   menuPrice: { color: ORANGE, fontSize: 13, fontWeight: '900' },
   menuDescription: { color: '#777268', fontSize: 12, lineHeight: 18, marginTop: 6 },
+  servingTime: { color: '#777268', fontSize: 10, marginTop: 8 },
+  unavailableBadge: { alignSelf: 'flex-start', color: '#8E2F1A', backgroundColor: '#F5D8D1', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900', marginTop: 9 },
   contactCard: { gap: 7, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF' },
   contactLabel: { color: '#9A9187', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 8 },
   contactLink: { color: ORANGE, fontSize: 15, fontWeight: '800' },

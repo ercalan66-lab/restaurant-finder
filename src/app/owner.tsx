@@ -4,6 +4,8 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { defaultOwnerRestaurant, getOwnerRestaurant, isMenuItemAvailable, type OwnerMenuItem, type OwnerRestaurant, saveOwnerRestaurant } from '@/data/owner-storage';
+import { goBackOrReplace } from '@/utils/navigation';
+import { supabase } from '../../lib/supabase';
 
 const ORANGE = '#B93F1D';
 const CREAM = '#FFF8EE';
@@ -18,10 +20,17 @@ export default function OwnerDashboardScreen() {
   const [availableUntil, setAvailableUntil] = useState('22:00');
 
   useEffect(() => {
-    getOwnerRestaurant().then((saved) => {
-      setRestaurant(saved);
-      setFacilities(saved.facilities.join(', '));
-    }).catch(() => Alert.alert('Could not load dashboard', 'Please try again.'));
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return router.replace('/auth?role=owner');
+      if (data.user.user_metadata?.role !== 'owner') {
+        Alert.alert('Owner account required', 'Create or sign in with a restaurant-owner account.');
+        return router.replace('/profile');
+      }
+      return getOwnerRestaurant().then((saved) => {
+        setRestaurant(saved);
+        setFacilities(saved.facilities.join(', '));
+      });
+    }).catch(() => Alert.alert('Could not load dashboard', 'Please sign in again.'));
   }, []);
 
   const persist = async (next: OwnerRestaurant, message: string) => {
@@ -80,7 +89,7 @@ export default function OwnerDashboardScreen() {
   };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Pressable onPress={() => router.back()}><Text style={styles.back}>‹ Back</Text></Pressable>
+    <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>‹ Back</Text></Pressable>
     <Text style={styles.eyebrow}>RESTAURANT OWNER</Text><Text style={styles.title}>Dashboard</Text>
     <Text style={styles.subtitle}>Manage the information and food availability customers see.</Text>
 

@@ -1,8 +1,8 @@
 import 'react-native-url-polyfill/auto';
+import 'expo-sqlite/localStorage/install';
 
 import { createClient } from '@supabase/supabase-js';
-
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 const supabaseUrl =
   process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -19,9 +19,17 @@ export const supabase = createClient(
   supabaseKey,
   {
     auth: {
-      persistSession: Platform.OS === 'web',
+      storage: localStorage,
+      persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
     },
   }
 );
+
+if (Platform.OS !== 'web') {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') supabase.auth.startAutoRefresh();
+    else supabase.auth.stopAutoRefresh();
+  });
+}
