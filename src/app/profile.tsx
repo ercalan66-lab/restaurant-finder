@@ -20,6 +20,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     getGuestProfile().then((profile) => { setName(profile.name); setPhone(profile.phone); setEmail(profile.email); }).catch(() => undefined);
     supabase.auth.getUser().then(({ data }) => setAccountEmail(data.user?.email ?? null)).catch(() => undefined);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => setAccountEmail(session?.user.email ?? null));
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {

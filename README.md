@@ -1,56 +1,54 @@
-# Welcome to your Expo app 👋
+# Fork restaurant finder
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed by Supabase.
 
-## Get started
+## Local setup
 
-1. Install dependencies
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and add the Supabase project URL and publishable key.
+3. In the Supabase SQL editor, run `supabase/migrations/202611100001_restaurant_foundation.sql`.
+4. Start the app with `npx expo start`.
 
-   ```bash
-   npm install
-   ```
+The app keeps a local copy of orders and reservations, so requests still receive a reference when cloud sync is temporarily unavailable. Once the migration is installed, signed-in customers and restaurant owners can access permitted records across devices under Row Level Security.
 
-2. Start the app
+## Assigning the first restaurant owner
 
-   ```bash
-   npx expo start
-   ```
+After creating an owner account, copy its user UUID from Supabase Authentication and run this once in the SQL editor:
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sql
+update public.restaurants
+set owner_id = 'OWNER_USER_UUID'
+where id = 1 and owner_id is null;
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+This manual bootstrap is temporary. The next implementation phase replaces it with owner onboarding and restaurant creation.
 
-### Other setup steps
+## Data security
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- Active restaurant and menu information is public.
+- Customers can read only requests associated with their account.
+- Restaurant owners can read and update only requests sent to their restaurant.
+- Anonymous customers may submit a request, but cannot query it from the API afterward.
+- The mobile app uses only the publishable key. Never place a Supabase secret or service-role key in `.env`.
 
-## Learn more
+## Delivery roadmap
 
-To learn more about developing your project with Expo, look at the following resources:
+- [x] Supabase schema for restaurants, menus, reservations, and orders
+- [x] Row Level Security ownership boundaries
+- [x] Local-first request submission with cloud synchronization
+- [ ] Owner restaurant onboarding and database-backed editing
+- [ ] Restaurant and menu image uploads
+- [ ] Customer order and reservation tracking screen
+- [ ] Rating, price, distance, and availability filters
+- [ ] Native date/time booking controls and capacity validation
+- [ ] Push notifications
+- [ ] Mobile money/card payments
+- [ ] Automated tests, accessibility audit, and real-device QA
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Validation
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx expo lint
+npx tsc --noEmit
+npx expo-doctor
+```

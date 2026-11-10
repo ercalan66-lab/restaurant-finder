@@ -41,9 +41,16 @@ export default function RestaurantDetailScreen() {
     }
   };
 
-  const destination = encodeURIComponent(`${restaurant.name}, ${restaurant.address}, Dar es Salaam`);
   const usesOwnerMenu = ownerRestaurant?.name.trim().toLowerCase() === restaurant.name.trim().toLowerCase()
     && ownerRestaurant.menu.length > 0;
+  const usesOwnerDetails = ownerRestaurant?.name.trim().toLowerCase() === restaurant.name.trim().toLowerCase();
+  const address = usesOwnerDetails ? ownerRestaurant.address : restaurant.address;
+  const hours = usesOwnerDetails
+    ? `Daily · ${ownerRestaurant.opensAt}–${ownerRestaurant.closesAt}`
+    : restaurant.hours;
+  const directionsUrl = usesOwnerDetails && ownerRestaurant.mapUrl
+    ? ownerRestaurant.mapUrl
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${address}, Dar es Salaam`)}`;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -75,7 +82,7 @@ export default function RestaurantDetailScreen() {
             <Pressable onPress={() => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.')} style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Call restaurant</Text>
             </Pressable>
-            <Pressable onPress={() => openLink(`https://www.google.com/maps/search/?api=1&query=${destination}`, 'Maps could not be opened.')} style={styles.secondaryButton}>
+            <Pressable onPress={() => openLink(directionsUrl, 'Maps could not be opened.')} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Directions</Text>
             </Pressable>
           </View>
@@ -127,9 +134,13 @@ export default function RestaurantDetailScreen() {
               <Text style={styles.contactLink}>{restaurant.email}</Text>
             </Pressable>
             <Text style={styles.contactLabel}>ADDRESS</Text>
-            <Text style={styles.contactValue}>{restaurant.address}</Text>
+            <Text style={styles.contactValue}>{address}</Text>
             <Text style={styles.contactLabel}>OPENING HOURS</Text>
-            <Text style={styles.contactValue}>{restaurant.hours}</Text>
+            <Text style={styles.contactValue}>{hours}</Text>
+            {usesOwnerDetails && ownerRestaurant.facilities.length > 0 ? <>
+              <Text style={styles.contactLabel}>FACILITIES</Text>
+              <View style={styles.facilities}>{ownerRestaurant.facilities.map((facility) => <Text key={facility} style={styles.facility}>{facility}</Text>)}</View>
+            </> : null}
           </View>
         </View>
       </ScrollView>
@@ -183,4 +194,6 @@ const styles = StyleSheet.create({
   contactLabel: { color: '#9A9187', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 8 },
   contactLink: { color: ORANGE, fontSize: 15, fontWeight: '800' },
   contactValue: { color: '#302C27', fontSize: 14, lineHeight: 20 },
+  facilities: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  facility: { color: '#5A4A40', fontSize: 11, fontWeight: '700', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, overflow: 'hidden', backgroundColor: '#FFF3E9' },
 });

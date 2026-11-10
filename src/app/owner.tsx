@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OwnerRequests } from '@/components/owner-requests';
 import { defaultOwnerRestaurant, getOwnerRestaurant, isMenuItemAvailable, type OwnerMenuItem, type OwnerRestaurant, saveOwnerRestaurant } from '@/data/owner-storage';
 import { goBackOrReplace } from '@/utils/navigation';
 import { supabase } from '../../lib/supabase';
 
 const ORANGE = '#B93F1D';
 const CREAM = '#FFF8EE';
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export default function OwnerDashboardScreen() {
   const [restaurant, setRestaurant] = useState<OwnerRestaurant>(defaultOwnerRestaurant);
@@ -47,6 +49,12 @@ export default function OwnerDashboardScreen() {
     if (!restaurant.name.trim() || !restaurant.address.trim()) {
       return Alert.alert('Missing information', 'Enter the restaurant name and location.');
     }
+    if (!TIME_PATTERN.test(restaurant.opensAt) || !TIME_PATTERN.test(restaurant.closesAt)) {
+      return Alert.alert('Invalid opening hours', 'Use 24-hour HH:MM times, for example 08:00 and 22:00.');
+    }
+    if (restaurant.mapUrl.trim() && !/^https?:\/\//i.test(restaurant.mapUrl.trim())) {
+      return Alert.alert('Invalid map link', 'Enter a full Google Maps link beginning with http:// or https://.');
+    }
     const next = {
       ...restaurant,
       name: restaurant.name.trim(),
@@ -59,8 +67,11 @@ export default function OwnerDashboardScreen() {
 
   const addFood = () => {
     const numericPrice = Number(price);
-    if (!foodName.trim() || !ingredients.trim() || !numericPrice) {
+    if (!foodName.trim() || !ingredients.trim() || !Number.isFinite(numericPrice) || numericPrice <= 0) {
       return Alert.alert('Missing food information', 'Enter the food name, ingredients, and price.');
+    }
+    if (!TIME_PATTERN.test(availableFrom) || !TIME_PATTERN.test(availableUntil)) {
+      return Alert.alert('Invalid serving hours', 'Use 24-hour HH:MM times, for example 08:00 and 22:00.');
     }
     const item: OwnerMenuItem = {
       id: `${Date.now()}`,
@@ -92,6 +103,8 @@ export default function OwnerDashboardScreen() {
     <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>‹ Back</Text></Pressable>
     <Text style={styles.eyebrow}>RESTAURANT OWNER</Text><Text style={styles.title}>Dashboard</Text>
     <Text style={styles.subtitle}>Manage the information and food availability customers see.</Text>
+
+    <OwnerRequests restaurantName={restaurant.name} />
 
     <View style={styles.section}><Text style={styles.sectionTitle}>Restaurant information</Text>
       <Field label="RESTAURANT NAME" onChangeText={(name) => setRestaurant((current) => ({ ...current, name }))} value={restaurant.name} />
