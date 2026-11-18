@@ -14,6 +14,7 @@ import {
   updateOrderStatus,
   updateReservationStatus,
 } from '@/data/guest-storage';
+import { onNotificationReceived } from '@/utils/push-notifications';
 
 const ORANGE = '#B93F1D';
 
@@ -48,6 +49,9 @@ export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [restaurantId]);
+
+  // A new order or booking notification arriving while the dashboard is open refreshes the list.
+  useEffect(() => onNotificationReceived(() => void load()), [load]);
 
   const setOrderStatus = async (id: string, status: OrderStatus) => {
     await updateOrderStatus(id, status);

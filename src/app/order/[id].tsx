@@ -7,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { describePayment, getGuestProfile, newReference, saveGuestProfile, saveOrder, type PaymentMethod } from '@/data/guest-storage';
 import { formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
+import { getPushToken } from '@/utils/push-notifications';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -26,6 +27,7 @@ export default function OrderScreen() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [delivered, setDelivered] = useState(true);
+  const [notifying, setNotifying] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -63,11 +65,14 @@ export default function OrderScreen() {
     const guest = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
       setSubmitting(true);
+      // Asking here, right after the customer orders, is when "tell me when it's ready" makes sense.
+      const pushToken = await getPushToken({ ask: true });
       const [, sent] = await Promise.all([
         saveGuestProfile(guest),
-        saveOrder({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, guest, fulfillment, address: address.trim(), items, total, paymentMethod, paymentStatus: 'unpaid', createdAt: new Date().toISOString() }),
+        saveOrder({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, guest, fulfillment, address: address.trim(), items, total, paymentMethod, paymentStatus: 'unpaid', pushToken, createdAt: new Date().toISOString() }),
       ]);
       setDelivered(sent);
+      setNotifying(Boolean(pushToken));
       setConfirmation(reference);
     } catch {
       Alert.alert('Could not save order', 'Please try again.');
@@ -79,7 +84,7 @@ export default function OrderScreen() {
   const paymentLabel = describePayment(paymentMethod, fulfillment);
   const paymentInstruction = fulfillment === 'Delivery' ? 'when your order arrives' : 'when you collect your order';
 
-  if (confirmation) return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{delivered ? 'Order received' : 'Order saved'}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{fulfillment} · TSh {total.toLocaleString()}</Text>{!delivered && <Text style={styles.pendingNote}>You are offline, so the restaurant has not received this order yet. It is saved on this phone and will be sent automatically as soon as you are back online.</Text>}<Text style={styles.confirmationPayment}>Please have TSh {total.toLocaleString()} in cash ready {paymentInstruction}.</Text><Text style={styles.reference}>REFERENCE {confirmation}</Text><Pressable onPress={() => router.replace('/')} style={styles.submit}><Text style={styles.submitText}>Back to home</Text></Pressable></SafeAreaView>;
+  if (confirmation) return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{delivered ? 'Order received' : 'Order saved'}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{fulfillment} · TSh {total.toLocaleString()}</Text>{!delivered && <Text style={styles.pendingNote}>You are offline, so the restaurant has not received this order yet. It is saved on this phone and will be sent automatically as soon as you are back online.</Text>}<Text style={styles.confirmationPayment}>Please have TSh {total.toLocaleString()} in cash ready {paymentInstruction}.</Text>{notifying && <Text style={styles.notifyNote}>We will send you a notification when the restaurant accepts your order and when it is ready.</Text>}<Text style={styles.reference}>REFERENCE {confirmation}</Text><Pressable onPress={() => router.replace('/')} style={styles.submit}><Text style={styles.submitText}>Back to home</Text></Pressable></SafeAreaView>;
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled"><Pressable onPress={() => goBackOrReplace(`/restaurant/${restaurant.id}`)}><Text style={styles.back}>‹ Restaurant details</Text></Pressable><Text style={styles.eyebrow}>ORDER FOOD</Text><Text style={styles.title}>{restaurant.name}</Text><Text style={styles.subtitle}>Choose your dishes and quantities.</Text>
     {menu.length === 0 && <Text style={styles.subtitle}>This restaurant has not published its menu yet.</Text>}<View style={styles.menuList}>{menu.map((item) => <View key={item.id} style={[styles.menuCard, !item.available && styles.menuCardUnavailable]}>{item.photoUrl ? <Image contentFit="cover" source={item.photoUrl} style={styles.photo} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderIcon}>🍽️</Text></View>}<View style={styles.menuCopy}><Text style={styles.menuName}>{item.name}</Text><Text style={styles.menuDescription}>{item.description}</Text><Text style={styles.price}>{formatTsh(item.price)}</Text>{!item.available && <Text style={styles.unavailableBadge}>UNAVAILABLE</Text>}<View style={styles.stepper}><Pressable accessibilityLabel={`Remove one ${item.name}`} disabled={!item.available} onPress={() => changeQuantity(item.id, -1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>−</Text></Pressable><Text style={styles.quantity}>{quantities[item.id] ?? 0}</Text><Pressable accessibilityLabel={`Add one ${item.name}`} disabled={!item.available} onPress={() => changeQuantity(item.id, 1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>+</Text></Pressable></View></View></View>)}</View>
@@ -97,6 +102,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#171612', fontSize: 20, fontWeight: '900', marginTop: 28, marginBottom: 12 }, choices: { flexDirection: 'row', gap: 9 }, choice: { flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 22, borderWidth: 1, borderColor: '#E9DFD2', backgroundColor: '#FFF' }, choiceActive: { borderColor: ORANGE, backgroundColor: ORANGE }, choiceText: { color: '#4F4A43', fontWeight: '900' }, choiceTextActive: { color: '#FFF' },
   label: { color: '#777268', fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 7 }, input: { height: 50, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, paddingHorizontal: 15, color: '#171612', backgroundColor: '#FFF' }, addressInput: { height: 82, paddingTop: 14, textAlignVertical: 'top' }, totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 24, marginTop: 24, borderTopWidth: 1, borderTopColor: '#E9DFD2' }, totalLabel: { color: '#777268', fontSize: 10, fontWeight: '900' }, total: { color: '#171612', fontSize: 22, fontWeight: '900' }, submit: { minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, borderRadius: 26, backgroundColor: ORANGE, marginTop: 18 }, submitText: { color: '#FFF', fontSize: 13, fontWeight: '900' }, paymentNote: { color: '#8A847B', textAlign: 'center', fontSize: 10, marginTop: 10 },
   paymentList: { gap: 9 }, paymentOption: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 16, backgroundColor: '#FFF' }, paymentOptionActive: { borderColor: ORANGE, backgroundColor: '#FFF6EF' }, radio: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#CFC5B9', borderRadius: 10 }, radioActive: { borderColor: ORANGE }, radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: ORANGE }, paymentCopy: { flex: 1 }, paymentTitle: { color: '#171612', fontSize: 14, fontWeight: '900' }, paymentDescription: { color: '#777268', fontSize: 11, lineHeight: 16, marginTop: 3 },
+  notifyNote: { color: '#5F5951', textAlign: 'center', fontSize: 12, lineHeight: 18, marginTop: 12, maxWidth: 360 },
   pendingNote: { color: '#8E2F1A', textAlign: 'center', fontSize: 13, lineHeight: 19, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F5D8D1', maxWidth: 420 },
   confirmationPayment: { color: '#5F5951', textAlign: 'center', fontSize: 13, lineHeight: 19, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#FFF1E6' },
   confirmation: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: CREAM }, check: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: '#FFF', backgroundColor: '#278653', fontSize: 38, fontWeight: '900' }, confirmationTitle: { color: '#171612', fontSize: 28, fontWeight: '900', marginTop: 24 }, confirmationCopy: { color: '#5F5951', textAlign: 'center', fontSize: 15, lineHeight: 23, marginTop: 10 }, reference: { color: ORANGE, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 18 },

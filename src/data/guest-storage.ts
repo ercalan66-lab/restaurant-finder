@@ -14,6 +14,8 @@ type SyncState = {
   customerId?: string | null;
   /** false until Supabase has accepted the request; undefined on records saved before tracking existed. */
   synced?: boolean;
+  /** Expo push token of the phone that placed it, so the customer hears about status changes even as a guest. */
+  pushToken?: string | null;
 };
 
 export type ReservationRecord = GuestProfile & SyncState & {
@@ -106,6 +108,7 @@ const reservationRow = (reservation: ReservationRecord) => ({
   reservation_date: reservation.date,
   reservation_time: reservation.time,
   guest_count: reservation.guests,
+  ...(reservation.pushToken ? { push_token: reservation.pushToken } : {}),
 });
 
 const orderRow = (order: OrderRecord) => ({
@@ -120,6 +123,8 @@ const orderRow = (order: OrderRecord) => ({
   items: order.items,
   total: order.total,
   payment_method: order.paymentMethod ?? 'cash',
+  // Only sent when there is one, so phones without push keep working against older databases.
+  ...(order.pushToken ? { push_token: order.pushToken } : {}),
 });
 
 /**

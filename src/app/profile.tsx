@@ -8,6 +8,7 @@ import type { User } from '@supabase/supabase-js';
 import { describePayment, getGuestProfile, getOrders, getReservations, saveGuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
 import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
+import { unregisterDevice } from '@/utils/push-notifications';
 import { supabase } from '../../lib/supabase';
 
 // Phone sign-in accounts have no email, so fall back to the phone number.
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
   }, []);
 
   const signOut = async () => {
+    await unregisterDevice();
     const { error } = await supabase.auth.signOut();
     if (error) return Alert.alert('Could not sign out', error.message);
     setAccount(null);

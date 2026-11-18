@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AlertsCard } from '@/components/owner/alerts-card';
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from '@/components/owner/form-controls';
 import { MenuManager } from '@/components/owner/menu-manager';
 import { PhotoManager } from '@/components/owner/photo-manager';
@@ -141,6 +142,7 @@ export default function OwnerDashboardScreen() {
           <Switch accessibilityLabel="Visible to customers" onValueChange={(value) => void setVisible(value)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={restaurant.isActive} />
         </View>
 
+        <AlertsCard />
         <OwnerRequests restaurantId={restaurant.id} />
         <PhotoManager onUpdated={update} restaurant={restaurant} />
         <Section title="Restaurant information">

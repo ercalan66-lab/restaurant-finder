@@ -6,6 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getGuestProfile, newReference, saveGuestProfile, saveReservation } from '@/data/guest-storage';
 import { useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
+import { getPushToken } from '@/utils/push-notifications';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -23,6 +24,7 @@ export default function ReservationScreen() {
   const [guests, setGuests] = useState(2);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [delivered, setDelivered] = useState(true);
+  const [notifying, setNotifying] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -52,11 +54,13 @@ export default function ReservationScreen() {
     const profile = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
       setSubmitting(true);
+      const pushToken = await getPushToken({ ask: true });
       const [, sent] = await Promise.all([
         saveGuestProfile(profile),
-        saveReservation({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, ...profile, date: date.trim(), time, guests, createdAt: new Date().toISOString() }),
+        saveReservation({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, ...profile, date: date.trim(), time, guests, pushToken, createdAt: new Date().toISOString() }),
       ]);
       setDelivered(sent);
+      setNotifying(Boolean(pushToken));
       setConfirmation(reference);
     } catch {
       Alert.alert('Could not save reservation', 'Please try again.');
@@ -66,7 +70,7 @@ export default function ReservationScreen() {
   };
 
   if (confirmation) {
-    return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{delivered ? 'Reservation requested' : 'Reservation saved'}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{date} at {time} · {guests} guests</Text>{!delivered && <Text style={styles.pendingNote}>You are offline, so the restaurant has not received this request yet. It is saved on this phone and will be sent automatically as soon as you are back online.</Text>}<Text style={styles.reference}>REFERENCE {confirmation}</Text><Pressable onPress={() => router.replace('/')} style={styles.primaryButton}><Text style={styles.primaryText}>Back to home</Text></Pressable></SafeAreaView>;
+    return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{delivered ? 'Reservation requested' : 'Reservation saved'}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{date} at {time} · {guests} guests</Text>{!delivered && <Text style={styles.pendingNote}>You are offline, so the restaurant has not received this request yet. It is saved on this phone and will be sent automatically as soon as you are back online.</Text>}{notifying && <Text style={styles.notifyNote}>We will send you a notification when the restaurant confirms your table.</Text>}<Text style={styles.reference}>REFERENCE {confirmation}</Text><Pressable onPress={() => router.replace('/')} style={styles.primaryButton}><Text style={styles.primaryText}>Back to home</Text></Pressable></SafeAreaView>;
   }
 
   return (
@@ -106,6 +110,7 @@ const styles = StyleSheet.create({
   stepper: { width: 170, height: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 25, backgroundColor: '#FFF' }, stepButton: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' }, stepText: { color: ORANGE, fontSize: 25, fontWeight: '800' }, guestCount: { color: '#171612', fontSize: 18, fontWeight: '900' },
   primaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, paddingHorizontal: 24, backgroundColor: ORANGE, marginTop: 28 }, primaryText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
   disabled: { opacity: 0.6 },
+  notifyNote: { color: '#5F5951', textAlign: 'center', fontSize: 12, lineHeight: 18, marginTop: 12, maxWidth: 360 },
   pendingNote: { color: '#8E2F1A', textAlign: 'center', fontSize: 13, lineHeight: 19, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F5D8D1', maxWidth: 420 },
   confirmation: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: CREAM }, check: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: '#FFF', backgroundColor: '#278653', fontSize: 38, fontWeight: '900' }, confirmationTitle: { color: '#171612', fontSize: 28, fontWeight: '900', marginTop: 24 }, confirmationCopy: { color: '#5F5951', textAlign: 'center', fontSize: 15, lineHeight: 23, marginTop: 10 }, reference: { color: ORANGE, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 18 },
 });

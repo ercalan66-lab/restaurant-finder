@@ -10,6 +10,7 @@ An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed b
    1. `202611100001_restaurant_foundation.sql`
    2. `202611180001_order_payments.sql`
    3. `202611180002_restaurant_onboarding.sql` (also creates the `restaurant-photos` storage bucket)
+   4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
 4. Start the app with `npx expo start`. Expo Go includes every native module the app uses, including the photo picker.
@@ -23,6 +24,34 @@ Customers and owners can sign in with an SMS code as well as email and password.
 3. For development without SMS costs, add test numbers and fixed codes under the same settings.
 
 Until a provider is configured, the app shows "Phone sign-in is not enabled" when someone requests a code. Numbers typed in local Tanzanian format (`0712 345 678`) are converted to `+255…` automatically.
+
+## Push notifications
+
+| When | Who is notified | Opens |
+| --- | --- | --- |
+| A new order or booking arrives | The restaurant owner's phones | Owner dashboard |
+| An order is accepted, ready, or declined | The customer (guest or signed in) | Profile |
+| A booking is confirmed or declined | The customer (guest or signed in) | Profile |
+
+How it works:
+
+- **Customers** are asked for permission when they place an order or booking. The phone's push token is stored with the request, so guests are notified too.
+- **Owners** turn alerts on from the card on their dashboard. Each phone is linked to the signed-in account and unlinked on sign-out.
+- **Sending:** a database trigger sends the notification to Expo's push service with `pg_net`, so there is no server to deploy. A failed send never blocks the order or booking.
+- **Privacy:** push tokens cannot be read back through the API.
+
+One-time setup:
+
+1. **Create an EAS project.** Run `npx eas-cli@latest init` (needs a free Expo account). It adds `extra.eas.projectId` to `app.json`; commit that. Without it the app skips push and the dashboard card says alerts are unavailable.
+2. **Use a development build, not Expo Go.** Expo Go on Android has no remote push since SDK 53. Run `npx eas-cli@latest build:configure` once, then `npx eas-cli@latest build --profile development --platform android` (or `ios`). Set `android.package` and `ios.bundleIdentifier` in `app.json` when EAS asks.
+3. **Set up Android (Firebase Cloud Messaging):**
+   1. Create a Firebase project and add an Android app with the same package name.
+   2. Put its `google-services.json` in the project root and set `"android": { "googleServicesFile": "./google-services.json" }`.
+   3. In Firebase, generate a service-account private key and upload it with `npx eas-cli@latest credentials` (Android → Google Service Account → FCM V1). Keep that key out of git.
+4. **Set up iOS:** a paid Apple Developer account is required. EAS creates the push key during the build.
+5. **Run the migration** above.
+
+Delivery receipts from Expo are not checked yet, so tokens from uninstalled apps are not cleaned up automatically.
 
 ## Payments
 
@@ -72,7 +101,7 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - [x] Customer order and reservation tracking screen
 - [x] Rating, price, and distance filters
 - [ ] Native date/time booking controls and capacity validation
-- [ ] Push notifications
+- [x] Push notifications (needs EAS project + development build, see above)
 - [x] Phone (SMS code) sign-in
 - [x] Cash payment tracking (owner marks orders paid)
 - [ ] Mobile money/card payments
