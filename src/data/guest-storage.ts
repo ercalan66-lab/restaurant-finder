@@ -32,10 +32,22 @@ export type OrderRecord = {
   createdAt: string;
   status?: OrderStatus;
   updatedAt?: string;
+  // Optional because orders saved before payment tracking have no payment fields.
+  paymentMethod?: PaymentMethod;
+  paymentStatus?: PaymentStatus;
+  paidAt?: string | null;
 };
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'declined' | 'completed';
 export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'declined';
+export type PaymentMethod = 'cash';
+export type PaymentStatus = 'unpaid' | 'paid';
+
+export function describePayment(method: PaymentMethod | undefined, fulfillment: OrderRecord['fulfillment']) {
+  switch (method ?? 'cash') {
+    case 'cash': return fulfillment === 'Delivery' ? 'Cash on delivery' : 'Cash on pickup';
+  }
+}
 
 const PROFILE_KEY = 'fork-guest-profile';
 const RESERVATIONS_KEY = 'fork-reservations';
@@ -105,6 +117,7 @@ export async function saveOrder(order: OrderRecord) {
     delivery_address: order.address,
     items: order.items,
     total: order.total,
+    payment_method: order.paymentMethod ?? 'cash',
   });
   if (error) console.warn('Order cloud sync unavailable:', error.message);
 }
@@ -137,7 +150,7 @@ export async function getOrders(): Promise<OrderRecord[]> {
   const local = await readList<OrderRecord>(ORDERS_KEY);
   const { data, error } = await supabase
     .from('orders')
-    .select('reference, restaurant_id, guest_name, guest_phone, guest_email, fulfillment, delivery_address, items, total, status, created_at, updated_at, restaurants(name)')
+    .select('reference, restaurant_id, guest_name, guest_phone, guest_email, fulfillment, delivery_address, items, total, status, payment_method, payment_status, paid_at, created_at, updated_at, restaurants(name)')
     .order('created_at', { ascending: false });
   if (error || !data) return local;
   const remote = data.map((row) => ({
@@ -150,10 +163,24 @@ export async function getOrders(): Promise<OrderRecord[]> {
     items: row.items as OrderRecord['items'],
     total: row.total,
     status: row.status as OrderStatus,
+    paymentMethod: row.payment_method as PaymentMethod,
+    paymentStatus: row.payment_status as PaymentStatus,
+    paidAt: row.paid_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
   return mergeById(local, remote);
+}
+
+export async function updateOrderPayment(id: string, paymentStatus: PaymentStatus) {
+  const orders = await getOrders();
+  const now = new Date().toISOString();
+  await writeList(ORDERS_KEY, orders.map((order) =>
+    order.id === id ? { ...order, paymentStatus, paidAt: paymentStatus === 'paid' ? now : null, updatedAt: now } : order,
+  ));
+  // paid_at is set by a database trigger, so only the status is sent.
+  const { error } = await supabase.from('orders').update({ payment_status: paymentStatus }).eq('reference', id);
+  if (error) console.warn('Order payment cloud sync unavailable:', error.message);
 }
 
 export async function updateReservationStatus(id: string, status: ReservationStatus) {

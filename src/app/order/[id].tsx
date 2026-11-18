@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getGuestProfile, saveGuestProfile, saveOrder } from '@/data/guest-storage';
+import { describePayment, getGuestProfile, saveGuestProfile, saveOrder, type PaymentMethod } from '@/data/guest-storage';
 import { getRestaurantDetail } from '@/data/restaurant-details';
 import { getOwnerRestaurant, isMenuItemAvailable, type OwnerRestaurant } from '@/data/owner-storage';
 import { goBackOrReplace } from '@/utils/navigation';
@@ -12,6 +12,8 @@ import { goBackOrReplace } from '@/utils/navigation';
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
 const priceNumber = (price: string) => Number(price.replace(/[^0-9]/g, ''));
+// Cash is the only payment method for now; online methods will be added to this list.
+const paymentMethods: PaymentMethod[] = ['cash'];
 
 export default function OrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +25,7 @@ export default function OrderScreen() {
   const [email, setEmail] = useState('');
   const [fulfillment, setFulfillment] = useState<'Pickup' | 'Delivery'>('Pickup');
   const [address, setAddress] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [ownerRestaurant, setOwnerRestaurant] = useState<OwnerRestaurant | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +62,7 @@ export default function OrderScreen() {
       setSubmitting(true);
       await Promise.all([
         saveGuestProfile(guest),
-        saveOrder({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, guest, fulfillment, address: address.trim(), items, total, createdAt: new Date().toISOString() }),
+        saveOrder({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, guest, fulfillment, address: address.trim(), items, total, paymentMethod, paymentStatus: 'unpaid', createdAt: new Date().toISOString() }),
       ]);
       setConfirmation(reference);
     } catch {
@@ -69,14 +72,18 @@ export default function OrderScreen() {
     }
   };
 
-  if (confirmation) return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>Order received</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{fulfillment} · TSh {total.toLocaleString()}</Text><Text style={styles.reference}>REFERENCE {confirmation}</Text><Pressable onPress={() => router.replace('/')} style={styles.submit}><Text style={styles.submitText}>Back to home</Text></Pressable></SafeAreaView>;
+  const paymentLabel = describePayment(paymentMethod, fulfillment);
+  const paymentInstruction = fulfillment === 'Delivery' ? 'when your order arrives' : 'when you collect your order';
+
+  if (confirmation) return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>Order received</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{fulfillment} · TSh {total.toLocaleString()}</Text><Text style={styles.confirmationPayment}>Please have TSh {total.toLocaleString()} in cash ready {paymentInstruction}.</Text><Text style={styles.reference}>REFERENCE {confirmation}</Text><Pressable onPress={() => router.replace('/')} style={styles.submit}><Text style={styles.submitText}>Back to home</Text></Pressable></SafeAreaView>;
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled"><Pressable onPress={() => goBackOrReplace(`/restaurant/${restaurant.id}`)}><Text style={styles.back}>‹ Restaurant details</Text></Pressable><Text style={styles.eyebrow}>ORDER FOOD</Text><Text style={styles.title}>{restaurant.name}</Text><Text style={styles.subtitle}>Choose your dishes and quantities.</Text>
     <View style={styles.menuList}>{menu.map((item) => <View key={item.name} style={[styles.menuCard, !item.available && styles.menuCardUnavailable]}>{'photo' in item ? <Image contentFit="cover" source={item.photo} style={styles.photo} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderIcon}>🍽️</Text></View>}<View style={styles.menuCopy}><Text style={styles.menuName}>{item.name}</Text><Text style={styles.menuDescription}>{item.description}</Text><Text style={styles.price}>{item.priceLabel}</Text>{!item.available && <Text style={styles.unavailableBadge}>UNAVAILABLE</Text>}<View style={styles.stepper}><Pressable disabled={!item.available} onPress={() => changeQuantity(item.name, -1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>−</Text></Pressable><Text style={styles.quantity}>{quantities[item.name] ?? 0}</Text><Pressable disabled={!item.available} onPress={() => changeQuantity(item.name, 1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>+</Text></Pressable></View></View></View>)}</View>
     <Text style={styles.sectionTitle}>How should we prepare it?</Text><View style={styles.choices}>{(['Pickup', 'Delivery'] as const).map((value) => <Pressable key={value} onPress={() => setFulfillment(value)} style={[styles.choice, fulfillment === value && styles.choiceActive]}><Text style={[styles.choiceText, fulfillment === value && styles.choiceTextActive]}>{value}</Text></Pressable>)}</View>
     {fulfillment === 'Delivery' && <><Text style={styles.label}>DELIVERY ADDRESS</Text><TextInput multiline onChangeText={setAddress} placeholder="Street, building, and area" style={[styles.input, styles.addressInput]} value={address} /></>}
     <Text style={styles.sectionTitle}>Guest details</Text><Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" onChangeText={setName} placeholder="Full name" style={styles.input} value={name} /><Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="+255..." style={styles.input} value={phone} /><Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="you@example.com" style={styles.input} value={email} />
-    <View style={styles.totalRow}><Text style={styles.totalLabel}>ORDER TOTAL</Text><Text style={styles.total}>TSh {total.toLocaleString()}</Text></View><Pressable disabled={submitting} onPress={submit} style={[styles.submit, submitting && styles.disabled]}><Text style={styles.submitText}>{submitting ? 'Sending order…' : `Confirm ${fulfillment.toLowerCase()} order`}</Text></Pressable><Text style={styles.paymentNote}>Payment will be arranged directly with the restaurant.</Text>
+    <Text style={styles.sectionTitle}>Payment</Text><View accessibilityRole="radiogroup" style={styles.paymentList}>{paymentMethods.map((method) => { const selected = paymentMethod === method; return <Pressable accessibilityRole="radio" accessibilityState={{ checked: selected }} key={method} onPress={() => setPaymentMethod(method)} style={[styles.paymentOption, selected && styles.paymentOptionActive]}><View style={[styles.radio, selected && styles.radioActive]}>{selected && <View style={styles.radioDot} />}</View><View style={styles.paymentCopy}><Text style={styles.paymentTitle}>{describePayment(method, fulfillment)}</Text><Text style={styles.paymentDescription}>Pay the restaurant in cash {paymentInstruction}.</Text></View></Pressable>; })}</View>
+    <View style={styles.totalRow}><Text style={styles.totalLabel}>ORDER TOTAL</Text><Text style={styles.total}>TSh {total.toLocaleString()}</Text></View><Pressable disabled={submitting} onPress={submit} style={[styles.submit, submitting && styles.disabled]}><Text style={styles.submitText}>{submitting ? 'Sending order…' : `Confirm ${fulfillment.toLowerCase()} order`}</Text></Pressable><Text style={styles.paymentNote}>{paymentLabel} · nothing is charged in the app.</Text>
   </ScrollView></SafeAreaView>;
 }
 
@@ -85,6 +92,8 @@ const styles = StyleSheet.create({
   menuList: { gap: 12 }, menuCard: { flexDirection: 'row', minHeight: 135, overflow: 'hidden', borderWidth: 1, borderColor: '#EEE6DA', borderRadius: 18, backgroundColor: '#FFF' }, menuCardUnavailable: { opacity: 0.68, backgroundColor: '#FFF8ED' }, photo: { width: 125, backgroundColor: '#DDD4C9' }, photoPlaceholder: { width: 125, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4E9DC' }, photoPlaceholderIcon: { fontSize: 38 }, menuCopy: { flex: 1, padding: 13 }, menuName: { color: '#171612', fontSize: 15, fontWeight: '900' }, menuDescription: { color: '#777268', fontSize: 10, lineHeight: 14, marginTop: 4 }, price: { color: ORANGE, fontSize: 12, fontWeight: '900', marginTop: 7 }, unavailableBadge: { alignSelf: 'flex-start', color: '#8E2F1A', backgroundColor: '#F5D8D1', borderRadius: 8, overflow: 'hidden', paddingHorizontal: 6, paddingVertical: 3, fontSize: 7, fontWeight: '900', marginTop: 6 }, stepper: { position: 'absolute', right: 10, bottom: 9, flexDirection: 'row', alignItems: 'center', borderRadius: 16, backgroundColor: '#FFF1E6' }, stepButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }, stepText: { color: ORANGE, fontSize: 20, fontWeight: '900' }, disabledText: { color: '#AFA8A0' }, quantity: { minWidth: 24, textAlign: 'center', color: '#171612', fontWeight: '900' },
   sectionTitle: { color: '#171612', fontSize: 20, fontWeight: '900', marginTop: 28, marginBottom: 12 }, choices: { flexDirection: 'row', gap: 9 }, choice: { flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 22, borderWidth: 1, borderColor: '#E9DFD2', backgroundColor: '#FFF' }, choiceActive: { borderColor: ORANGE, backgroundColor: ORANGE }, choiceText: { color: '#4F4A43', fontWeight: '900' }, choiceTextActive: { color: '#FFF' },
   label: { color: '#777268', fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 7 }, input: { height: 50, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, paddingHorizontal: 15, color: '#171612', backgroundColor: '#FFF' }, addressInput: { height: 82, paddingTop: 14, textAlignVertical: 'top' }, totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 24, marginTop: 24, borderTopWidth: 1, borderTopColor: '#E9DFD2' }, totalLabel: { color: '#777268', fontSize: 10, fontWeight: '900' }, total: { color: '#171612', fontSize: 22, fontWeight: '900' }, submit: { minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, borderRadius: 26, backgroundColor: ORANGE, marginTop: 18 }, submitText: { color: '#FFF', fontSize: 13, fontWeight: '900' }, paymentNote: { color: '#8A847B', textAlign: 'center', fontSize: 10, marginTop: 10 },
+  paymentList: { gap: 9 }, paymentOption: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 16, backgroundColor: '#FFF' }, paymentOptionActive: { borderColor: ORANGE, backgroundColor: '#FFF6EF' }, radio: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#CFC5B9', borderRadius: 10 }, radioActive: { borderColor: ORANGE }, radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: ORANGE }, paymentCopy: { flex: 1 }, paymentTitle: { color: '#171612', fontSize: 14, fontWeight: '900' }, paymentDescription: { color: '#777268', fontSize: 11, lineHeight: 16, marginTop: 3 },
+  confirmationPayment: { color: '#5F5951', textAlign: 'center', fontSize: 13, lineHeight: 19, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#FFF1E6' },
   confirmation: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: CREAM }, check: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: '#FFF', backgroundColor: '#278653', fontSize: 38, fontWeight: '900' }, confirmationTitle: { color: '#171612', fontSize: 28, fontWeight: '900', marginTop: 24 }, confirmationCopy: { color: '#5F5951', textAlign: 'center', fontSize: 15, lineHeight: 23, marginTop: 10 }, reference: { color: ORANGE, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 18 },
   disabled: { opacity: 0.6 },
 });

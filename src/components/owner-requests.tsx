@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
+  describePayment,
   getOrders,
   getReservations,
   type OrderRecord,
   type OrderStatus,
+  type PaymentStatus,
   type ReservationRecord,
   type ReservationStatus,
+  updateOrderPayment,
   updateOrderStatus,
   updateReservationStatus,
 } from '@/data/guest-storage';
@@ -53,6 +56,11 @@ export function OwnerRequests({ restaurantName }: { restaurantName: string }) {
     await load();
   };
 
+  const setOrderPayment = async (id: string, paymentStatus: PaymentStatus) => {
+    await updateOrderPayment(id, paymentStatus);
+    await load();
+  };
+
   const setReservationStatus = async (id: string, status: ReservationStatus) => {
     await updateReservationStatus(id, status);
     await load();
@@ -69,13 +77,14 @@ export function OwnerRequests({ restaurantName }: { restaurantName: string }) {
       <Tab active={active === 'reservations'} label={`Reservations (${reservations.length})`} onPress={() => setActive('reservations')} />
     </View>
     {active === 'orders'
-      ? orders.length ? orders.map((order) => <OrderCard key={order.id} order={order} onStatus={setOrderStatus} />) : <Empty copy="New food orders will appear here." />
+      ? orders.length ? orders.map((order) => <OrderCard key={order.id} order={order} onPayment={setOrderPayment} onStatus={setOrderStatus} />) : <Empty copy="New food orders will appear here." />
       : reservations.length ? reservations.map((reservation) => <ReservationCard key={reservation.id} reservation={reservation} onStatus={setReservationStatus} />) : <Empty copy="New table requests will appear here." />}
   </View>;
 }
 
-function OrderCard({ order, onStatus }: { order: OrderRecord; onStatus: (id: string, status: OrderStatus) => Promise<void> }) {
+function OrderCard({ order, onPayment, onStatus }: { order: OrderRecord; onPayment: (id: string, paymentStatus: PaymentStatus) => Promise<void>; onStatus: (id: string, status: OrderStatus) => Promise<void> }) {
   const status = order.status ?? 'pending';
+  const paid = order.paymentStatus === 'paid';
   const next: Partial<Record<OrderStatus, OrderStatus>> = { pending: 'accepted', accepted: 'preparing', preparing: 'ready', ready: 'completed' };
   const labels: Partial<Record<OrderStatus, string>> = { accepted: 'Accept order', preparing: 'Start preparing', ready: 'Mark ready', completed: 'Complete order' };
   const nextStatus = next[status];
@@ -84,8 +93,8 @@ function OrderCard({ order, onStatus }: { order: OrderRecord; onStatus: (id: str
     <Text style={styles.meta}>{order.fulfillment} · {order.guest.phone}</Text>
     {order.address ? <Text style={styles.meta}>{order.address}</Text> : null}
     <View style={styles.items}>{order.items.map((item) => <Text key={item.name} style={styles.item}>{item.quantity} × {item.name} · {item.price}</Text>)}</View>
-    <Text style={styles.total}>TSh {order.total.toLocaleString()}</Text>
-    <View style={styles.actions}>{nextStatus && <Action label={labels[nextStatus] ?? 'Update'} onPress={() => void onStatus(order.id, nextStatus)} />}{status !== 'completed' && status !== 'declined' && <Action destructive label="Decline" onPress={() => void onStatus(order.id, 'declined')} />}</View>
+    <View style={styles.paymentRow}><Text style={styles.total}>TSh {order.total.toLocaleString()}</Text><Text style={styles.paymentMethod}>{describePayment(order.paymentMethod, order.fulfillment)}</Text><Text style={[styles.status, !paid && styles.statusAttention]}>{paid ? 'PAID' : 'UNPAID'}</Text></View>
+    <View style={styles.actions}>{nextStatus && <Action label={labels[nextStatus] ?? 'Update'} onPress={() => void onStatus(order.id, nextStatus)} />}{!paid && status !== 'declined' && <Action label="Mark paid" onPress={() => void onPayment(order.id, 'paid')} />}{paid && <Action destructive label="Mark unpaid" onPress={() => void onPayment(order.id, 'unpaid')} />}{status !== 'completed' && status !== 'declined' && <Action destructive label="Decline" onPress={() => void onStatus(order.id, 'declined')} />}</View>
   </View>;
 }
 
@@ -106,5 +115,5 @@ function Action({ destructive, label, onPress }: { destructive?: boolean; label:
 function Empty({ copy }: { copy: string }) { return <View style={styles.empty}><Text style={styles.emptyTitle}>Nothing here yet</Text><Text style={styles.helper}>{copy}</Text></View>; }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 22, padding: 17, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 22, backgroundColor: '#FFFDF9' }, headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }, title: { color: '#271812', fontSize: 20, fontWeight: '900' }, helper: { color: '#71675F', fontSize: 12, lineHeight: 18, marginTop: 5 }, refresh: { color: ORANGE, fontSize: 11, fontWeight: '900', paddingVertical: 5 }, stats: { flexDirection: 'row', gap: 8, marginTop: 15 }, stat: { flex: 1, padding: 11, borderRadius: 13, backgroundColor: '#FFF3E9' }, statValue: { color: '#271812', fontSize: 21, fontWeight: '900' }, statLabel: { color: '#8A7164', fontSize: 7, fontWeight: '900', marginTop: 3 }, tabs: { flexDirection: 'row', padding: 4, borderRadius: 16, backgroundColor: '#F4EAE1', marginTop: 16 }, tab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12 }, tabActive: { backgroundColor: '#FFF' }, tabText: { color: '#7B7068', fontSize: 11, fontWeight: '800' }, tabTextActive: { color: ORANGE }, card: { padding: 14, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 16, backgroundColor: '#FFF', marginTop: 12 }, cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }, reference: { color: ORANGE, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 }, customer: { color: '#271812', fontSize: 16, fontWeight: '900', marginTop: 3 }, status: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 7, fontWeight: '900' }, statusAttention: { color: '#8E2F1A', backgroundColor: '#F5D8D1' }, meta: { color: '#71675F', fontSize: 11, lineHeight: 17, marginTop: 6 }, items: { paddingVertical: 8, marginTop: 7, borderTopWidth: 1, borderTopColor: '#F0E7DE' }, item: { color: '#4E453F', fontSize: 11, lineHeight: 18 }, total: { color: ORANGE, fontSize: 14, fontWeight: '900' }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }, action: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 20, backgroundColor: ORANGE }, actionSecondary: { borderWidth: 1, borderColor: '#D9C8BC', backgroundColor: '#FFF' }, actionText: { color: '#FFF', fontSize: 10, fontWeight: '900' }, actionSecondaryText: { color: '#8E2F1A' }, empty: { alignItems: 'center', padding: 22, marginTop: 12, borderRadius: 15, backgroundColor: '#FFF8EE' }, emptyTitle: { color: '#271812', fontSize: 15, fontWeight: '900' },
+  section: { marginTop: 22, padding: 17, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 22, backgroundColor: '#FFFDF9' }, headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }, title: { color: '#271812', fontSize: 20, fontWeight: '900' }, helper: { color: '#71675F', fontSize: 12, lineHeight: 18, marginTop: 5 }, refresh: { color: ORANGE, fontSize: 11, fontWeight: '900', paddingVertical: 5 }, stats: { flexDirection: 'row', gap: 8, marginTop: 15 }, stat: { flex: 1, padding: 11, borderRadius: 13, backgroundColor: '#FFF3E9' }, statValue: { color: '#271812', fontSize: 21, fontWeight: '900' }, statLabel: { color: '#8A7164', fontSize: 7, fontWeight: '900', marginTop: 3 }, tabs: { flexDirection: 'row', padding: 4, borderRadius: 16, backgroundColor: '#F4EAE1', marginTop: 16 }, tab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12 }, tabActive: { backgroundColor: '#FFF' }, tabText: { color: '#7B7068', fontSize: 11, fontWeight: '800' }, tabTextActive: { color: ORANGE }, card: { padding: 14, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 16, backgroundColor: '#FFF', marginTop: 12 }, cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }, reference: { color: ORANGE, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 }, customer: { color: '#271812', fontSize: 16, fontWeight: '900', marginTop: 3 }, status: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 7, fontWeight: '900' }, statusAttention: { color: '#8E2F1A', backgroundColor: '#F5D8D1' }, meta: { color: '#71675F', fontSize: 11, lineHeight: 17, marginTop: 6 }, items: { paddingVertical: 8, marginTop: 7, borderTopWidth: 1, borderTopColor: '#F0E7DE' }, item: { color: '#4E453F', fontSize: 11, lineHeight: 18 }, total: { color: ORANGE, fontSize: 14, fontWeight: '900' }, paymentRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }, paymentMethod: { flex: 1, color: '#71675F', fontSize: 11 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }, action: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 20, backgroundColor: ORANGE }, actionSecondary: { borderWidth: 1, borderColor: '#D9C8BC', backgroundColor: '#FFF' }, actionText: { color: '#FFF', fontSize: 10, fontWeight: '900' }, actionSecondaryText: { color: '#8E2F1A' }, empty: { alignItems: 'center', padding: 22, marginTop: 12, borderRadius: 15, backgroundColor: '#FFF8EE' }, emptyTitle: { color: '#271812', fontSize: 15, fontWeight: '900' },
 });
