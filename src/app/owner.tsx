@@ -16,12 +16,12 @@ import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
 
-const emptyDetails: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0 };
+const emptyDetails: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0, seatsPerSlot: 40 };
 
 const detailsOf = (restaurant: Restaurant): RestaurantDetails => ({
   name: restaurant.name, cuisine: restaurant.cuisine, area: restaurant.area, address: restaurant.address, description: restaurant.description,
   phone: restaurant.phone, email: restaurant.email, opensAt: restaurant.opensAt, closesAt: restaurant.closesAt, mapUrl: restaurant.mapUrl,
-  facilities: restaurant.facilities, pricePerPerson: restaurant.pricePerPerson,
+  facilities: restaurant.facilities, pricePerPerson: restaurant.pricePerPerson, seatsPerSlot: restaurant.seatsPerSlot,
 });
 
 type Owner = { id: string; email: string; phone: string };
@@ -76,7 +76,7 @@ export default function OwnerDashboardScreen() {
     if (!owner) return;
     try {
       setRestaurant(await createRestaurant(owner.id, details));
-      Alert.alert('Restaurant created', 'Add a cover photo and your menu so customers can start ordering.');
+      Alert.alert('Restaurant created', 'Fork will review it before customers can see it. Meanwhile, add a cover photo and your menu.');
     } catch (error) {
       const duplicate = typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
       Alert.alert('Could not create restaurant', duplicate ? 'This account already has a restaurant. Reopen the dashboard to manage it.' : errorMessage(error));
@@ -87,8 +87,10 @@ export default function OwnerDashboardScreen() {
     if (!restaurant) return;
     try {
       await updateRestaurant(restaurant.id, details);
-      update(details);
-      Alert.alert('Saved', 'Restaurant information updated.');
+      // Saving a rejected restaurant sends it back for review (done by the database).
+      const resubmitted = restaurant.approvalStatus === 'rejected';
+      update(resubmitted ? { ...details, approvalStatus: 'pending', rejectionReason: '' } : details);
+      Alert.alert('Saved', resubmitted ? 'Restaurant information updated and sent to Fork for review again.' : 'Restaurant information updated.');
     } catch (error) {
       Alert.alert('Could not save', errorMessage(error));
     }
@@ -133,10 +135,16 @@ export default function OwnerDashboardScreen() {
       : <>
         <Text style={styles.title}>{restaurant.name}</Text>
         <Text style={styles.subtitle}>Manage what customers see, and handle their orders and bookings.</Text>
+        {restaurant.approvalStatus !== 'approved' && <View style={[styles.reviewCard, restaurant.approvalStatus === 'rejected' && styles.reviewCardRejected]}>
+          <Text style={styles.reviewTitle}>{restaurant.approvalStatus === 'pending' ? 'Waiting for approval' : 'Changes needed'}</Text>
+          <Text style={styles.reviewCopy}>{restaurant.approvalStatus === 'pending'
+            ? 'Fork reviews every new restaurant before customers can see it. You will get a notification when it is approved. Meanwhile, add photos and your menu.'
+            : `${restaurant.rejectionReason || 'Fork asked for changes to your listing.'} Update your details and save them to send the restaurant for review again.`}</Text>
+        </View>}
         <View style={styles.visibilityCard}>
           <View style={styles.visibilityCopy}>
             <Text style={styles.visibilityTitle}>{restaurant.isActive ? 'Visible to customers' : 'Hidden from customers'}</Text>
-            <Text style={styles.visibilityHelper}>{restaurant.isActive ? 'Your restaurant appears in search and accepts orders.' : 'Turn this on when your page is ready.'}</Text>
+            <Text style={styles.visibilityHelper}>{!restaurant.isActive ? 'Turn this on when your page is ready.' : restaurant.approvalStatus === 'approved' ? 'Your restaurant appears in search and accepts orders.' : 'It will appear in search once Fork approves it.'}</Text>
             <TextButton label="View customer page ›" onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} />
           </View>
           <Switch accessibilityLabel="Visible to customers" onValueChange={(value) => void setVisible(value)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={restaurant.isActive} />
@@ -163,6 +171,10 @@ const styles = StyleSheet.create({
   subtitle: { color: OWNER_COLORS.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
   errorBox: { width: '100%', maxWidth: 420 },
   errorTitle: { color: OWNER_COLORS.ink, fontSize: 22, fontWeight: '900' },
+  reviewCard: { marginTop: 18, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: '#EBD9A8', backgroundColor: '#FFF7DE' },
+  reviewCardRejected: { borderColor: '#E8B7AC', backgroundColor: '#FBE9E5' },
+  reviewTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
+  reviewCopy: { color: '#5A4A40', fontSize: 12, lineHeight: 18, marginTop: 4 },
   visibilityCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: OWNER_COLORS.line, backgroundColor: '#FFF' },
   visibilityCopy: { flex: 1, gap: 3 },
   visibilityTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },

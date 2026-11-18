@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
 import { formatTsh, isOpenNow, useRestaurants, type RestaurantSummary } from '@/data/restaurants';
 
 type Cuisine = 'All' | 'African' | 'Italian' | 'Asian' | 'Indian' | 'Cafe';
@@ -16,7 +17,7 @@ const cuisines: { name: Cuisine; icon: string }[] = [
   { name: 'All', icon: '🍽️' }, { name: 'African', icon: '🥘' }, { name: 'Italian', icon: '🍕' },
   { name: 'Asian', icon: '🍣' }, { name: 'Indian', icon: '🍛' }, { name: 'Cafe', icon: '☕' },
 ];
-const SAVED_STORAGE_KEY = 'fork-saved-restaurants';
+const SAVED_STORAGE_KEY = SAVED_RESTAURANTS_KEY;
 const defaultFilters: Filters = { maxPrice: 0, minRating: 0, maxDistance: 0 };
 const distanceLabel = (restaurant: Restaurant) => restaurant.distanceKm > 0 ? `⌖ ${restaurant.distanceKm} km · ${restaurant.area}` : `⌖ ${restaurant.area}`;
 const ratingLabel = (restaurant: Restaurant) => restaurant.rating > 0 ? `★ ${restaurant.rating}` : 'NEW';

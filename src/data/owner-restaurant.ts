@@ -4,7 +4,7 @@ import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuIt
 /** The restaurant fields an owner can edit. Rating, distance, and tag are managed by Fork. */
 export type RestaurantDetails = Pick<Restaurant,
   'name' | 'cuisine' | 'area' | 'address' | 'description' | 'phone' | 'email' | 'opensAt' | 'closesAt'
-  | 'mapUrl' | 'facilities' | 'pricePerPerson'>;
+  | 'mapUrl' | 'facilities' | 'pricePerPerson' | 'seatsPerSlot'>;
 export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'coverUrl' | 'galleryUrls' | 'isActive'>>;
 export type MenuItemInput = Omit<MenuItem, 'id'>;
 
@@ -18,6 +18,7 @@ export function restaurantDetailsError(details: RestaurantDetails): string | nul
   if (details.mapUrl.trim() && !/^https?:\/\//i.test(details.mapUrl.trim())) return 'Enter a full Google Maps link beginning with http:// or https://.';
   if (details.email.trim() && !/^\S+@\S+\.\S+$/.test(details.email.trim())) return 'Enter a valid email address or leave it blank.';
   if (!Number.isInteger(details.pricePerPerson) || details.pricePerPerson < 0) return 'Enter the average price per person as a whole number.';
+  if (!Number.isInteger(details.seatsPerSlot) || details.seatsPerSlot < 1 || details.seatsPerSlot > 500) return 'Enter how many guests you can seat per booking time (1–500).';
   return null;
 }
 
@@ -42,6 +43,7 @@ function restaurantColumns(changes: RestaurantChanges) {
   if (changes.mapUrl !== undefined) columns.map_url = changes.mapUrl.trim();
   if (changes.facilities !== undefined) columns.facilities = changes.facilities;
   if (changes.pricePerPerson !== undefined) columns.price_per_person = changes.pricePerPerson;
+  if (changes.seatsPerSlot !== undefined) columns.seats_per_slot = changes.seatsPerSlot;
   if (changes.coverUrl !== undefined) columns.cover_url = changes.coverUrl;
   if (changes.galleryUrls !== undefined) columns.gallery_urls = changes.galleryUrls;
   if (changes.isActive !== undefined) columns.is_active = changes.isActive;

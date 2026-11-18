@@ -11,9 +11,13 @@ An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed b
    2. `202611180001_order_payments.sql`
    3. `202611180002_restaurant_onboarding.sql` (also creates the `restaurant-photos` storage bucket)
    4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
+   5. `202611180004_status_values.sql` (new order, booking, and payment values). Run it on its own and let it finish before the next one: Postgres cannot use new enum values in the transaction that adds them.
+   6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
-4. Start the app with `npx expo start`. Expo Go includes every native module the app uses, including the photo picker.
+4. Make yourself a Fork admin (see [Fork admins](#fork-admins)) so you can approve new restaurants.
+5. Fill in `SUPPORT_EMAIL` in `src/constants/app-info.ts`. It is shown in the privacy policy.
+6. Start the app with `npx expo start`. Expo Go runs everything except push notifications on Android, which need a development build.
 
 ## Phone sign-in
 
@@ -29,9 +33,13 @@ Until a provider is configured, the app shows "Phone sign-in is not enabled" whe
 
 | When | Who is notified | Opens |
 | --- | --- | --- |
-| A new order or booking arrives | The restaurant owner's phones | Owner dashboard |
-| An order is accepted, ready, or declined | The customer (guest or signed in) | Profile |
+| A new order or booking arrives, or a customer cancels | The restaurant owner's phones | Owner dashboard |
+| A delivery order is paid by mobile money | The restaurant owner's phones | Owner dashboard |
+| An order is accepted, ready / on its way, or declined | The customer (guest or signed in) | Profile |
+| A delivery order arrives | The customer | Payment screen |
 | A booking is confirmed or declined | The customer (guest or signed in) | Profile |
+| A new restaurant needs review | Fork admins | Admin screen |
+| A restaurant is approved or needs changes | Its owner | Owner dashboard |
 
 How it works:
 
@@ -53,16 +61,62 @@ One-time setup:
 
 Delivery receipts from Expo are not checked yet, so tokens from uninstalled apps are not cleaned up automatically.
 
-## Payments
+## Payments (delivery orders only)
 
-Checkout currently offers **cash on pickup / cash on delivery** only. Every order records `payment_method` and `payment_status` (`unpaid` → `paid`). The restaurant owner marks an order as paid from the dashboard, and the database stamps `paid_at`. Customers cannot submit an order that is already marked paid. Online methods such as mobile money or card can be added later by extending the `payment_method` enum and adding a server-side payment step.
+- **Pickup orders** have no payment step in the app. The customer pays at the counter.
+- **Delivery orders** are paid after the food arrives:
+  1. The owner moves the order through Accept, Start preparing, **Out for delivery**, then **Mark delivered**.
+  2. The customer is notified, and their profile shows **Pay TSh …**. That opens a payment screen with M-Pesa, Tigo Pesa, or Airtel Money. Paying completes the order and notifies the owner.
+  3. If the customer pays the rider in cash instead, the owner taps **Cash received**, which completes the order.
 
-The app keeps a local copy of orders and reservations, so requests still receive a reference when cloud sync is temporarily unavailable. Once the migration is installed, signed-in customers and restaurant owners can access permitted records across devices under Row Level Security.
+**Mobile money is simulated.** The `pay_order` database function marks the order paid with a `SIM-…` reference, and the app shows a "Test mode" banner, so no money moves. To take real payments:
+
+1. Open a merchant account with a Tanzanian gateway (Selcom, AzamPay, or ClickPesa).
+2. Replace `pay_order` with a Supabase Edge Function that starts the push-to-phone payment.
+3. Mark the order paid only from the gateway's confirmation callback.
+
+Customers can never mark an order paid themselves outside `pay_order`. Owners can only record cash.
+
+The app keeps a local copy of orders and reservations, so requests still receive a reference when cloud sync is temporarily unavailable. Customers (including guests) see live status through the `request_statuses` function. The profile refreshes every 15 seconds, and whenever a notification arrives.
+
+## Bookings
+
+- **Dates:** customers pick a date from the next 14 days.
+- **Times:** slots are every 30 minutes within opening hours. The last slot is an hour before closing, and same-day slots need 30 minutes' notice.
+- **Capacity:** owners set **Seats per booking time** (default 40). Full slots are disabled in the app, and the database refuses overbooking (error `FB001`). If someone takes the last seats first, the customer is asked to pick another time.
+
+## Cancelling
+
+Customers can cancel an order while it is still pending, and a booking while it is pending or confirmed. Cancelling works from the profile, for guests too (they prove it is theirs with the phone number on the request), and the owner is notified. A request that was never sent is simply not sent.
+
+## Fork admins
+
+New restaurants start as **waiting for approval** and are hidden from customers until an admin approves them. Restaurants that existed before this change stay live.
+
+To make an account an admin, copy its user UUID from Supabase **Authentication → Users** and run this in the SQL editor:
+
+```sql
+insert into public.admins (user_id) values ('YOUR_USER_UUID');
+```
+
+Admins see **Review restaurants** on their profile. From there they can:
+
+- approve a restaurant, or request changes with a reason the owner sees;
+- unpublish a live restaurant;
+- set the rating and the tag (for example "Bestseller").
+
+When an owner saves changes to a rejected restaurant, it goes back into review automatically.
+
+## Account deletion and privacy
+
+- **Profile → Delete account** calls `delete_my_account`. It deletes the account and hides any restaurant the person owns. It also removes their name, phone number, and address from past orders and bookings, which the restaurant keeps as a record, and clears the app's data on the phone. The App Store and Google Play require in-app deletion.
+- The privacy policy lives at `/privacy` and is linked from the sign-in screen and the profile.
+- The store listings need a public URL for it. Host the web build (for example with EAS Hosting), or publish the same text elsewhere.
 
 ## Restaurant owners
 
 1. Register in the app and choose **Restaurant owner**.
-2. The dashboard opens with a **Set up your restaurant** form. Submitting it creates the restaurant in Supabase, linked to that account (one restaurant per owner).
+2. The dashboard opens with a **Set up your restaurant** form. Submitting it creates the restaurant in Supabase, linked to that account (one restaurant per owner). It stays hidden until a Fork admin approves it.
 3. From the dashboard the owner can:
    - edit details, hours, and price per person;
    - upload a cover photo, up to eight gallery photos, and food photos;
@@ -84,11 +138,11 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 
 ## Data security
 
-- Active restaurant and menu information is public. Hidden restaurants are visible only to their owner.
+- Restaurant and menu information is public once a restaurant is approved and visible. Hidden or unapproved restaurants are visible only to their owner and Fork admins, and cannot receive orders or bookings.
 - Owners can edit only their own restaurant, menu, and photos.
 - Customers can read only requests associated with their account.
 - Restaurant owners can read and update only requests sent to their restaurant.
-- Anonymous customers may submit a request, but cannot query it from the API afterward.
+- Anonymous customers may submit a request. Afterwards they can read only its status (via `request_statuses`, by reference), and cancel or pay it only with the phone number on the request.
 - The mobile app uses only the publishable key. Never place a Supabase secret or service-role key in `.env`.
 
 ## Delivery roadmap
@@ -100,11 +154,14 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - [x] Restaurant and menu image uploads
 - [x] Customer order and reservation tracking screen
 - [x] Rating, price, and distance filters
-- [ ] Native date/time booking controls and capacity validation
+- [x] Booking date and time slots, and capacity validation
 - [x] Push notifications (needs EAS project + development build, see above)
 - [x] Phone (SMS code) sign-in
-- [x] Cash payment tracking (owner marks orders paid)
-- [ ] Mobile money/card payments
+- [x] Pay on delivery: mobile money in the app (simulated) or cash to the rider
+- [ ] Real mobile money gateway (Selcom / AzamPay / ClickPesa)
+- [x] Restaurant approval by Fork admins
+- [x] Customer cancellation and live status
+- [x] In-app account deletion and privacy policy
 - [ ] Automated tests, accessibility audit, and real-device QA
 
 ## Validation

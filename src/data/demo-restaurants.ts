@@ -13,7 +13,7 @@ const foodPhotos = {
 const dishDescriptions = ['Chef signature, prepared fresh to order.', 'A guest favorite made with local ingredients.', 'Perfect for sharing at the table.'];
 const dishPrices = [28000, 34000, 52000];
 
-type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu'> & {
+type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu' | 'approvalStatus' | 'rejectionReason' | 'seatsPerSlot'> & {
   kind: keyof typeof foodPhotos;
   dishes: [string, string, string];
 };
@@ -34,6 +34,9 @@ function demo({ kind, dishes, ...restaurant }: DemoInput): Restaurant {
     ownerId: null,
     mapUrl: '',
     isActive: true,
+    approvalStatus: 'approved',
+    rejectionReason: '',
+    seatsPerSlot: 40,
     galleryUrls: restaurant.id % 2 === 0 ? [...interiors].reverse() : interiors,
     menu,
   };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 
 import { restaurantDetailsError, type RestaurantDetails } from '@/data/owner-restaurant';
 import { CUISINES } from '@/data/restaurants';
@@ -16,6 +16,7 @@ export function RestaurantDetailsForm({ initial, onSubmit, submitLabel }: { init
     cuisine: asCuisine(initial.cuisine),
     facilities: initial.facilities.join(', '),
     pricePerPerson: initial.pricePerPerson ? String(initial.pricePerPerson) : '',
+    seatsPerSlot: String(initial.seatsPerSlot || 40),
   });
   const [saving, setSaving] = useState(false);
   const set = <K extends keyof typeof values>(key: K) => (value: (typeof values)[K]) => setValues((current) => ({ ...current, [key]: value }));
@@ -25,6 +26,7 @@ export function RestaurantDetailsForm({ initial, onSubmit, submitLabel }: { init
       ...values,
       facilities: values.facilities.split(',').map((item) => item.trim()).filter(Boolean),
       pricePerPerson: values.pricePerPerson.trim() ? Number(values.pricePerPerson.replace(/[,\s]/g, '')) : 0,
+      seatsPerSlot: Number(values.seatsPerSlot.replace(/[,\s]/g, '')),
     };
     const problem = restaurantDetailsError(details);
     if (problem) return Alert.alert('Check the restaurant details', problem);
@@ -50,6 +52,8 @@ export function RestaurantDetailsForm({ initial, onSubmit, submitLabel }: { init
       <Field containerStyle={formStyles.half} label="OPENS AT" onChangeText={set('opensAt')} placeholder="08:00" value={values.opensAt} />
       <Field containerStyle={formStyles.half} label="CLOSES AT" onChangeText={set('closesAt')} placeholder="22:00" value={values.closesAt} />
     </View>
+    <Field keyboardType="number-pad" label="SEATS PER BOOKING TIME" onChangeText={set('seatsPerSlot')} placeholder="40" value={values.seatsPerSlot} />
+    <Text style={formStyles.helper}>Guests you can seat at one booking time. Fork stops taking bookings for a time once it is full.</Text>
     <Field label="FACILITIES (SEPARATE WITH COMMAS)" onChangeText={set('facilities')} placeholder="Wi-Fi, parking, outdoor seating" value={values.facilities} />
     <PrimaryButton busy={saving} label={submitLabel} onPress={() => void submit()} />
   </>;
