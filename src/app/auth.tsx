@@ -146,7 +146,7 @@ export default function AuthScreen() {
       ? <>
         <Text style={styles.codeHint}>Enter the code we sent by SMS to <Text style={styles.codePhone}>{codeSentTo}</Text>.</Text>
         <Text style={styles.label}>VERIFICATION CODE</Text>
-        <TextInput autoComplete="one-time-code" autoFocus editable={!loading} keyboardType="number-pad" maxLength={10} onChangeText={(value) => setCode(value.replace(/\D/g, ''))} onSubmitEditing={() => void verifyCode()} placeholder="123456" style={[styles.input, styles.codeInput]} value={code} />
+        <TextInput autoComplete="one-time-code" autoFocus editable={!loading} keyboardType="number-pad" maxLength={10} onChangeText={(value) => setCode(value.replace(/\D/g, ''))} onSubmitEditing={() => void verifyCode()} placeholder="••••••" placeholderTextColor="#CDBFB3" style={[styles.input, styles.codeInput]} value={code} />
         <View style={styles.codeLinks}><Pressable disabled={loading} onPress={() => void sendCode()}><Text style={styles.link}>Resend code</Text></Pressable><Pressable disabled={loading} onPress={resetCode}><Text style={styles.link}>Use a different number</Text></Pressable></View>
       </>
       : <>
