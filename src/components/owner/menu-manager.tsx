@@ -12,6 +12,7 @@ import { Field, formStyles, OWNER_COLORS, PrimaryButton, Section, TextButton } f
 
 export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu: MenuItem[]) => void; restaurant: Restaurant }) {
   const [busyItem, setBusyItem] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const replaceItem = (id: string, changes: Partial<MenuItem>) => onMenuChange(restaurant.menu.map((item) => item.id === id ? { ...item, ...changes } : item));
 
   const setInStock = async (item: MenuItem, inStock: boolean) => {
@@ -57,6 +58,11 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
         : restaurant.menu.map((item) => {
           const available = isMenuItemAvailable(item, restaurant);
           const busy = busyItem === item.id;
+          if (editingId === item.id) {
+            return <View key={item.id} style={styles.card}>
+              <EditFoodForm item={item} onCancel={() => setEditingId(null)} onSaved={(changes) => { replaceItem(item.id, changes); setEditingId(null); }} />
+            </View>;
+          }
           return <View key={item.id} style={styles.card}>
             <View style={styles.cardTop}>
               <Pressable accessibilityLabel={`${item.photoUrl ? 'Change' : 'Add'} photo for ${item.name}`} disabled={busyItem !== null} onPress={() => void changePhoto(item)}>
@@ -79,11 +85,53 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
               </View>
               <Switch accessibilityLabel={`${item.name} in stock`} onValueChange={(inStock) => void setInStock(item, inStock)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={item.inStock} />
             </View>
-            <TextButton destructive disabled={busyItem !== null} label="Remove food" onPress={() => remove(item)} />
+            <View style={styles.cardActions}>
+              <TextButton disabled={busyItem !== null || editingId !== null} label="Edit food" onPress={() => setEditingId(item.id)} />
+              <TextButton destructive disabled={busyItem !== null} label="Remove food" onPress={() => remove(item)} />
+            </View>
           </View>;
         })}
     </Section>
     <AddFoodForm onAdded={(item) => onMenuChange([...restaurant.menu, item])} restaurant={restaurant} />
+  </>;
+}
+
+type EditableFields = Pick<MenuItem, 'name' | 'description' | 'price' | 'availableFrom' | 'availableUntil'>;
+
+function EditFoodForm({ item, onCancel, onSaved }: { item: MenuItem; onCancel: () => void; onSaved: (changes: EditableFields) => void }) {
+  const [name, setName] = useState(item.name);
+  const [ingredients, setIngredients] = useState(item.description);
+  const [price, setPrice] = useState(String(item.price));
+  const [availableFrom, setAvailableFrom] = useState(item.availableFrom);
+  const [availableUntil, setAvailableUntil] = useState(item.availableUntil);
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const changes: EditableFields = { name: name.trim(), description: ingredients.trim(), price: Number(price.replace(/[,\s]/g, '')), availableFrom, availableUntil };
+    const problem = menuItemError({ ...item, ...changes });
+    if (problem) return Alert.alert('Check the food details', problem);
+    setSaving(true);
+    try {
+      await updateMenuItem(item.id, changes);
+      onSaved(changes);
+    } catch (error) {
+      Alert.alert('Could not save food', errorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return <>
+    <Text style={styles.editTitle}>Edit {item.name}</Text>
+    <Field label="FOOD NAME" onChangeText={setName} value={name} />
+    <Field label="INGREDIENTS" multiline onChangeText={setIngredients} value={ingredients} />
+    <Field keyboardType="number-pad" label="PRICE (TSH)" onChangeText={setPrice} value={price} />
+    <View style={formStyles.row}>
+      <Field containerStyle={formStyles.half} label="SERVED FROM" onChangeText={setAvailableFrom} placeholder="08:00" value={availableFrom} />
+      <Field containerStyle={formStyles.half} label="SERVED UNTIL" onChangeText={setAvailableUntil} placeholder="22:00" value={availableUntil} />
+    </View>
+    <PrimaryButton busy={saving} label="Save changes" onPress={() => void save()} />
+    <View style={styles.cancelRow}><TextButton disabled={saving} label="Cancel" onPress={onCancel} /></View>
   </>;
 }
 
@@ -160,4 +208,7 @@ const styles = StyleSheet.create({
   label: { color: OWNER_COLORS.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 8 },
   newPhotoRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   newPhotoActions: { gap: 6 },
+  cardActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  editTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
+  cancelRow: { alignItems: 'center', marginTop: 10 },
 });
