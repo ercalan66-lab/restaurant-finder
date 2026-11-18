@@ -38,8 +38,8 @@ This manual bootstrap is temporary. The next implementation phase replaces it wi
 - [x] Local-first request submission with cloud synchronization
 - [ ] Owner restaurant onboarding and database-backed editing
 - [ ] Restaurant and menu image uploads
-- [ ] Customer order and reservation tracking screen
-- [ ] Rating, price, distance, and availability filters
+- [x] Customer order and reservation tracking screen
+- [x] Rating, price, and distance filters
 - [ ] Native date/time booking controls and capacity validation
 - [ ] Push notifications
 - [ ] Mobile money/card payments

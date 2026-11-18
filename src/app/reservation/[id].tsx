@@ -22,6 +22,7 @@ export default function ReservationScreen() {
   const [time, setTime] = useState(times[1]);
   const [guests, setGuests] = useState(2);
   const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     getGuestProfile().then((profile) => {
@@ -38,9 +39,17 @@ export default function ReservationScreen() {
       Alert.alert('Missing information', 'Enter your name, phone number, and reservation date.');
       return;
     }
+    if (phone.replace(/\D/g, '').length < 7) return Alert.alert('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return Alert.alert('Invalid email', 'Enter a valid email address or leave it blank.');
+    const selectedDate = parseLocalDate(date.trim());
+    if (!selectedDate) return Alert.alert('Invalid date', 'Use YYYY-MM-DD and enter a real calendar date.');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) return Alert.alert('Date has passed', 'Choose today or a future date.');
     const reference = `FR-${Date.now().toString().slice(-6)}`;
     const profile = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
+      setSubmitting(true);
       await Promise.all([
         saveGuestProfile(profile),
         saveReservation({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, ...profile, date: date.trim(), time, guests, createdAt: new Date().toISOString() }),
@@ -48,6 +57,8 @@ export default function ReservationScreen() {
       setConfirmation(reference);
     } catch {
       Alert.alert('Could not save reservation', 'Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -67,11 +78,21 @@ export default function ReservationScreen() {
           <Text style={styles.label}>DATE</Text><TextInput onChangeText={setDate} placeholder="YYYY-MM-DD" style={styles.input} value={date} />
           <Text style={styles.label}>TIME</Text><View style={styles.choices}>{times.map((value) => <Pressable key={value} onPress={() => setTime(value)} style={[styles.choice, time === value && styles.choiceActive]}><Text style={[styles.choiceText, time === value && styles.choiceTextActive]}>{value}</Text></Pressable>)}</View>
           <Text style={styles.label}>GUESTS</Text><View style={styles.stepper}><Pressable onPress={() => setGuests((value) => Math.max(1, value - 1))} style={styles.stepButton}><Text style={styles.stepText}>−</Text></Pressable><Text style={styles.guestCount}>{guests}</Text><Pressable onPress={() => setGuests((value) => Math.min(12, value + 1))} style={styles.stepButton}><Text style={styles.stepText}>+</Text></Pressable></View>
-          <Pressable onPress={submit} style={styles.primaryButton}><Text style={styles.primaryText}>Confirm reservation request</Text></Pressable>
+          <Pressable disabled={submitting} onPress={submit} style={[styles.primaryButton, submitting && styles.disabled]}><Text style={styles.primaryText}>{submitting ? 'Sending request…' : 'Confirm reservation request'}</Text></Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+function parseLocalDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day ? parsed : null;
 }
 
 const styles = StyleSheet.create({
@@ -81,5 +102,6 @@ const styles = StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, choice: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#E9DFD2', backgroundColor: '#FFF' }, choiceActive: { borderColor: ORANGE, backgroundColor: ORANGE }, choiceText: { color: '#4F4A43', fontSize: 12, fontWeight: '800' }, choiceTextActive: { color: '#FFF' },
   stepper: { width: 170, height: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 25, backgroundColor: '#FFF' }, stepButton: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' }, stepText: { color: ORANGE, fontSize: 25, fontWeight: '800' }, guestCount: { color: '#171612', fontSize: 18, fontWeight: '900' },
   primaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, paddingHorizontal: 24, backgroundColor: ORANGE, marginTop: 28 }, primaryText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  disabled: { opacity: 0.6 },
   confirmation: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: CREAM }, check: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: '#FFF', backgroundColor: '#278653', fontSize: 38, fontWeight: '900' }, confirmationTitle: { color: '#171612', fontSize: 28, fontWeight: '900', marginTop: 24 }, confirmationCopy: { color: '#5F5951', textAlign: 'center', fontSize: 15, lineHeight: 23, marginTop: 10 }, reference: { color: ORANGE, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 18 },
 });
