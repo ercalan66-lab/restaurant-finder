@@ -1,12 +1,10 @@
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, type Href, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getRestaurantDetail } from '@/data/restaurant-details';
-import { getOwnerRestaurant, isMenuItemAvailable, type OwnerRestaurant } from '@/data/owner-storage';
+import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 
 const ORANGE = '#ED6417';
@@ -15,12 +13,11 @@ const CREAM = '#FFF8ED';
 export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const restaurant = getRestaurantDetail(id);
-  const [ownerRestaurant, setOwnerRestaurant] = useState<OwnerRestaurant | null>(null);
+  const { loading, restaurant } = useRestaurant(id);
 
-  useEffect(() => {
-    getOwnerRestaurant().then(setOwnerRestaurant).catch(() => setOwnerRestaurant(null));
-  }, []);
+  if (loading) {
+    return <SafeAreaView style={styles.centered}><Text style={styles.sectionCaption}>Loading restaurant…</Text></SafeAreaView>;
+  }
 
   if (!restaurant) {
     return (
@@ -41,22 +38,17 @@ export default function RestaurantDetailScreen() {
     }
   };
 
-  const usesOwnerMenu = ownerRestaurant?.name.trim().toLowerCase() === restaurant.name.trim().toLowerCase()
-    && ownerRestaurant.menu.length > 0;
-  const usesOwnerDetails = ownerRestaurant?.name.trim().toLowerCase() === restaurant.name.trim().toLowerCase();
-  const address = usesOwnerDetails ? ownerRestaurant.address : restaurant.address;
-  const hours = usesOwnerDetails
-    ? `Daily · ${ownerRestaurant.opensAt}–${ownerRestaurant.closesAt}`
-    : restaurant.hours;
-  const directionsUrl = usesOwnerDetails && ownerRestaurant.mapUrl
-    ? ownerRestaurant.mapUrl
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${address}, Dar es Salaam`)}`;
+  const directionsUrl = restaurant.mapUrl
+    || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
+  const heroPhoto = restaurant.coverUrl ?? restaurant.galleryUrls[0] ?? null;
+  const meta = [restaurant.rating > 0 ? `★ ${restaurant.rating}` : 'New on Fork', restaurant.area, restaurant.distanceKm > 0 ? `${restaurant.distanceKm} km away` : null].filter(Boolean).join(' · ');
+  const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.');
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 32 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap}>
-          <Image contentFit="cover" source={restaurant.environmentPhotos[0]} style={styles.heroImage} transition={250} />
+          {heroPhoto && <Image contentFit="cover" source={heroPhoto} style={styles.heroImage} transition={250} />}
           <View style={styles.heroShade} />
           <Pressable accessibilityLabel="Back" onPress={() => goBackOrReplace('/')} style={styles.backButton}>
             <Text style={styles.backIcon}>‹</Text>
@@ -64,12 +56,12 @@ export default function RestaurantDetailScreen() {
           <View style={styles.heroCopy}>
             <Text style={styles.cuisine}>{restaurant.cuisine.toUpperCase()}</Text>
             <Text style={styles.title}>{restaurant.name}</Text>
-            <Text style={styles.heroMeta}>★ {restaurant.rating} · {restaurant.area} · {restaurant.distance} km away</Text>
+            <Text style={styles.heroMeta}>{meta}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.description}>{restaurant.description}</Text>
+          {restaurant.description ? <Text style={styles.description}>{restaurant.description}</Text> : null}
           <View style={styles.bookingActions}>
             <Pressable onPress={() => router.push(`/reservation/${restaurant.id}` as Href)} style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Reserve a table</Text>
@@ -79,67 +71,67 @@ export default function RestaurantDetailScreen() {
             </Pressable>
           </View>
           <View style={styles.quickActions}>
-            <Pressable onPress={() => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.')} style={styles.primaryButton}>
+            {restaurant.phone ? <Pressable onPress={callRestaurant} style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Call restaurant</Text>
-            </Pressable>
+            </Pressable> : null}
             <Pressable onPress={() => openLink(directionsUrl, 'Maps could not be opened.')} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>Directions</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={styles.section}>
+        {restaurant.galleryUrls.length > 0 && <View style={styles.section}>
           <Text style={styles.sectionTitle}>The environment</Text>
           <Text style={styles.sectionCaption}>See the dining space before you visit.</Text>
           <ScrollView contentContainerStyle={styles.gallery} horizontal showsHorizontalScrollIndicator={false}>
-            {restaurant.environmentPhotos.map((photo, index) => (
+            {restaurant.galleryUrls.map((photo, index) => (
               <Image contentFit="cover" key={photo} source={photo} style={[styles.environmentPhoto, index === 0 && styles.environmentPhotoFirst]} transition={200} />
             ))}
           </ScrollView>
-        </View>
+        </View>}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Menu & food</Text>
-          <Text style={styles.sectionCaption}>{usesOwnerMenu ? 'Current foods, ingredients, prices, and availability.' : 'Popular dishes and current sample prices.'}</Text>
+          <Text style={styles.sectionCaption}>{restaurant.menu.length ? 'Current foods, ingredients, prices, and availability.' : 'The menu is coming soon.'}</Text>
           <View style={styles.menuList}>
-            {(usesOwnerMenu ? ownerRestaurant.menu : restaurant.menu).map((item) => {
-              const managed = 'ingredients' in item;
-              const available = managed ? isMenuItemAvailable(item, ownerRestaurant!) : true;
+            {restaurant.menu.map((item) => {
+              const available = isMenuItemAvailable(item, restaurant);
               return (
-              <View key={item.name} style={[styles.menuCard, !available && styles.menuCardUnavailable]}>
-                {managed ? <View style={styles.foodPlaceholder}><Text style={styles.foodPlaceholderIcon}>🍽️</Text></View> : <Image contentFit="cover" source={item.photo} style={styles.foodPhoto} transition={200} />}
-                <View style={styles.menuCopy}>
-                  <View style={styles.menuTitleRow}>
-                    <Text style={styles.menuName}>{item.name}</Text>
-                    <Text style={styles.menuPrice}>{managed ? `TSh ${item.price.toLocaleString()}` : item.price}</Text>
+                <View key={item.id} style={[styles.menuCard, !available && styles.menuCardUnavailable]}>
+                  {item.photoUrl ? <Image contentFit="cover" source={item.photoUrl} style={styles.foodPhoto} transition={200} /> : <View style={styles.foodPlaceholder}><Text style={styles.foodPlaceholderIcon}>🍽️</Text></View>}
+                  <View style={styles.menuCopy}>
+                    <View style={styles.menuTitleRow}>
+                      <Text style={styles.menuName}>{item.name}</Text>
+                      <Text style={styles.menuPrice}>{formatTsh(item.price)}</Text>
+                    </View>
+                    <Text style={styles.menuDescription}>{item.description}</Text>
+                    <Text style={styles.servingTime}>Served {item.availableFrom}–{item.availableUntil}</Text>
+                    {!available && <Text style={styles.unavailableBadge}>UNAVAILABLE</Text>}
                   </View>
-                  <Text style={styles.menuDescription}>{managed ? item.ingredients : item.description}</Text>
-                  {managed && <Text style={styles.servingTime}>Served {item.availableFrom}–{item.availableUntil}</Text>}
-                  {!available && <Text style={styles.unavailableBadge}>UNAVAILABLE</Text>}
                 </View>
-              </View>
-            );})}
+              );
+            })}
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact & visit</Text>
           <View style={styles.contactCard}>
-            <Text style={styles.contactLabel}>PHONE</Text>
-            <Pressable onPress={() => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.')}>
-              <Text style={styles.contactLink}>{restaurant.phone}</Text>
-            </Pressable>
-            <Text style={styles.contactLabel}>EMAIL</Text>
-            <Pressable onPress={() => openLink(`mailto:${restaurant.email}`, 'No email application is available.')}>
-              <Text style={styles.contactLink}>{restaurant.email}</Text>
-            </Pressable>
+            {restaurant.phone ? <>
+              <Text style={styles.contactLabel}>PHONE</Text>
+              <Pressable onPress={callRestaurant}><Text style={styles.contactLink}>{restaurant.phone}</Text></Pressable>
+            </> : null}
+            {restaurant.email ? <>
+              <Text style={styles.contactLabel}>EMAIL</Text>
+              <Pressable onPress={() => openLink(`mailto:${restaurant.email}`, 'No email application is available.')}><Text style={styles.contactLink}>{restaurant.email}</Text></Pressable>
+            </> : null}
             <Text style={styles.contactLabel}>ADDRESS</Text>
-            <Text style={styles.contactValue}>{address}</Text>
+            <Text style={styles.contactValue}>{restaurant.address}</Text>
             <Text style={styles.contactLabel}>OPENING HOURS</Text>
-            <Text style={styles.contactValue}>{hours}</Text>
-            {usesOwnerDetails && ownerRestaurant.facilities.length > 0 ? <>
+            <Text style={styles.contactValue}>{formatHours(restaurant)}</Text>
+            {restaurant.facilities.length > 0 ? <>
               <Text style={styles.contactLabel}>FACILITIES</Text>
-              <View style={styles.facilities}>{ownerRestaurant.facilities.map((facility) => <Text key={facility} style={styles.facility}>{facility}</Text>)}</View>
+              <View style={styles.facilities}>{restaurant.facilities.map((facility) => <Text key={facility} style={styles.facility}>{facility}</Text>)}</View>
             </> : null}
           </View>
         </View>

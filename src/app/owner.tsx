@@ -1,146 +1,168 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OWNER_COLORS, PrimaryButton, Section, TextButton } from '@/components/owner/form-controls';
+import { MenuManager } from '@/components/owner/menu-manager';
+import { PhotoManager } from '@/components/owner/photo-manager';
+import { RestaurantDetailsForm } from '@/components/owner/restaurant-details-form';
 import { OwnerRequests } from '@/components/owner-requests';
-import { defaultOwnerRestaurant, getOwnerRestaurant, isMenuItemAvailable, type OwnerMenuItem, type OwnerRestaurant, saveOwnerRestaurant } from '@/data/owner-storage';
+import { createRestaurant, fetchMyRestaurant, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
+import type { Restaurant } from '@/data/restaurants';
+import { errorMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
+import { formatAccountPhone } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
 
-const ORANGE = '#B93F1D';
-const CREAM = '#FFF8EE';
-const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+const emptyDetails: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0 };
+
+const detailsOf = (restaurant: Restaurant): RestaurantDetails => ({
+  name: restaurant.name, cuisine: restaurant.cuisine, area: restaurant.area, address: restaurant.address, description: restaurant.description,
+  phone: restaurant.phone, email: restaurant.email, opensAt: restaurant.opensAt, closesAt: restaurant.closesAt, mapUrl: restaurant.mapUrl,
+  facilities: restaurant.facilities, pricePerPerson: restaurant.pricePerPerson,
+});
+
+type Owner = { id: string; email: string; phone: string };
+type LoadResult = { kind: 'redirected' } | { kind: 'error'; message: string } | { kind: 'ready'; owner: Owner; restaurant: Restaurant | null };
+
+async function loadDashboard(): Promise<LoadResult> {
+  try {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      router.replace('/auth?role=owner');
+      return { kind: 'redirected' };
+    }
+    if (data.user.user_metadata?.role !== 'owner') {
+      Alert.alert('Owner account required', 'Create or sign in with a restaurant-owner account.');
+      router.replace('/profile');
+      return { kind: 'redirected' };
+    }
+    const owner = { id: data.user.id, email: data.user.email ?? '', phone: formatAccountPhone(data.user.phone) ?? '' };
+    return { kind: 'ready', owner, restaurant: await fetchMyRestaurant(owner.id) };
+  } catch (error) {
+    return { kind: 'error', message: errorMessage(error) };
+  }
+}
 
 export default function OwnerDashboardScreen() {
-  const [restaurant, setRestaurant] = useState<OwnerRestaurant>(defaultOwnerRestaurant);
-  const [facilities, setFacilities] = useState(defaultOwnerRestaurant.facilities.join(', '));
-  const [foodName, setFoodName] = useState('');
-  const [ingredients, setIngredients] = useState('');
-  const [price, setPrice] = useState('');
-  const [availableFrom, setAvailableFrom] = useState('08:00');
-  const [availableUntil, setAvailableUntil] = useState('22:00');
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [loadError, setLoadError] = useState('');
+  const [owner, setOwner] = useState<Owner | null>(null);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return router.replace('/auth?role=owner');
-      if (data.user.user_metadata?.role !== 'owner') {
-        Alert.alert('Owner account required', 'Create or sign in with a restaurant-owner account.');
-        return router.replace('/profile');
-      }
-      return getOwnerRestaurant().then((saved) => {
-        setRestaurant(saved);
-        setFacilities(saved.facilities.join(', '));
-      });
-    }).catch(() => Alert.alert('Could not load dashboard', 'Please sign in again.'));
+  const apply = useCallback((result: LoadResult) => {
+    if (result.kind === 'error') {
+      setLoadError(result.message);
+      setStatus('error');
+    } else if (result.kind === 'ready') {
+      setOwner(result.owner);
+      setRestaurant(result.restaurant);
+      setStatus('ready');
+    }
   }, []);
 
-  const persist = async (next: OwnerRestaurant, message: string) => {
+  useEffect(() => {
+    let active = true;
+    void loadDashboard().then((result) => { if (active) apply(result); });
+    return () => { active = false; };
+  }, [apply]);
+
+  const retry = () => { setStatus('loading'); void loadDashboard().then(apply); };
+  const update = (changes: Partial<Restaurant>) => setRestaurant((current) => current ? { ...current, ...changes } : current);
+
+  const create = async (details: RestaurantDetails) => {
+    if (!owner) return;
     try {
-      await saveOwnerRestaurant(next);
-      setRestaurant(next);
-      Alert.alert('Saved', message);
-    } catch {
-      Alert.alert('Could not save', 'Please try again.');
+      setRestaurant(await createRestaurant(owner.id, details));
+      Alert.alert('Restaurant created', 'Add a cover photo and your menu so customers can start ordering.');
+    } catch (error) {
+      const duplicate = typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
+      Alert.alert('Could not create restaurant', duplicate ? 'This account already has a restaurant. Reopen the dashboard to manage it.' : errorMessage(error));
     }
   };
 
-  const saveDetails = () => {
-    if (!restaurant.name.trim() || !restaurant.address.trim()) {
-      return Alert.alert('Missing information', 'Enter the restaurant name and location.');
+  const saveDetails = async (details: RestaurantDetails) => {
+    if (!restaurant) return;
+    try {
+      await updateRestaurant(restaurant.id, details);
+      update(details);
+      Alert.alert('Saved', 'Restaurant information updated.');
+    } catch (error) {
+      Alert.alert('Could not save', errorMessage(error));
     }
-    if (!TIME_PATTERN.test(restaurant.opensAt) || !TIME_PATTERN.test(restaurant.closesAt)) {
-      return Alert.alert('Invalid opening hours', 'Use 24-hour HH:MM times, for example 08:00 and 22:00.');
-    }
-    if (restaurant.mapUrl.trim() && !/^https?:\/\//i.test(restaurant.mapUrl.trim())) {
-      return Alert.alert('Invalid map link', 'Enter a full Google Maps link beginning with http:// or https://.');
-    }
-    const next = {
-      ...restaurant,
-      name: restaurant.name.trim(),
-      address: restaurant.address.trim(),
-      mapUrl: restaurant.mapUrl.trim(),
-      facilities: facilities.split(',').map((item) => item.trim()).filter(Boolean),
-    };
-    return persist(next, 'Restaurant information updated.');
   };
 
-  const addFood = () => {
-    const numericPrice = Number(price);
-    if (!foodName.trim() || !ingredients.trim() || !Number.isFinite(numericPrice) || numericPrice <= 0) {
-      return Alert.alert('Missing food information', 'Enter the food name, ingredients, and price.');
+  const setVisible = async (isActive: boolean) => {
+    if (!restaurant) return;
+    update({ isActive });
+    try {
+      await updateRestaurant(restaurant.id, { isActive });
+    } catch (error) {
+      update({ isActive: !isActive });
+      Alert.alert('Could not change visibility', errorMessage(error));
     }
-    if (!TIME_PATTERN.test(availableFrom) || !TIME_PATTERN.test(availableUntil)) {
-      return Alert.alert('Invalid serving hours', 'Use 24-hour HH:MM times, for example 08:00 and 22:00.');
-    }
-    const item: OwnerMenuItem = {
-      id: `${Date.now()}`,
-      name: foodName.trim(),
-      ingredients: ingredients.trim(),
-      price: numericPrice,
-      availableFrom,
-      availableUntil,
-      inStock: true,
-    };
-    setFoodName('');
-    setIngredients('');
-    setPrice('');
-    return persist({ ...restaurant, menu: [...restaurant.menu, item] }, 'Food added to the menu.');
   };
 
-  const updateFood = (id: string, changes: Partial<OwnerMenuItem>) => {
-    void persist({ ...restaurant, menu: restaurant.menu.map((item) => item.id === id ? { ...item, ...changes } : item) }, 'Food availability updated.');
-  };
-
-  const removeFood = (id: string) => {
-    Alert.alert('Remove food?', 'This item will be removed from the customer menu.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => void persist({ ...restaurant, menu: restaurant.menu.filter((item) => item.id !== id) }, 'Food removed.') },
-    ]);
-  };
+  if (status !== 'ready') {
+    return <SafeAreaView style={[styles.safeArea, styles.centered]}>
+      {status === 'loading'
+        ? <Text style={styles.subtitle}>Loading your restaurant…</Text>
+        : <View style={styles.errorBox}>
+          <Text style={styles.errorTitle}>Could not load your restaurant</Text>
+          <Text style={styles.subtitle}>{loadError}</Text>
+          <Text style={styles.subtitle}>Check your connection. If the app was just updated, make sure the latest Supabase migrations have been run.</Text>
+          <PrimaryButton label="Try again" onPress={retry} />
+        </View>}
+    </SafeAreaView>;
+  }
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>‹ Back</Text></Pressable>
-    <Text style={styles.eyebrow}>RESTAURANT OWNER</Text><Text style={styles.title}>Dashboard</Text>
-    <Text style={styles.subtitle}>Manage the information and food availability customers see.</Text>
+    <Text style={styles.eyebrow}>RESTAURANT OWNER</Text>
 
-    <OwnerRequests restaurantName={restaurant.name} />
+    {!restaurant
+      ? <>
+        <Text style={styles.title}>Set up your restaurant</Text>
+        <Text style={styles.subtitle}>Tell customers about your place. You can add photos and your menu right after.</Text>
+        <Section title="Restaurant details">
+          <RestaurantDetailsForm initial={{ ...emptyDetails, email: owner?.email ?? '', phone: owner?.phone ?? '' }} onSubmit={create} submitLabel="Create restaurant" />
+        </Section>
+      </>
+      : <>
+        <Text style={styles.title}>{restaurant.name}</Text>
+        <Text style={styles.subtitle}>Manage what customers see, and handle their orders and bookings.</Text>
+        <View style={styles.visibilityCard}>
+          <View style={styles.visibilityCopy}>
+            <Text style={styles.visibilityTitle}>{restaurant.isActive ? 'Visible to customers' : 'Hidden from customers'}</Text>
+            <Text style={styles.visibilityHelper}>{restaurant.isActive ? 'Your restaurant appears in search and accepts orders.' : 'Turn this on when your page is ready.'}</Text>
+            <TextButton label="View customer page ›" onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} />
+          </View>
+          <Switch accessibilityLabel="Visible to customers" onValueChange={(value) => void setVisible(value)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={restaurant.isActive} />
+        </View>
 
-    <View style={styles.section}><Text style={styles.sectionTitle}>Restaurant information</Text>
-      <Field label="RESTAURANT NAME" onChangeText={(name) => setRestaurant((current) => ({ ...current, name }))} value={restaurant.name} />
-      <Field label="ADDRESS / LOCATION" onChangeText={(address) => setRestaurant((current) => ({ ...current, address }))} value={restaurant.address} />
-      <Field autoCapitalize="none" keyboardType="url" label="GOOGLE MAPS LINK (OPTIONAL)" onChangeText={(mapUrl) => setRestaurant((current) => ({ ...current, mapUrl }))} value={restaurant.mapUrl} />
-      <View style={styles.row}><Field containerStyle={styles.half} label="OPENS AT" onChangeText={(opensAt) => setRestaurant((current) => ({ ...current, opensAt }))} placeholder="08:00" value={restaurant.opensAt} /><Field containerStyle={styles.half} label="CLOSES AT" onChangeText={(closesAt) => setRestaurant((current) => ({ ...current, closesAt }))} placeholder="22:00" value={restaurant.closesAt} /></View>
-      <Field label="FACILITIES (SEPARATE WITH COMMAS)" onChangeText={setFacilities} placeholder="Wi-Fi, parking, playing ground" value={facilities} />
-      <PrimaryButton label="Save restaurant information" onPress={saveDetails} />
-    </View>
-
-    <View style={styles.section}><Text style={styles.sectionTitle}>Food menu</Text><Text style={styles.helper}>All foods remain visible to customers. Out-of-stock or out-of-hours foods receive an Unavailable badge.</Text>
-      {restaurant.menu.length === 0 ? <View style={styles.empty}><Text style={styles.emptyTitle}>No food uploaded yet</Text><Text style={styles.helper}>Add the first menu item below.</Text></View> : restaurant.menu.map((item) => {
-        const available = isMenuItemAvailable(item, restaurant);
-        return <View key={item.id} style={styles.foodCard}><View style={styles.foodHeading}><View style={styles.foodCopy}><Text style={styles.foodName}>{item.name}</Text><Text style={styles.ingredients}>{item.ingredients}</Text></View><Text style={styles.price}>TSh {item.price.toLocaleString()}</Text></View><Text style={styles.servingTime}>Served {item.availableFrom}–{item.availableUntil}</Text><View style={styles.availabilityRow}><View><Text style={[styles.status, !available && styles.unavailable]}>{available ? 'AVAILABLE NOW' : 'UNAVAILABLE'}</Text><Text style={styles.stockLabel}>In stock</Text></View><Switch onValueChange={(inStock) => updateFood(item.id, { inStock })} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: ORANGE }} value={item.inStock} /></View><Pressable onPress={() => removeFood(item.id)}><Text style={styles.remove}>Remove food</Text></Pressable></View>;
-      })}
-    </View>
-
-    <View style={styles.section}><Text style={styles.sectionTitle}>Add food</Text>
-      <Field label="FOOD NAME" onChangeText={setFoodName} placeholder="Chicken biryani" value={foodName} />
-      <Field label="INGREDIENTS" multiline onChangeText={setIngredients} placeholder="Rice, chicken, spices..." value={ingredients} />
-      <Field keyboardType="numeric" label="PRICE (TSH)" onChangeText={setPrice} placeholder="25000" value={price} />
-      <View style={styles.row}><Field containerStyle={styles.half} label="SERVED FROM" onChangeText={setAvailableFrom} placeholder="08:00" value={availableFrom} /><Field containerStyle={styles.half} label="SERVED UNTIL" onChangeText={setAvailableUntil} placeholder="22:00" value={availableUntil} /></View>
-      <PrimaryButton label="Add food to menu" onPress={addFood} />
-    </View>
+        <OwnerRequests restaurantId={restaurant.id} />
+        <PhotoManager onUpdated={update} restaurant={restaurant} />
+        <Section title="Restaurant information">
+          <RestaurantDetailsForm initial={detailsOf(restaurant)} key={restaurant.id} onSubmit={saveDetails} submitLabel="Save restaurant information" />
+        </Section>
+        <MenuManager onMenuChange={(menu) => update({ menu })} restaurant={restaurant} />
+      </>}
   </ScrollView></SafeAreaView>;
 }
 
-type FieldProps = React.ComponentProps<typeof TextInput> & { label: string; containerStyle?: object };
-function Field({ label, containerStyle, multiline, ...props }: FieldProps) {
-  return <View style={containerStyle}><Text style={styles.label}>{label}</Text><TextInput {...props} multiline={multiline} placeholderTextColor="#968B82" style={[styles.input, multiline && styles.multiline]} /></View>;
-}
-
-function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }) {
-  return <Pressable onPress={onPress} style={styles.button}><Text style={styles.buttonText}>{label}</Text></Pressable>;
-}
-
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: CREAM }, content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 18, paddingBottom: 70 }, back: { color: ORANGE, fontSize: 14, fontWeight: '800', marginBottom: 22 }, eyebrow: { color: ORANGE, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }, title: { color: '#271812', fontSize: 36, fontWeight: '900', marginTop: 5 }, subtitle: { color: '#71675F', fontSize: 14, lineHeight: 21, marginTop: 6 }, section: { marginTop: 22, padding: 17, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 22, backgroundColor: '#FFFDF9' }, sectionTitle: { color: '#271812', fontSize: 20, fontWeight: '900' }, helper: { color: '#71675F', fontSize: 12, lineHeight: 18, marginTop: 5 }, label: { color: '#71675F', fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 6 }, input: { minHeight: 48, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 13, paddingHorizontal: 13, color: '#271812', backgroundColor: '#FFF' }, multiline: { minHeight: 82, paddingTop: 13, textAlignVertical: 'top' }, row: { flexDirection: 'row', gap: 10 }, half: { flex: 1 }, button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 25, backgroundColor: ORANGE, marginTop: 18 }, buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' }, empty: { alignItems: 'center', padding: 22, marginTop: 14, borderRadius: 15, backgroundColor: CREAM }, emptyTitle: { color: '#271812', fontSize: 15, fontWeight: '900' }, foodCard: { marginTop: 13, padding: 14, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 16, backgroundColor: '#FFF' }, foodHeading: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' }, foodCopy: { flex: 1 }, foodName: { color: '#271812', fontSize: 15, fontWeight: '900' }, ingredients: { color: '#71675F', fontSize: 11, lineHeight: 16, marginTop: 3 }, price: { color: ORANGE, fontSize: 12, fontWeight: '900' }, servingTime: { color: '#71675F', fontSize: 10, marginTop: 9 }, availabilityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }, status: { alignSelf: 'flex-start', color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' }, unavailable: { color: '#8E2F1A', backgroundColor: '#F5D8D1' }, stockLabel: { color: '#71675F', fontSize: 9, marginTop: 5 }, remove: { color: '#9B321C', fontSize: 11, fontWeight: '800', marginTop: 13 },
+  safeArea: { flex: 1, backgroundColor: OWNER_COLORS.cream },
+  centered: { alignItems: 'center', justifyContent: 'center', padding: 24 },
+  content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 18, paddingBottom: 70 },
+  back: { color: OWNER_COLORS.accent, fontSize: 14, fontWeight: '800', marginBottom: 22 },
+  eyebrow: { color: OWNER_COLORS.accent, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: OWNER_COLORS.ink, fontSize: 34, fontWeight: '900', marginTop: 5 },
+  subtitle: { color: OWNER_COLORS.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  errorBox: { width: '100%', maxWidth: 420 },
+  errorTitle: { color: OWNER_COLORS.ink, fontSize: 22, fontWeight: '900' },
+  visibilityCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: OWNER_COLORS.line, backgroundColor: '#FFF' },
+  visibilityCopy: { flex: 1, gap: 3 },
+  visibilityTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
+  visibilityHelper: { color: OWNER_COLORS.muted, fontSize: 11, lineHeight: 16 },
 });

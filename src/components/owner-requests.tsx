@@ -17,7 +17,7 @@ import {
 
 const ORANGE = '#B93F1D';
 
-export function OwnerRequests({ restaurantName }: { restaurantName: string }) {
+export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [reservations, setReservations] = useState<ReservationRecord[]>([]);
   const [active, setActive] = useState<'orders' | 'reservations'>('orders');
@@ -27,29 +27,27 @@ export function OwnerRequests({ restaurantName }: { restaurantName: string }) {
     setLoading(true);
     try {
       const [savedOrders, savedReservations] = await Promise.all([getOrders(), getReservations()]);
-      const matches = (name: string) => name.trim().toLowerCase() === restaurantName.trim().toLowerCase();
-      setOrders(savedOrders.filter((order) => matches(order.restaurantName)));
-      setReservations(savedReservations.filter((reservation) => matches(reservation.restaurantName)));
+      setOrders(savedOrders.filter((order) => order.restaurantId === restaurantId));
+      setReservations(savedReservations.filter((reservation) => reservation.restaurantId === restaurantId));
     } catch {
       Alert.alert('Could not load requests', 'Please try again.');
     } finally {
       setLoading(false);
     }
-  }, [restaurantName]);
+  }, [restaurantId]);
 
   useEffect(() => {
     let active = true;
-    const matches = (name: string) => name.trim().toLowerCase() === restaurantName.trim().toLowerCase();
     Promise.all([getOrders(), getReservations()])
       .then(([savedOrders, savedReservations]) => {
         if (!active) return;
-        setOrders(savedOrders.filter((order) => matches(order.restaurantName)));
-        setReservations(savedReservations.filter((reservation) => matches(reservation.restaurantName)));
+        setOrders(savedOrders.filter((order) => order.restaurantId === restaurantId));
+        setReservations(savedReservations.filter((reservation) => reservation.restaurantId === restaurantId));
       })
       .catch(() => { if (active) Alert.alert('Could not load requests', 'Please try again.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [restaurantName]);
+  }, [restaurantId]);
 
   const setOrderStatus = async (id: string, status: OrderStatus) => {
     await updateOrderStatus(id, status);
@@ -70,7 +68,7 @@ export function OwnerRequests({ restaurantName }: { restaurantName: string }) {
   const pendingReservations = reservations.filter((reservation) => (reservation.status ?? 'pending') === 'pending').length;
 
   return <View style={styles.section}>
-    <View style={styles.headingRow}><View><Text style={styles.title}>Customer requests</Text><Text style={styles.helper}>Manage orders and table bookings from this device.</Text></View><Pressable onPress={() => void load()}><Text style={styles.refresh}>{loading ? 'Loading…' : 'Refresh'}</Text></Pressable></View>
+    <View style={styles.headingRow}><View><Text style={styles.title}>Customer requests</Text><Text style={styles.helper}>Orders and table bookings sent to your restaurant.</Text></View><Pressable onPress={() => void load()}><Text style={styles.refresh}>{loading ? 'Loading…' : 'Refresh'}</Text></Pressable></View>
     <View style={styles.stats}><Stat label="NEW ORDERS" value={pendingOrders} /><Stat label="NEW BOOKINGS" value={pendingReservations} /><Stat label="TOTAL" value={orders.length + reservations.length} /></View>
     <View style={styles.tabs}>
       <Tab active={active === 'orders'} label={`Orders (${orders.length})`} onPress={() => setActive('orders')} />

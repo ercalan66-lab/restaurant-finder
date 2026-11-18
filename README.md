@@ -6,8 +6,13 @@ An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed b
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env` and add the Supabase project URL and publishable key.
-3. In the Supabase SQL editor, run each file in `supabase/migrations/` in filename order (`202611100001_restaurant_foundation.sql`, then `202611180001_order_payments.sql`). Run new migrations before shipping an app build that depends on them; otherwise order sync fails.
-4. Start the app with `npx expo start`.
+3. In the Supabase SQL editor, run each file in `supabase/migrations/` in filename order:
+   1. `202611100001_restaurant_foundation.sql`
+   2. `202611180001_order_payments.sql`
+   3. `202611180002_restaurant_onboarding.sql` (also creates the `restaurant-photos` storage bucket)
+
+   Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
+4. Start the app with `npx expo start`. Expo Go includes every native module the app uses, including the photo picker.
 
 ## Phone sign-in
 
@@ -25,21 +30,33 @@ Checkout currently offers **cash on pickup / cash on delivery** only. Every orde
 
 The app keeps a local copy of orders and reservations, so requests still receive a reference when cloud sync is temporarily unavailable. Once the migration is installed, signed-in customers and restaurant owners can access permitted records across devices under Row Level Security.
 
-## Assigning the first restaurant owner
+## Restaurant owners
 
-After creating an owner account, copy its user UUID from Supabase Authentication and run this once in the SQL editor:
+1. Register in the app and choose **Restaurant owner**.
+2. The dashboard opens with a **Set up your restaurant** form. Submitting it creates the restaurant in Supabase, linked to that account (one restaurant per owner).
+3. From the dashboard the owner can:
+   - edit details, hours, and price per person;
+   - upload a cover photo, up to eight gallery photos, and food photos;
+   - add, remove, and mark foods in or out of stock;
+   - hide or show the restaurant;
+   - handle orders and bookings.
+
+Changes are saved to Supabase and appear for every customer. The restaurant list and pages reload whenever a screen is opened.
+
+Ratings, distance, and the promotional tag (for example "Bestseller") cannot be edited by owners. A new restaurant shows **New on Fork** until a rating is set.
+
+The eight demo restaurants (ids 1–8) have no owner. To hand one to a real owner instead of having them create a new listing, run this once in the SQL editor (only if that owner has not created a restaurant yet):
 
 ```sql
-update public.restaurants
-set owner_id = 'OWNER_USER_UUID'
-where id = 1 and owner_id is null;
+update public.restaurants set owner_id = 'OWNER_USER_UUID' where id = 1 and owner_id is null;
 ```
 
-This manual bootstrap is temporary. The next implementation phase replaces it with owner onboarding and restaurant creation.
+Photos are stored in the public `restaurant-photos` bucket under `<restaurant id>/cover|gallery|menu/`. Only the restaurant's owner can upload or delete files in that folder. Files are limited to 5 MB and to JPEG, PNG, or WebP.
 
 ## Data security
 
-- Active restaurant and menu information is public.
+- Active restaurant and menu information is public. Hidden restaurants are visible only to their owner.
+- Owners can edit only their own restaurant, menu, and photos.
 - Customers can read only requests associated with their account.
 - Restaurant owners can read and update only requests sent to their restaurant.
 - Anonymous customers may submit a request, but cannot query it from the API afterward.
@@ -50,8 +67,8 @@ This manual bootstrap is temporary. The next implementation phase replaces it wi
 - [x] Supabase schema for restaurants, menus, reservations, and orders
 - [x] Row Level Security ownership boundaries
 - [x] Local-first request submission with cloud synchronization
-- [ ] Owner restaurant onboarding and database-backed editing
-- [ ] Restaurant and menu image uploads
+- [x] Owner restaurant onboarding and database-backed editing
+- [x] Restaurant and menu image uploads
 - [x] Customer order and reservation tracking screen
 - [x] Rating, price, and distance filters
 - [ ] Native date/time booking controls and capacity validation

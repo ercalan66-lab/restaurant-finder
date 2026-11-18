@@ -4,7 +4,7 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getGuestProfile, saveGuestProfile, saveReservation } from '@/data/guest-storage';
-import { getRestaurantDetail } from '@/data/restaurant-details';
+import { useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 
 const ORANGE = '#ED6417';
@@ -13,7 +13,7 @@ const times = ['6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'];
 
 export default function ReservationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const restaurant = getRestaurantDetail(id);
+  const { loading, restaurant } = useRestaurant(id);
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -32,7 +32,7 @@ export default function ReservationScreen() {
     }).catch(() => undefined);
   }, []);
 
-  if (!restaurant) return null;
+  if (!restaurant) return <SafeAreaView style={styles.confirmation}><Text style={styles.subtitle}>{loading ? 'Loading restaurant…' : 'Restaurant not found.'}</Text></SafeAreaView>;
 
   const submit = async () => {
     if (!name.trim() || !phone.trim() || !date.trim()) {
