@@ -8,9 +8,11 @@
     "scheme": "restaurantfinder",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/fork-app-icon.png"
+      "icon": "./assets/images/fork-app-icon.png",
+      "bundleIdentifier": "com.forktz.app"
     },
     "android": {
+      "package": "com.forktz.app",
       "adaptiveIcon": {
         "backgroundColor": "#FDC52B",
         "foregroundImage": "./assets/images/fork-app-icon.png"
@@ -46,11 +48,24 @@
           "color": "#ED6417",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "dd5902e9-4b12-4781-a779-031f346345d0"
+      }
+    },
+    "owner": "erickallanmbuya"
   }
 }
