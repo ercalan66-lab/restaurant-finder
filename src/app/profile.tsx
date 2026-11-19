@@ -141,8 +141,8 @@ export default function ProfileScreen() {
 
     {isAdmin && <Pressable accessibilityRole="button" onPress={() => router.push('/admin' as Href)} style={styles.adminCard}>
       <Text style={styles.adminEyebrow}>FORK ADMIN</Text>
-      <Text style={styles.adminTitle}>Review restaurants ›</Text>
-      <Text style={styles.adminCopy}>Approve new restaurants and update ratings and tags.</Text>
+      <Text style={styles.adminTitle}>Open admin console ›</Text>
+      <Text style={styles.adminCopy}>Review restaurants, look up orders and bookings, see today’s numbers, and manage admins.</Text>
     </Pressable>}
 
     <View style={styles.ownerCard}><Text style={styles.ownerEyebrow}>FOR RESTAURANT OWNERS</Text><Text style={styles.ownerTitle}>Manage your restaurant</Text><Text style={styles.ownerCopy}>Update facilities, location, working hours, foods, prices, ingredients, and availability.</Text><Pressable onPress={() => router.push(account ? '/owner' : '/auth?role=owner')} style={styles.ownerButton}><Text style={styles.ownerButtonText}>Open restaurant dashboard</Text></Pressable></View>

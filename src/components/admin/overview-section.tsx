@@ -1,0 +1,75 @@
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { fetchOverview, type AdminOverview } from '@/data/admin';
+import type { ApprovalStatus } from '@/data/restaurants';
+import { errorMessage } from '@/utils/feedback';
+
+import { ACCENT, formatMoney, LoadError, SectionHeading, type Loadable } from './admin-ui';
+
+const loadOverview = (): Promise<Loadable<AdminOverview>> =>
+  fetchOverview().then((value) => ({ kind: 'ready' as const, value }), (error: unknown) => ({ kind: 'error' as const, message: errorMessage(error) }));
+
+type Props = { onOpenRequests: () => void; onOpenRestaurants: (tab: ApprovalStatus) => void };
+
+export function OverviewSection({ onOpenRequests, onOpenRestaurants }: Props) {
+  const [state, setState] = useState<Loadable<AdminOverview>>({ kind: 'loading' });
+  const [refreshing, setRefreshing] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void loadOverview().then((result) => { if (active) setState(result); });
+    return () => { active = false; };
+  }, []));
+
+  const refresh = () => {
+    setRefreshing(true);
+    void loadOverview().then((result) => { setState(result); setRefreshing(false); });
+  };
+
+  return <View>
+    <SectionHeading helper="How Fork is doing right now. Tap a number to see the list behind it." loading={refreshing || state.kind === 'loading'} onRefresh={refresh} title="Overview" />
+    {state.kind === 'error' && <LoadError message={state.message} onRetry={refresh} />}
+    {state.kind === 'ready' && <>
+      <Text style={styles.group}>RESTAURANTS</Text>
+      <View style={styles.grid}>
+        <Tile attention={state.value.restaurantsWaiting > 0} caption="Waiting for review" onPress={() => onOpenRestaurants('pending')} value={String(state.value.restaurantsWaiting)} />
+        <Tile caption="Live" onPress={() => onOpenRestaurants('approved')} value={String(state.value.restaurantsLive)} />
+        <Tile caption="Changes requested" onPress={() => onOpenRestaurants('rejected')} value={String(state.value.restaurantsChangesRequested)} />
+      </View>
+      <Text style={styles.group}>TODAY</Text>
+      <View style={styles.grid}>
+        <Tile caption="Orders placed" onPress={onOpenRequests} value={String(state.value.ordersToday)} />
+        <Tile caption="Orders in progress" onPress={onOpenRequests} value={String(state.value.ordersInProgress)} />
+        <Tile caption="Tables booked" onPress={onOpenRequests} value={String(state.value.tablesToday)} />
+      </View>
+      <View style={styles.sales}>
+        <Text style={styles.salesLabel}>SALES, LAST 7 DAYS</Text>
+        <Text style={styles.salesValue}>{formatMoney(state.value.salesLast7Days)}</Text>
+        <Text style={styles.salesCopy}>Value of completed orders across all restaurants, paid by cash or mobile money.</Text>
+      </View>
+    </>}
+  </View>;
+}
+
+function Tile({ attention, caption, onPress, value }: { attention?: boolean; caption: string; onPress: () => void; value: string }) {
+  return <Pressable accessibilityHint="Opens the list" accessibilityRole="button" onPress={onPress} style={[styles.tile, attention && styles.tileAttention]}>
+    <Text style={[styles.tileValue, attention && styles.tileValueAttention]}>{value}</Text>
+    <Text style={styles.tileCaption}>{caption}</Text>
+  </Pressable>;
+}
+
+const styles = StyleSheet.create({
+  group: { color: '#8A7164', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 20, marginBottom: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tile: { flexGrow: 1, flexBasis: 100, padding: 14, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 16, backgroundColor: '#FFF' },
+  tileAttention: { borderColor: '#F0B9A8', backgroundColor: '#FDEEE9' },
+  tileValue: { color: '#271812', fontSize: 26, fontWeight: '900' },
+  tileValueAttention: { color: ACCENT },
+  tileCaption: { color: '#71675F', fontSize: 11, fontWeight: '700', marginTop: 4 },
+  sales: { marginTop: 20, padding: 18, borderRadius: 20, backgroundColor: '#271812' },
+  salesLabel: { color: '#F29A52', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  salesValue: { color: '#FFF', fontSize: 28, fontWeight: '900', marginTop: 6 },
+  salesCopy: { color: '#D8CEC8', fontSize: 12, lineHeight: 18, marginTop: 6 },
+});

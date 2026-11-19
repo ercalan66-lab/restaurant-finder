@@ -28,7 +28,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
     title: 'Who can see it',
     body: [
       'The restaurant you order from or book with sees your name, phone number, email, delivery address and order.',
-      `${APP_NAME} administrators can see restaurant listings to review them.`,
+      `${APP_NAME} administrators can see restaurant listings to review them, and can look up orders and bookings (including the customer’s name and phone number) to help customers and restaurants with problems.`,
       'Data is stored with our hosting provider (Supabase) and notifications are delivered through Expo. They process it only to run the app.',
     ],
   },
