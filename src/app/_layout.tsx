@@ -1,18 +1,29 @@
 import { router, Stack, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
+import { AppState, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { syncPendingRequests } from '@/data/guest-storage';
+import { useSettings } from '@/data/settings';
+import { paint, setScheme, type Scheme } from '@/theme/theme';
 import { handleNotificationTaps, registerDeviceForAccount } from '@/utils/push-notifications';
 import { supabase } from '../../lib/supabase';
 
 SplashScreen.preventAutoHideAsync();
 
 const RETRY_INTERVAL_MS = 30_000;
+const PAGE_BACKGROUND = '#FFF8ED';
 
 export default function TabLayout() {
+  // Light or dark: the person's choice in Settings, or the phone's own setting.
+  const { settings } = useSettings();
+  const phoneScheme = useColorScheme();
+  const scheme: Scheme = settings.theme === 'system' ? (phoneScheme === 'dark' ? 'dark' : 'light') : settings.theme;
+  // Themed styles read the scheme while rendering, so it is set before any screen renders.
+  setScheme(scheme);
+
   // Orders and bookings that could not be sent are retried on launch, on return to the app, and every 30 s while open.
   useEffect(() => {
     void syncPendingRequests();
@@ -35,7 +46,10 @@ export default function TabLayout() {
   return (
     <>
       <AnimatedSplashOverlay />
-      <Stack screenOptions={{ headerShown: false }} />
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      {/* Changing the scheme remounts the screens (the key), so every themed style is read again.
+          The open screens stay open: the navigator keeps its state. */}
+      <Stack key={scheme} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: paint().bg(PAGE_BACKGROUND) } }} />
     </>
   );
 }

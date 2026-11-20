@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { formatBooking } from '@/data/booking';
 import {
@@ -13,6 +13,7 @@ import {
   type ReservationRecord,
 } from '@/data/guest-storage';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 const SHOWN = 8;
@@ -113,31 +114,31 @@ function Action({ label, onPress, secondary }: { label: string; onPress: () => v
   return <Pressable accessibilityRole="button" onPress={onPress} style={[styles.action, secondary && styles.actionSecondary]}><Text style={[styles.actionText, secondary && styles.actionSecondaryText]}>{label}</Text></Pressable>;
 }
 
-const styles = StyleSheet.create({
-  section: { marginTop: 28, padding: 17, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 20, backgroundColor: '#FFF' },
-  title: { color: '#171612', fontSize: 21, fontWeight: '900' },
-  copy: { color: '#777268', fontSize: 11, lineHeight: 17, marginTop: 4 },
-  label: { color: '#777268', fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 18, marginBottom: 7 },
-  empty: { color: '#918A81', fontSize: 12, paddingVertical: 12 },
-  card: { padding: 13, borderWidth: 1, borderColor: '#F0E7DE', borderRadius: 14, backgroundColor: '#FFFDF9', marginBottom: 8 },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  section: { marginTop: 28, padding: 17, borderWidth: 1, borderColor: line('#E9DFD2'), borderRadius: 20, backgroundColor: bg('#FFF') },
+  title: { color: fg('#171612'), fontSize: 21, fontWeight: '900' },
+  copy: { color: fg('#777268'), fontSize: 11, lineHeight: 17, marginTop: 4 },
+  label: { color: fg('#777268'), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 18, marginBottom: 7 },
+  empty: { color: fg('#918A81'), fontSize: 12, paddingVertical: 12 },
+  card: { padding: 13, borderWidth: 1, borderColor: line('#F0E7DE'), borderRadius: 14, backgroundColor: bg('#FFFDF9'), marginBottom: 8 },
   heading: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
   headingCopy: { flex: 1 },
-  name: { color: '#171612', fontSize: 13, fontWeight: '900' },
-  reference: { color: ORANGE, fontSize: 8, fontWeight: '900', marginTop: 3 },
-  meta: { color: '#71675F', fontSize: 10, lineHeight: 15, marginTop: 7 },
-  note: { color: '#8E2F1A', fontSize: 10, lineHeight: 15, marginTop: 5 },
+  name: { color: fg('#171612'), fontSize: 13, fontWeight: '900' },
+  reference: { color: fg(ORANGE), fontSize: 8, fontWeight: '900', marginTop: 3 },
+  meta: { color: fg('#71675F'), fontSize: 10, lineHeight: 15, marginTop: 7 },
+  note: { color: fg('#8E2F1A'), fontSize: 10, lineHeight: 15, marginTop: 5 },
   status: { borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 7, fontWeight: '900' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  action: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 18, backgroundColor: ORANGE },
-  actionSecondary: { borderWidth: 1, borderColor: '#E3D6CA', backgroundColor: '#FFF' },
-  actionText: { color: '#FFF', fontSize: 11, fontWeight: '900' },
-  actionSecondaryText: { color: '#8E2F1A' },
-  reviewed: { color: '#EAA000', fontSize: 11, fontWeight: '900', paddingVertical: 9 },
-});
+  action: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 18, backgroundColor: bg(ORANGE) },
+  actionSecondary: { borderWidth: 1, borderColor: line('#E3D6CA'), backgroundColor: bg('#FFF') },
+  actionText: { color: fg('#FFF'), fontSize: 11, fontWeight: '900' },
+  actionSecondaryText: { color: fg('#8E2F1A') },
+  reviewed: { color: fg('#EAA000'), fontSize: 11, fontWeight: '900', paddingVertical: 9 },
+}));
 
-const tones = StyleSheet.create({
-  ok: { color: '#28734D', backgroundColor: '#E8F5ED' },
-  waiting: { color: '#6B5A30', backgroundColor: '#FFF7DE' },
-  action: { color: '#FFF', backgroundColor: ORANGE },
-  bad: { color: '#8E2F1A', backgroundColor: '#F5D8D1' },
-});
+const tones = themedStyles(({ bg, fg }) => ({
+  ok: { color: fg('#28734D'), backgroundColor: bg('#E8F5ED') },
+  waiting: { color: fg('#6B5A30'), backgroundColor: bg('#FFF7DE') },
+  action: { color: fg('#FFF'), backgroundColor: bg(ORANGE) },
+  bad: { color: fg('#8E2F1A'), backgroundColor: bg('#F5D8D1') },
+}));

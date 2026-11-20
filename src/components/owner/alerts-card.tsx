@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 
 import { getPushAvailability, registerDeviceForAccount } from '@/utils/push-notifications';
 
 import { OWNER_COLORS, PrimaryButton } from './form-controls';
+import { themedStyles } from '@/theme/theme';
 
 type AlertsState = 'loading' | 'on' | 'off' | 'blocked' | 'failed' | 'unavailable';
 
@@ -50,9 +51,9 @@ export function AlertsCard() {
   </View>;
 }
 
-const styles = StyleSheet.create({
-  card: { marginTop: 12, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: OWNER_COLORS.line, backgroundColor: '#FFF' },
-  cardOn: { borderColor: '#BFE0CB', backgroundColor: '#F2FAF5' },
-  title: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
-  helper: { color: OWNER_COLORS.muted, fontSize: 12, lineHeight: 18, marginTop: 4 },
-});
+const styles = themedStyles(({ bg, fg, line }) => ({
+  card: { marginTop: 12, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: line(OWNER_COLORS.line), backgroundColor: bg('#FFF') },
+  cardOn: { borderColor: line('#BFE0CB'), backgroundColor: bg('#F2FAF5') },
+  title: { color: fg(OWNER_COLORS.ink), fontSize: 15, fontWeight: '900' },
+  helper: { color: fg(OWNER_COLORS.muted), fontSize: 12, lineHeight: 18, marginTop: 4 },
+}));

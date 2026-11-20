@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { themedStyles } from '@/theme/theme';
 
 /** Matches the native splash (app.json): the Kwetu icon on its own yellow. */
 const SPLASH_BACKGROUND = '#FDC52B';
@@ -39,7 +40,7 @@ export function AnimatedSplashOverlay() {
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: SPLASH_BACKGROUND, zIndex: 1000 },
+const styles = themedStyles(({ bg }) => ({
+  overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: bg(SPLASH_BACKGROUND), zIndex: 1000 },
   icon: { width: 200, height: 200 },
-});
+}));

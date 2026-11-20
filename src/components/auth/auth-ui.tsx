@@ -1,9 +1,10 @@
 import { router, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { goBackOrReplace } from '@/utils/navigation';
+import { themedStyles } from '@/theme/theme';
 
 export const ACCENT = '#B93F1D';
 const ERROR = '#B3261E';
@@ -104,50 +105,50 @@ export function Notice({ children, title, tone = 'success' }: { children: ReactN
   </View>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF8EE' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  safeArea: { flex: 1, backgroundColor: bg('#FFF8EE') },
   content: { width: '100%', maxWidth: 520, alignSelf: 'center', padding: 22, paddingBottom: 60 },
-  back: { color: ACCENT, fontSize: 14, fontWeight: '800', marginBottom: 28 },
-  eyebrow: { color: ACCENT, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: '#271812', fontSize: 34, fontWeight: '900', marginTop: 6 },
-  subtitle: { color: '#71675F', fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 20 },
-  segmented: { flexDirection: 'row', padding: 4, borderRadius: 16, backgroundColor: '#F4EAE1', marginBottom: 4 },
+  back: { color: fg(ACCENT), fontSize: 14, fontWeight: '800', marginBottom: 28 },
+  eyebrow: { color: fg(ACCENT), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: fg('#271812'), fontSize: 34, fontWeight: '900', marginTop: 6 },
+  subtitle: { color: fg('#71675F'), fontSize: 14, lineHeight: 21, marginTop: 7, marginBottom: 20 },
+  segmented: { flexDirection: 'row', padding: 4, borderRadius: 16, backgroundColor: bg('#F4EAE1'), marginBottom: 4 },
   segment: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 12 },
-  segmentActive: { backgroundColor: '#FFF' },
-  segmentText: { color: '#7B7068', fontSize: 12, fontWeight: '800' },
-  segmentTextActive: { color: ACCENT },
-  label: { color: '#71675F', fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 16, marginBottom: 7 },
-  input: { height: 50, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 14, paddingHorizontal: 15, color: '#271812', backgroundColor: '#FFF' },
-  inputError: { borderColor: ERROR, borderWidth: 1.5 },
-  passwordRow: { height: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#EADFD3', borderRadius: 14, backgroundColor: '#FFF' },
-  passwordInput: { flex: 1, height: 48, paddingHorizontal: 15, color: '#271812' },
+  segmentActive: { backgroundColor: bg('#FFF') },
+  segmentText: { color: fg('#7B7068'), fontSize: 12, fontWeight: '800' },
+  segmentTextActive: { color: fg(ACCENT) },
+  label: { color: fg('#71675F'), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 16, marginBottom: 7 },
+  input: { height: 50, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 14, paddingHorizontal: 15, color: fg('#271812'), backgroundColor: bg('#FFF') },
+  inputError: { borderColor: line(ERROR), borderWidth: 1.5 },
+  passwordRow: { height: 50, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 14, backgroundColor: bg('#FFF') },
+  passwordInput: { flex: 1, height: 48, paddingHorizontal: 15, color: fg('#271812') },
   showButton: { height: 48, justifyContent: 'center', paddingHorizontal: 15 },
-  showText: { color: ACCENT, fontSize: 11, fontWeight: '900' },
-  error: { color: ERROR, fontSize: 11, fontWeight: '700', lineHeight: 16, marginTop: 6 },
-  helper: { color: '#8A7F76', fontSize: 11, lineHeight: 16, marginTop: 6 },
+  showText: { color: fg(ACCENT), fontSize: 11, fontWeight: '900' },
+  error: { color: fg(ERROR), fontSize: 11, fontWeight: '700', lineHeight: 16, marginTop: 6 },
+  helper: { color: fg('#8A7F76'), fontSize: 11, lineHeight: 16, marginTop: 6 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20 },
-  checkBox: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: '#CDBFB3', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF' },
-  checkBoxOn: { borderColor: ACCENT, backgroundColor: ACCENT },
-  checkMark: { color: '#FFF', fontSize: 14, fontWeight: '900', lineHeight: 16 },
-  checkLabel: { flex: 1, color: '#4E453F', fontSize: 13, lineHeight: 19 },
-  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: ACCENT, marginTop: 24 },
-  buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  checkBox: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.5, borderColor: line('#CDBFB3'), alignItems: 'center', justifyContent: 'center', backgroundColor: bg('#FFF') },
+  checkBoxOn: { borderColor: line(ACCENT), backgroundColor: bg(ACCENT) },
+  checkMark: { color: fg('#FFF'), fontSize: 14, fontWeight: '900', lineHeight: 16 },
+  checkLabel: { flex: 1, color: fg('#4E453F'), fontSize: 13, lineHeight: 19 },
+  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: bg(ACCENT), marginTop: 24 },
+  buttonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   disabled: { opacity: 0.6 },
   textLink: { paddingVertical: 8 },
-  textLinkText: { color: ACCENT, fontSize: 12, fontWeight: '800' },
+  textLinkText: { color: fg(ACCENT), fontSize: 12, fontWeight: '800' },
   alignRight: { alignSelf: 'flex-end' },
   alignCenter: { alignSelf: 'center' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 7, marginTop: 22 },
-  switchCopy: { color: '#71675F', fontSize: 12 },
-  switchLink: { color: ACCENT, fontSize: 12, fontWeight: '900' },
-  notice: { marginTop: 18, padding: 14, borderRadius: 14, backgroundColor: '#E8F5ED' },
-  noticeError: { backgroundColor: '#FBE5DF' },
-  noticeTitle: { color: '#1F5E3D', fontSize: 14, fontWeight: '900' },
-  noticeTitleError: { color: '#8E2F1A' },
-  noticeCopy: { color: '#28734D', fontSize: 12, lineHeight: 18, marginTop: 4 },
-  noticeCopyError: { color: '#8E2F1A' },
-  privacy: { color: '#8A7F76', fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 22 },
-  privacyLink: { color: ACCENT, fontWeight: '800', textDecorationLine: 'underline' },
-});
+  switchCopy: { color: fg('#71675F'), fontSize: 12 },
+  switchLink: { color: fg(ACCENT), fontSize: 12, fontWeight: '900' },
+  notice: { marginTop: 18, padding: 14, borderRadius: 14, backgroundColor: bg('#E8F5ED') },
+  noticeError: { backgroundColor: bg('#FBE5DF') },
+  noticeTitle: { color: fg('#1F5E3D'), fontSize: 14, fontWeight: '900' },
+  noticeTitleError: { color: fg('#8E2F1A') },
+  noticeCopy: { color: fg('#28734D'), fontSize: 12, lineHeight: 18, marginTop: 4 },
+  noticeCopyError: { color: fg('#8E2F1A') },
+  privacy: { color: fg('#8A7F76'), fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: 22 },
+  privacyLink: { color: fg(ACCENT), fontWeight: '800', textDecorationLine: 'underline' },
+}));
 
 export const authStyles = styles;

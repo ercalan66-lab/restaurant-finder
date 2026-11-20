@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { AuthShell, authStyles, Checkbox, Field, Notice, PasswordField, PrimaryButton, Segmented, SwitchPrompt } from '@/components/auth/auth-ui';
 import { authErrorMessage, endSignUpSession, newAccountProblems, normalizeEmail, PASSWORD_RULE, registerWithEmail, type AccountRole } from '@/data/auth';
 import { saveGuestProfile } from '@/data/guest-storage';
 import { toE164 } from '@/utils/phone';
 import { showMessage } from '@/utils/feedback';
+import { themedStyles } from '@/theme/theme';
 
 const ROLE_OPTIONS: { value: AccountRole; label: string }[] = [{ value: 'customer', label: 'Customer' }, { value: 'owner', label: 'Restaurant owner' }];
 
@@ -83,7 +84,7 @@ export default function RegisterScreen() {
   </AuthShell>;
 }
 
-const styles = StyleSheet.create({
-  link: { color: '#B93F1D', fontWeight: '800', textDecorationLine: 'underline' },
-  summary: { color: '#B3261E', fontSize: 12, fontWeight: '700', marginTop: 14 },
-});
+const styles = themedStyles(({ fg }) => ({
+  link: { color: fg('#B93F1D'), fontWeight: '800', textDecorationLine: 'underline' },
+  summary: { color: fg('#B3261E'), fontSize: 12, fontWeight: '700', marginTop: 14 },
+}));

@@ -1,12 +1,13 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getMyOrders, getMyReservations } from '@/data/guest-storage';
 import { MAX_REVIEW_COMMENT, submitReview } from '@/data/reviews';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 const RATING_WORDS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
@@ -102,21 +103,22 @@ export default function ReviewScreen() {
   </ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF8ED' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  safeArea: { flex: 1, backgroundColor: bg('#FFF8ED') },
   content: { width: '100%', maxWidth: 560, alignSelf: 'center', padding: 22, paddingBottom: 60 },
-  back: { color: ORANGE, fontSize: 14, fontWeight: '800', marginBottom: 26 },
-  eyebrow: { color: ORANGE, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: '#171612', fontSize: 30, fontWeight: '900', marginTop: 6 },
-  helper: { color: '#777268', fontSize: 13, lineHeight: 20, marginTop: 8 },
+  back: { color: fg(ORANGE), fontSize: 14, fontWeight: '800', marginBottom: 26 },
+  eyebrow: { color: fg(ORANGE), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: fg('#171612'), fontSize: 30, fontWeight: '900', marginTop: 6 },
+  helper: { color: fg('#777268'), fontSize: 13, lineHeight: 20, marginTop: 8 },
   stars: { flexDirection: 'row', gap: 10, marginTop: 26 },
-  star: { color: '#E1D6C9', fontSize: 44 },
-  starOn: { color: '#EAA000' },
-  ratingWord: { color: '#171612', fontSize: 14, fontWeight: '800', marginTop: 4 },
-  label: { color: '#777268', fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 24, marginBottom: 7 },
-  input: { minHeight: 110, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, padding: 14, color: '#171612', backgroundColor: '#FFF', textAlignVertical: 'top' },
-  counter: { alignSelf: 'flex-end', color: '#9A9187', fontSize: 10, marginTop: 5 },
-  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: ORANGE, marginTop: 22 },
-  buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  // Empty stars use the border painter so they stay dim on the dark background too.
+  star: { color: line('#E1D6C9'), fontSize: 44 },
+  starOn: { color: fg('#EAA000') },
+  ratingWord: { color: fg('#171612'), fontSize: 14, fontWeight: '800', marginTop: 4 },
+  label: { color: fg('#777268'), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 24, marginBottom: 7 },
+  input: { minHeight: 110, borderWidth: 1, borderColor: line('#E9DFD2'), borderRadius: 14, padding: 14, color: fg('#171612'), backgroundColor: bg('#FFF'), textAlignVertical: 'top' },
+  counter: { alignSelf: 'flex-end', color: fg('#9A9187'), fontSize: 10, marginTop: 5 },
+  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: bg(ORANGE), marginTop: 22 },
+  buttonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   disabled: { opacity: 0.6 },
-});
+}));

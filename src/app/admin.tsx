@@ -1,6 +1,6 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ACCENT, Chips, type AdminSection } from '@/components/admin/admin-ui';
@@ -12,6 +12,7 @@ import { TeamSection } from '@/components/admin/team-section';
 import { checkIsAdmin } from '@/data/admin';
 import type { ApprovalStatus } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
+import { themedStyles } from '@/theme/theme';
 
 type Access = 'checking' | 'denied' | 'granted';
 
@@ -64,12 +65,12 @@ function Shell({ children }: { children: React.ReactNode }) {
   </ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF8EE' },
+const styles = themedStyles(({ bg, fg }) => ({
+  safeArea: { flex: 1, backgroundColor: bg('#FFF8EE') },
   content: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: 18, paddingBottom: 60 },
-  back: { color: ACCENT, fontSize: 14, fontWeight: '800', marginBottom: 22 },
-  eyebrow: { color: ACCENT, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: '#271812', fontSize: 32, fontWeight: '900', marginTop: 5 },
-  helper: { color: '#71675F', fontSize: 13, lineHeight: 19, marginTop: 6 },
-  link: { color: ACCENT, fontSize: 13, fontWeight: '800', marginTop: 12 },
-});
+  back: { color: fg(ACCENT), fontSize: 14, fontWeight: '800', marginBottom: 22 },
+  eyebrow: { color: fg(ACCENT), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: fg('#271812'), fontSize: 32, fontWeight: '900', marginTop: 5 },
+  helper: { color: fg('#71675F'), fontSize: 13, lineHeight: 19, marginTop: 6 },
+  link: { color: fg(ACCENT), fontSize: 13, fontWeight: '800', marginTop: 12 },
+}));

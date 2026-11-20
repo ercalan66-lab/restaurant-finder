@@ -1,6 +1,8 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { paint, themedStyles } from '@/theme/theme';
 
 const ACTIVE = '#ED6417';
 const INACTIVE = '#5E574F';
@@ -30,7 +32,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
         <SymbolView
           name={{ ios: item.active ? item.icon.iosSelected : item.icon.ios, android: item.icon.android, web: item.icon.android }}
           size={24}
-          tintColor={item.active ? ACTIVE : INACTIVE}
+          tintColor={paint().fg(item.active ? ACTIVE : INACTIVE)}
         />
       </View>
       <Text style={[styles.label, item.active && styles.labelActive]}>{item.label}</Text>
@@ -38,16 +40,16 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   </View>;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(({ bg, fg, line }) => ({
   bar: {
     position: 'absolute', left: 0, right: 0, bottom: 0,
     flexDirection: 'row', paddingTop: 8, paddingHorizontal: 12,
-    backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EFE6DA',
+    backgroundColor: bg('#FFF'), borderTopWidth: 1, borderTopColor: line('#EFE6DA'),
     shadowColor: '#3B2A1A', shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 12,
   },
   item: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 2 },
   pill: { width: 60, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  pillActive: { backgroundColor: '#FFE8D9' },
-  label: { color: INACTIVE, fontSize: 12, fontWeight: '700' },
-  labelActive: { color: ACTIVE, fontWeight: '900' },
-});
+  pillActive: { backgroundColor: bg('#FFE8D9') },
+  label: { color: fg(INACTIVE), fontSize: 12, fontWeight: '700' },
+  labelActive: { color: fg(ACTIVE), fontWeight: '900' },
+}));

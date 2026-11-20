@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { MAX_MENU_PDF_MB, pickMenuPdf, removeMenuPdf, uploadMenuPdf } from '@/data/restaurant-menu-pdf';
@@ -8,6 +8,7 @@ import type { Restaurant } from '@/data/restaurants';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
+import { themedStyles } from '@/theme/theme';
 
 type Changes = Pick<Restaurant, 'menuPdfUrl'>;
 
@@ -61,10 +62,10 @@ export function MenuPdfManager({ onUpdated, restaurant }: { onUpdated: (changes:
   </Section>;
 }
 
-const styles = StyleSheet.create({
-  file: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: OWNER_COLORS.line, backgroundColor: '#FFF' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  file: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: line(OWNER_COLORS.line), backgroundColor: bg('#FFF') },
   fileIcon: { fontSize: 30 },
   fileCopy: { flex: 1 },
-  fileTitle: { color: OWNER_COLORS.ink, fontSize: 14, fontWeight: '900' },
-  empty: { color: OWNER_COLORS.muted, fontSize: 13, fontWeight: '700' },
-});
+  fileTitle: { color: fg(OWNER_COLORS.ink), fontSize: 14, fontWeight: '900' },
+  empty: { color: fg(OWNER_COLORS.muted), fontSize: 13, fontWeight: '700' },
+}));

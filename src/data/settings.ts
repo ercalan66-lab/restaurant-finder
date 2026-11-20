@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import Storage from '@/utils/kv-store';
 
@@ -26,21 +26,32 @@ export async function loadSettings(): Promise<Settings> {
   }
 }
 
-/** The person's settings on this device, and a function to change one. */
+// One shared copy, so a change on the Settings page reaches the root layout (theme) at once.
+let current: Settings = DEFAULT_SETTINGS;
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((listener) => listener());
+
+let loaded = false;
+function ensureLoaded() {
+  if (loaded) return;
+  loaded = true;
+  void loadSettings().then((saved) => { current = saved; emit(); });
+}
+
+export function updateSettings(changes: Partial<Settings>) {
+  current = { ...current, ...changes };
+  void Storage.setItem(SETTINGS_KEY, JSON.stringify(current));
+  emit();
+}
+
+function subscribe(listener: () => void) {
+  ensureLoaded();
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
+
+/** The person's settings on this device, and a function to change them. */
 export function useSettings() {
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
-
-  useEffect(() => {
-    let active = true;
-    void loadSettings().then((loaded) => { if (active) setSettings(loaded); });
-    return () => { active = false; };
-  }, []);
-
-  const update = useCallback((changes: Partial<Settings>) => setSettings((current) => {
-    const next = { ...current, ...changes };
-    void Storage.setItem(SETTINGS_KEY, JSON.stringify(next));
-    return next;
-  }), []);
-
-  return { settings, update };
+  const settings = useSyncExternalStore(subscribe, () => current, () => current);
+  return { settings, update: updateSettings };
 }

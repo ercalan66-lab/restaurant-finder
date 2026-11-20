@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, type Href, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RestaurantReviews } from '@/components/restaurant-reviews';
@@ -12,6 +12,7 @@ import { useUserLocation } from '@/data/user-location';
 import { distanceTo, formatDistance } from '@/utils/distance';
 import { goBackOrReplace } from '@/utils/navigation';
 import { showMessage } from '@/utils/feedback';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -172,62 +173,62 @@ export default function RestaurantDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: CREAM },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  safeArea: { flex: 1, backgroundColor: bg(CREAM) },
   content: { width: '100%', maxWidth: 900, alignSelf: 'center' },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, backgroundColor: CREAM },
-  missingTitle: { color: '#171612', fontSize: 24, fontWeight: '900' },
-  heroWrap: { height: 390, overflow: 'hidden', backgroundColor: '#2B241E' },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, backgroundColor: bg(CREAM) },
+  missingTitle: { color: fg('#171612'), fontSize: 24, fontWeight: '900' },
+  heroWrap: { height: 390, overflow: 'hidden', backgroundColor: bg('#2B241E') },
   heroImage: { position: 'absolute', inset: 0 },
   heroShade: { position: 'absolute', inset: 0, backgroundColor: 'rgba(15,10,7,0.42)' },
-  backButton: { position: 'absolute', top: 16, left: 16, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.94)' },
-  backIcon: { color: '#171612', fontSize: 38, lineHeight: 39, marginTop: -3 },
+  backButton: { position: 'absolute', top: 16, left: 16, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: bg('#FFFFFF') },
+  backIcon: { color: fg('#171612'), fontSize: 38, lineHeight: 39, marginTop: -3 },
   heroCopy: { position: 'absolute', left: 20, right: 20, bottom: 24 },
-  cuisine: { alignSelf: 'flex-start', color: '#FFF', fontSize: 9, fontWeight: '900', letterSpacing: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, overflow: 'hidden', backgroundColor: ORANGE },
-  title: { color: '#FFF', fontSize: 36, lineHeight: 40, fontWeight: '900', marginTop: 12 },
-  heroMeta: { color: '#F7EEE6', fontSize: 13, fontWeight: '700', marginTop: 7 },
+  cuisine: { alignSelf: 'flex-start', color: fg('#FFF'), fontSize: 9, fontWeight: '900', letterSpacing: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, overflow: 'hidden', backgroundColor: bg(ORANGE) },
+  title: { color: fg('#FFF'), fontSize: 36, lineHeight: 40, fontWeight: '900', marginTop: 12 },
+  heroMeta: { color: fg('#F7EEE6'), fontSize: 13, fontWeight: '700', marginTop: 7 },
   section: { paddingHorizontal: 18, paddingTop: 26 },
-  description: { color: '#4F4A43', fontSize: 15, lineHeight: 23 },
-  sectionTitle: { color: '#171612', fontSize: 24, fontWeight: '900' },
-  sectionCaption: { color: '#777268', fontSize: 12, marginTop: 4, marginBottom: 14 },
+  description: { color: fg('#4F4A43'), fontSize: 15, lineHeight: 23 },
+  sectionTitle: { color: fg('#171612'), fontSize: 24, fontWeight: '900' },
+  sectionCaption: { color: fg('#777268'), fontSize: 12, marginTop: 4, marginBottom: 14 },
   quickActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   bookingActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  primaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: ORANGE },
-  primaryButtonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
-  secondaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderWidth: 1, borderColor: '#E6DCCE', backgroundColor: '#FFF' },
-  secondaryButtonText: { color: '#171612', fontSize: 13, fontWeight: '900' },
-  orderButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: '#171612' },
-  orderButtonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  primaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: bg(ORANGE) },
+  primaryButtonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
+  secondaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderWidth: 1, borderColor: line('#E6DCCE'), backgroundColor: bg('#FFF') },
+  secondaryButtonText: { color: fg('#171612'), fontSize: 13, fontWeight: '900' },
+  orderButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: bg('#171612') },
+  orderButtonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   gallery: { gap: 10, paddingRight: 18 },
-  environmentPhoto: { width: 260, height: 180, borderRadius: 18, backgroundColor: '#DDD4C9' },
+  environmentPhoto: { width: 260, height: 180, borderRadius: 18, backgroundColor: bg('#DDD4C9') },
   environmentPhotoFirst: { width: 300 },
-  pdfCard: { flexDirection: 'row', gap: 12, padding: 14, marginBottom: 14, borderRadius: 18, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF' },
+  pdfCard: { flexDirection: 'row', gap: 12, padding: 14, marginBottom: 14, borderRadius: 18, borderWidth: 1, borderColor: line('#EEE6DA'), backgroundColor: bg('#FFF') },
   pdfIcon: { fontSize: 32 },
   pdfCopy: { flex: 1 },
-  pdfTitle: { color: '#171612', fontSize: 16, fontWeight: '900' },
-  pdfCaption: { color: '#777268', fontSize: 12, lineHeight: 17, marginTop: 3 },
+  pdfTitle: { color: fg('#171612'), fontSize: 16, fontWeight: '900' },
+  pdfCaption: { color: fg('#777268'), fontSize: 12, lineHeight: 17, marginTop: 3 },
   pdfActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  pdfButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 20, backgroundColor: ORANGE },
-  pdfButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
-  pdfButtonSecondary: { borderWidth: 1, borderColor: '#E6DCCE', backgroundColor: '#FFF' },
-  pdfButtonSecondaryText: { color: '#171612' },
+  pdfButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 20, backgroundColor: bg(ORANGE) },
+  pdfButtonText: { color: fg('#FFF'), fontSize: 12, fontWeight: '900' },
+  pdfButtonSecondary: { borderWidth: 1, borderColor: line('#E6DCCE'), backgroundColor: bg('#FFF') },
+  pdfButtonSecondaryText: { color: fg('#171612') },
   menuList: { gap: 13 },
-  menuCard: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF' },
-  menuCardUnavailable: { opacity: 0.68, backgroundColor: '#FFF8ED' },
-  foodPhoto: { width: '100%', height: 190, backgroundColor: '#DDD4C9' },
-  foodPlaceholder: { width: '100%', height: 130, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4E9DC' },
+  menuCard: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: line('#EEE6DA'), backgroundColor: bg('#FFF') },
+  menuCardUnavailable: { opacity: 0.68, backgroundColor: bg('#FFF8ED') },
+  foodPhoto: { width: '100%', height: 190, backgroundColor: bg('#DDD4C9') },
+  foodPlaceholder: { width: '100%', height: 130, alignItems: 'center', justifyContent: 'center', backgroundColor: bg('#F4E9DC') },
   foodPlaceholderIcon: { fontSize: 42 },
   menuCopy: { padding: 14 },
   menuTitleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  menuName: { flex: 1, color: '#171612', fontSize: 16, fontWeight: '900' },
-  menuPrice: { color: ORANGE, fontSize: 13, fontWeight: '900' },
-  menuDescription: { color: '#777268', fontSize: 12, lineHeight: 18, marginTop: 6 },
-  servingTime: { color: '#777268', fontSize: 10, marginTop: 8 },
-  unavailableBadge: { alignSelf: 'flex-start', color: '#8E2F1A', backgroundColor: '#F5D8D1', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900', marginTop: 9 },
-  contactCard: { gap: 7, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF' },
-  contactLabel: { color: '#9A9187', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 8 },
-  contactLink: { color: ORANGE, fontSize: 15, fontWeight: '800' },
-  contactValue: { color: '#302C27', fontSize: 14, lineHeight: 20 },
+  menuName: { flex: 1, color: fg('#171612'), fontSize: 16, fontWeight: '900' },
+  menuPrice: { color: fg(ORANGE), fontSize: 13, fontWeight: '900' },
+  menuDescription: { color: fg('#777268'), fontSize: 12, lineHeight: 18, marginTop: 6 },
+  servingTime: { color: fg('#777268'), fontSize: 10, marginTop: 8 },
+  unavailableBadge: { alignSelf: 'flex-start', color: fg('#8E2F1A'), backgroundColor: bg('#F5D8D1'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900', marginTop: 9 },
+  contactCard: { gap: 7, padding: 18, borderRadius: 18, borderWidth: 1, borderColor: line('#EEE6DA'), backgroundColor: bg('#FFF') },
+  contactLabel: { color: fg('#9A9187'), fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 8 },
+  contactLink: { color: fg(ORANGE), fontSize: 15, fontWeight: '800' },
+  contactValue: { color: fg('#302C27'), fontSize: 14, lineHeight: 20 },
   facilities: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  facility: { color: '#5A4A40', fontSize: 11, fontWeight: '700', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, overflow: 'hidden', backgroundColor: '#FFF3E9' },
-});
+  facility: { color: fg('#5A4A40'), fontSize: 11, fontWeight: '700', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, overflow: 'hidden', backgroundColor: bg('#FFF3E9') },
+}));

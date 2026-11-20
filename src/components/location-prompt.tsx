@@ -1,7 +1,8 @@
 import * as Linking from 'expo-linking';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import type { LocationStatus } from '@/data/user-location';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 
@@ -26,12 +27,12 @@ export function LocationPrompt({ onRequest, status }: { onRequest: () => void; s
   </View>;
 }
 
-const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, marginBottom: 16, borderRadius: 16, borderWidth: 1, borderColor: '#F3D9C5', backgroundColor: '#FFF4EA' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  card: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, marginBottom: 16, borderRadius: 16, borderWidth: 1, borderColor: line('#F3D9C5'), backgroundColor: bg('#FFF4EA') },
   icon: { fontSize: 22 },
   copy: { flex: 1 },
-  title: { color: '#3B2A1A', fontSize: 12, fontWeight: '800', lineHeight: 17 },
-  note: { color: '#8A7164', fontSize: 10, marginTop: 2 },
-  button: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 18, backgroundColor: ORANGE },
-  buttonText: { color: '#FFF', fontSize: 11, fontWeight: '900' },
-});
+  title: { color: fg('#3B2A1A'), fontSize: 12, fontWeight: '800', lineHeight: 17 },
+  note: { color: fg('#8A7164'), fontSize: 10, marginTop: 2 },
+  button: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 18, backgroundColor: bg(ORANGE) },
+  buttonText: { color: fg('#FFF'), fontSize: 11, fontWeight: '900' },
+}));

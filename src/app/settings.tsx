@@ -2,13 +2,14 @@ import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import { router, type Href } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { APP_NAME, SUPPORT_EMAIL } from '@/constants/app-info';
 import { useSettings, type LanguagePreference, type ThemePreference } from '@/data/settings';
 import { showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -47,7 +48,7 @@ export default function SettingsScreen() {
     <Text style={styles.eyebrow}>{APP_NAME.toUpperCase()}</Text>
     <Text accessibilityRole="header" style={styles.title}>Settings</Text>
 
-    <Section comingNext="Dark mode is being added to every screen. Your choice is saved and will apply as soon as it is ready." title="Appearance">
+    <Section title="Appearance">
       {THEME_OPTIONS.map((option) => <Choice hint={option.hint} key={option.value} label={option.label} onPress={() => update({ theme: option.value })} selected={settings.theme === option.value} />)}
     </Section>
 
@@ -109,31 +110,31 @@ function LinkRow({ icon, label, note, onPress }: { icon: string; label: string; 
   </Pressable>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF8ED' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  safeArea: { flex: 1, backgroundColor: bg('#FFF8ED') },
   content: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: 20, paddingBottom: 60 },
-  back: { color: ORANGE, fontSize: 14, fontWeight: '800', marginBottom: 25 },
-  eyebrow: { color: ORANGE, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: '#171612', fontSize: 34, fontWeight: '900', marginTop: 6 },
+  back: { color: fg(ORANGE), fontSize: 14, fontWeight: '800', marginBottom: 25 },
+  eyebrow: { color: fg(ORANGE), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: fg('#171612'), fontSize: 34, fontWeight: '900', marginTop: 6 },
   section: { marginTop: 28 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { color: '#171612', fontSize: 19, fontWeight: '900' },
-  soon: { color: '#6B5A30', backgroundColor: '#FFF1C7', borderRadius: 8, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 3, fontSize: 8, fontWeight: '900' },
-  muted: { color: '#777268', fontSize: 12, lineHeight: 18, marginTop: 6 },
+  sectionTitle: { color: fg('#171612'), fontSize: 19, fontWeight: '900' },
+  soon: { color: fg('#6B5A30'), backgroundColor: bg('#FFF1C7'), borderRadius: 8, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 3, fontSize: 8, fontWeight: '900' },
+  muted: { color: fg('#777268'), fontSize: 12, lineHeight: 18, marginTop: 6 },
   cardText: { paddingHorizontal: 16, paddingBottom: 14 },
-  card: { marginTop: 12, borderRadius: 18, borderWidth: 1, borderColor: '#E9DFD2', backgroundColor: '#FFF', overflow: 'hidden' },
-  groupLabel: { color: '#8A7164', fontSize: 9, fontWeight: '900', letterSpacing: 0.8, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#F2EAE0' },
+  card: { marginTop: 12, borderRadius: 18, borderWidth: 1, borderColor: line('#E9DFD2'), backgroundColor: bg('#FFF'), overflow: 'hidden' },
+  groupLabel: { color: fg('#8A7164'), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: line('#F2EAE0') },
   rowCopy: { flex: 1 },
-  rowLabel: { flexShrink: 1, color: '#171612', fontSize: 14, fontWeight: '800' },
-  rowNote: { color: '#8A8278', fontSize: 11, marginTop: 2 },
-  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#CDBFB3', alignItems: 'center', justifyContent: 'center' },
-  radioOn: { borderColor: ORANGE },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: ORANGE },
-  faq: { paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: '#F2EAE0' },
+  rowLabel: { flexShrink: 1, color: fg('#171612'), fontSize: 14, fontWeight: '800' },
+  rowNote: { color: fg('#8A8278'), fontSize: 11, marginTop: 2 },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: line('#CDBFB3'), alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: line(ORANGE) },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: bg(ORANGE) },
+  faq: { paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 1, borderTopColor: line('#F2EAE0') },
   faqTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  answer: { color: '#4F4A43', fontSize: 13, lineHeight: 20, marginTop: 8 },
-  chevron: { color: ORANGE, fontSize: 20, fontWeight: '800' },
+  answer: { color: fg('#4F4A43'), fontSize: 13, lineHeight: 20, marginTop: 8 },
+  chevron: { color: fg(ORANGE), fontSize: 20, fontWeight: '800' },
   icon: { fontSize: 20 },
-  version: { color: '#9A9187', fontSize: 11, textAlign: 'center', marginTop: 28 },
-});
+  version: { color: fg('#9A9187'), fontSize: 11, textAlign: 'center', marginTop: 28 },
+}));

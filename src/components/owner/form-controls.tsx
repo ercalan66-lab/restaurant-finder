@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { themedStyles } from '@/theme/theme';
 
 export const OWNER_COLORS = { accent: '#B93F1D', cream: '#FFF8EE', ink: '#271812', muted: '#71675F', line: '#EADFD3' };
 
@@ -46,27 +47,27 @@ export function ChoiceChips<T extends string>({ label, onChange, options, value 
   </View>;
 }
 
-export const formStyles = StyleSheet.create({
+export const formStyles = themedStyles(({ fg }) => ({
   row: { flexDirection: 'row', gap: 10 },
   half: { flex: 1 },
-  helper: { color: OWNER_COLORS.muted, fontSize: 12, lineHeight: 18, marginTop: 5 },
-});
+  helper: { color: fg(OWNER_COLORS.muted), fontSize: 12, lineHeight: 18, marginTop: 5 },
+}));
 
-const styles = StyleSheet.create({
-  label: { color: OWNER_COLORS.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 6 },
-  input: { minHeight: 48, borderWidth: 1, borderColor: OWNER_COLORS.line, borderRadius: 13, paddingHorizontal: 13, color: OWNER_COLORS.ink, backgroundColor: '#FFF' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  label: { color: fg(OWNER_COLORS.muted), fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 6 },
+  input: { minHeight: 48, borderWidth: 1, borderColor: line(OWNER_COLORS.line), borderRadius: 13, paddingHorizontal: 13, color: fg(OWNER_COLORS.ink), backgroundColor: bg('#FFF') },
   multiline: { minHeight: 82, paddingTop: 13, textAlignVertical: 'top' },
-  button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 25, backgroundColor: OWNER_COLORS.accent, marginTop: 18, paddingHorizontal: 18 },
-  buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 25, backgroundColor: bg(OWNER_COLORS.accent), marginTop: 18, paddingHorizontal: 18 },
+  buttonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   inactive: { opacity: 0.55 },
-  textButton: { color: OWNER_COLORS.accent, fontSize: 11, fontWeight: '800', paddingVertical: 4 },
-  destructive: { color: '#9B321C' },
-  section: { marginTop: 22, padding: 17, borderWidth: 1, borderColor: OWNER_COLORS.line, borderRadius: 22, backgroundColor: '#FFFDF9' },
-  sectionTitle: { color: OWNER_COLORS.ink, fontSize: 20, fontWeight: '900' },
-  helper: { color: OWNER_COLORS.muted, fontSize: 12, lineHeight: 18, marginTop: 5 },
+  textButton: { color: fg(OWNER_COLORS.accent), fontSize: 11, fontWeight: '800', paddingVertical: 4 },
+  destructive: { color: fg('#9B321C') },
+  section: { marginTop: 22, padding: 17, borderWidth: 1, borderColor: line(OWNER_COLORS.line), borderRadius: 22, backgroundColor: bg('#FFFDF9') },
+  sectionTitle: { color: fg(OWNER_COLORS.ink), fontSize: 20, fontWeight: '900' },
+  helper: { color: fg(OWNER_COLORS.muted), fontSize: 12, lineHeight: 18, marginTop: 5 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 13, paddingVertical: 9, borderWidth: 1, borderColor: OWNER_COLORS.line, borderRadius: 20, backgroundColor: '#FFF' },
-  chipActive: { borderColor: OWNER_COLORS.accent, backgroundColor: OWNER_COLORS.accent },
-  chipText: { color: '#4F4A43', fontSize: 11, fontWeight: '800' },
-  chipTextActive: { color: '#FFF' },
-});
+  chip: { paddingHorizontal: 13, paddingVertical: 9, borderWidth: 1, borderColor: line(OWNER_COLORS.line), borderRadius: 20, backgroundColor: bg('#FFF') },
+  chipActive: { borderColor: line(OWNER_COLORS.accent), backgroundColor: bg(OWNER_COLORS.accent) },
+  chipText: { color: fg('#4F4A43'), fontSize: 11, fontWeight: '800' },
+  chipTextActive: { color: fg('#FFF') },
+}));

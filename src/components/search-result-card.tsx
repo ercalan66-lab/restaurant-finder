@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { router, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { formatTsh, isMenuItemAvailable, isOpenNow, type MenuItem, type Restaurant } from '@/data/restaurants';
 import type { SearchHit } from '@/data/search';
 import { formatDistance } from '@/utils/distance';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 const DISHES_SHOWN = 4;
@@ -65,30 +66,30 @@ function DishRow({ dish, restaurant }: { dish: MenuItem; restaurant: Restaurant 
   </View>;
 }
 
-const styles = StyleSheet.create({
-  card: { marginBottom: 12, padding: 14, borderRadius: 20, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF', elevation: 2 },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  card: { marginBottom: 12, padding: 14, borderRadius: 20, borderWidth: 1, borderColor: line('#EEE6DA'), backgroundColor: bg('#FFF'), elevation: 2 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  thumb: { width: 64, height: 64, borderRadius: 14, backgroundColor: '#E9DFD3' },
-  thumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4E9DC' },
+  thumb: { width: 64, height: 64, borderRadius: 14, backgroundColor: bg('#E9DFD3') },
+  thumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: bg('#F4E9DC') },
   thumbIcon: { fontSize: 26 },
   topCopy: { flex: 1, gap: 3 },
-  name: { color: '#171612', fontSize: 16, fontWeight: '900' },
-  details: { color: '#5E574F', fontSize: 11, fontWeight: '600' },
-  status: { alignSelf: 'flex-start', color: '#1F6B3A', backgroundColor: '#E3F5E8', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 3, fontSize: 8, fontWeight: '900' },
-  statusClosed: { color: '#8E2F1A', backgroundColor: '#F8DDD6' },
-  saveButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF4EA' },
-  saveIcon: { color: '#3B342D', fontSize: 19 },
-  savedIcon: { color: ORANGE },
-  heading: { color: '#8A7164', fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 14, marginBottom: 4 },
-  dish: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderTopWidth: 1, borderTopColor: '#F3ECE3' },
+  name: { color: fg('#171612'), fontSize: 16, fontWeight: '900' },
+  details: { color: fg('#5E574F'), fontSize: 11, fontWeight: '600' },
+  status: { alignSelf: 'flex-start', color: fg('#1F6B3A'), backgroundColor: bg('#E3F5E8'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 3, fontSize: 8, fontWeight: '900' },
+  statusClosed: { color: fg('#8E2F1A'), backgroundColor: bg('#F8DDD6') },
+  saveButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: bg('#FFF4EA') },
+  saveIcon: { color: fg('#3B342D'), fontSize: 19 },
+  savedIcon: { color: fg(ORANGE) },
+  heading: { color: fg('#8A7164'), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 14, marginBottom: 4 },
+  dish: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7, borderTopWidth: 1, borderTopColor: line('#F3ECE3') },
   dishUnavailable: { opacity: 0.6 },
-  dishPhoto: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#E9DFD3' },
+  dishPhoto: { width: 40, height: 40, borderRadius: 10, backgroundColor: bg('#E9DFD3') },
   dishCopy: { flex: 1 },
   dishLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  dishName: { flex: 1, color: '#171612', fontSize: 13, fontWeight: '800' },
-  dishPrice: { color: ORANGE, fontSize: 12, fontWeight: '900' },
-  dishStatus: { color: '#1F6B3A', fontSize: 10, fontWeight: '700', marginTop: 2 },
-  dishStatusOff: { color: '#8A8278' },
-  more: { color: '#8A8278', fontSize: 11, fontWeight: '700', marginTop: 4 },
-  fullMenu: { color: ORANGE, fontSize: 12, fontWeight: '900', marginTop: 10 },
-});
+  dishName: { flex: 1, color: fg('#171612'), fontSize: 13, fontWeight: '800' },
+  dishPrice: { color: fg(ORANGE), fontSize: 12, fontWeight: '900' },
+  dishStatus: { color: fg('#1F6B3A'), fontSize: 10, fontWeight: '700', marginTop: 2 },
+  dishStatusOff: { color: fg('#8A8278') },
+  more: { color: fg('#8A8278'), fontSize: 11, fontWeight: '700', marginTop: 4 },
+  fullMenu: { color: fg(ORANGE), fontSize: 12, fontWeight: '900', marginTop: 10 },
+}));

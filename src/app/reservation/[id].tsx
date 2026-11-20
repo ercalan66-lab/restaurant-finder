@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { bookingDates, bookingSlots, fetchBookedSeats, formatBooking } from '@/data/booking';
@@ -9,6 +9,7 @@ import { useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 import { getPushToken } from '@/utils/push-notifications';
 import { showMessage } from '@/utils/feedback';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -139,19 +140,19 @@ export default function ReservationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 }, safeArea: { flex: 1, backgroundColor: CREAM }, content: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: 20 },
-  back: { color: ORANGE, fontSize: 14, fontWeight: '800', marginBottom: 25 }, eyebrow: { color: ORANGE, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }, title: { color: '#171612', fontSize: 34, fontWeight: '900', marginTop: 6 }, subtitle: { color: '#777268', fontSize: 14, marginTop: 6, marginBottom: 8 },
-  sectionTitle: { color: '#171612', fontSize: 20, fontWeight: '900', marginTop: 28 },
-  label: { color: '#777268', fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 18, marginBottom: 8 }, input: { height: 50, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, paddingHorizontal: 15, color: '#171612', backgroundColor: '#FFF' },
-  dates: { gap: 8, paddingRight: 8 }, dateChip: { width: 74, alignItems: 'center', paddingVertical: 10, borderRadius: 16, borderWidth: 1, borderColor: '#E9DFD2', backgroundColor: '#FFF' }, dateLabel: { color: '#171612', fontSize: 12, fontWeight: '900' }, dateMonth: { color: '#777268', fontSize: 10, marginTop: 2 },
-  slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, slot: { minWidth: 72, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: '#E9DFD2', backgroundColor: '#FFF' }, slotTime: { color: '#171612', fontSize: 13, fontWeight: '900' }, slotNote: { color: ORANGE, fontSize: 9, fontWeight: '800', marginTop: 2 }, slotFull: { backgroundColor: '#F3EEE8', borderColor: '#EEE6DC' }, slotFullText: { color: '#B3AAA0' },
-  chipActive: { borderColor: ORANGE, backgroundColor: ORANGE }, chipTextActive: { color: '#FFF' },
-  noSlots: { color: '#8E2F1A', fontSize: 12, lineHeight: 18, padding: 12, borderRadius: 12, backgroundColor: '#F5D8D1' },
-  stepper: { width: 170, height: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 25, backgroundColor: '#FFF' }, stepButton: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' }, stepText: { color: ORANGE, fontSize: 25, fontWeight: '800' }, guestCount: { color: '#171612', fontSize: 18, fontWeight: '900' },
-  primaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, paddingHorizontal: 24, backgroundColor: ORANGE, marginTop: 28 }, primaryText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  flex: { flex: 1 }, safeArea: { flex: 1, backgroundColor: bg(CREAM) }, content: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: 20 },
+  back: { color: fg(ORANGE), fontSize: 14, fontWeight: '800', marginBottom: 25 }, eyebrow: { color: fg(ORANGE), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }, title: { color: fg('#171612'), fontSize: 34, fontWeight: '900', marginTop: 6 }, subtitle: { color: fg('#777268'), fontSize: 14, marginTop: 6, marginBottom: 8 },
+  sectionTitle: { color: fg('#171612'), fontSize: 20, fontWeight: '900', marginTop: 28 },
+  label: { color: fg('#777268'), fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 18, marginBottom: 8 }, input: { height: 50, borderWidth: 1, borderColor: line('#E9DFD2'), borderRadius: 14, paddingHorizontal: 15, color: fg('#171612'), backgroundColor: bg('#FFF') },
+  dates: { gap: 8, paddingRight: 8 }, dateChip: { width: 74, alignItems: 'center', paddingVertical: 10, borderRadius: 16, borderWidth: 1, borderColor: line('#E9DFD2'), backgroundColor: bg('#FFF') }, dateLabel: { color: fg('#171612'), fontSize: 12, fontWeight: '900' }, dateMonth: { color: fg('#777268'), fontSize: 10, marginTop: 2 },
+  slots: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, slot: { minWidth: 72, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 14, borderWidth: 1, borderColor: line('#E9DFD2'), backgroundColor: bg('#FFF') }, slotTime: { color: fg('#171612'), fontSize: 13, fontWeight: '900' }, slotNote: { color: fg(ORANGE), fontSize: 9, fontWeight: '800', marginTop: 2 }, slotFull: { backgroundColor: bg('#F3EEE8'), borderColor: line('#EEE6DC') }, slotFullText: { color: fg('#B3AAA0') },
+  chipActive: { borderColor: line(ORANGE), backgroundColor: bg(ORANGE) }, chipTextActive: { color: fg('#FFF') },
+  noSlots: { color: fg('#8E2F1A'), fontSize: 12, lineHeight: 18, padding: 12, borderRadius: 12, backgroundColor: bg('#F5D8D1') },
+  stepper: { width: 170, height: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 25, backgroundColor: bg('#FFF') }, stepButton: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' }, stepText: { color: fg(ORANGE), fontSize: 25, fontWeight: '800' }, guestCount: { color: fg('#171612'), fontSize: 18, fontWeight: '900' },
+  primaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, paddingHorizontal: 24, backgroundColor: bg(ORANGE), marginTop: 28 }, primaryText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   disabled: { opacity: 0.6 },
-  notifyNote: { color: '#5F5951', textAlign: 'center', fontSize: 12, lineHeight: 18, marginTop: 12, maxWidth: 360 },
-  pendingNote: { color: '#8E2F1A', textAlign: 'center', fontSize: 13, lineHeight: 19, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: '#F5D8D1', maxWidth: 420 },
-  confirmation: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: CREAM }, check: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: '#FFF', backgroundColor: '#278653', fontSize: 38, fontWeight: '900' }, confirmationTitle: { color: '#171612', fontSize: 28, fontWeight: '900', marginTop: 24 }, confirmationCopy: { color: '#5F5951', textAlign: 'center', fontSize: 15, lineHeight: 23, marginTop: 10 }, reference: { color: ORANGE, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 18 },
-});
+  notifyNote: { color: fg('#5F5951'), textAlign: 'center', fontSize: 12, lineHeight: 18, marginTop: 12, maxWidth: 360 },
+  pendingNote: { color: fg('#8E2F1A'), textAlign: 'center', fontSize: 13, lineHeight: 19, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: bg('#F5D8D1'), maxWidth: 420 },
+  confirmation: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: bg(CREAM) }, check: { width: 70, height: 70, borderRadius: 35, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: fg('#FFF'), backgroundColor: bg('#278653'), fontSize: 38, fontWeight: '900' }, confirmationTitle: { color: fg('#171612'), fontSize: 28, fontWeight: '900', marginTop: 24 }, confirmationCopy: { color: fg('#5F5951'), textAlign: 'center', fontSize: 15, lineHeight: 23, marginTop: 10 }, reference: { color: fg(ORANGE), fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 18 },
+}));

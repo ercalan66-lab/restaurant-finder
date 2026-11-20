@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AlertsCard } from '@/components/owner/alerts-card';
@@ -17,6 +17,7 @@ import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
+import { themedStyles } from '@/theme/theme';
 
 const emptyDetails: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0, seatsPerSlot: 40 };
 
@@ -166,22 +167,22 @@ export default function OwnerDashboardScreen() {
   </ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: OWNER_COLORS.cream },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  safeArea: { flex: 1, backgroundColor: bg(OWNER_COLORS.cream) },
   centered: { alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 18, paddingBottom: 70 },
-  back: { color: OWNER_COLORS.accent, fontSize: 14, fontWeight: '800', marginBottom: 22 },
-  eyebrow: { color: OWNER_COLORS.accent, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: OWNER_COLORS.ink, fontSize: 34, fontWeight: '900', marginTop: 5 },
-  subtitle: { color: OWNER_COLORS.muted, fontSize: 14, lineHeight: 21, marginTop: 6 },
+  back: { color: fg(OWNER_COLORS.accent), fontSize: 14, fontWeight: '800', marginBottom: 22 },
+  eyebrow: { color: fg(OWNER_COLORS.accent), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: fg(OWNER_COLORS.ink), fontSize: 34, fontWeight: '900', marginTop: 5 },
+  subtitle: { color: fg(OWNER_COLORS.muted), fontSize: 14, lineHeight: 21, marginTop: 6 },
   errorBox: { width: '100%', maxWidth: 420 },
-  errorTitle: { color: OWNER_COLORS.ink, fontSize: 22, fontWeight: '900' },
-  reviewCard: { marginTop: 18, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: '#EBD9A8', backgroundColor: '#FFF7DE' },
-  reviewCardRejected: { borderColor: '#E8B7AC', backgroundColor: '#FBE9E5' },
-  reviewTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
-  reviewCopy: { color: '#5A4A40', fontSize: 12, lineHeight: 18, marginTop: 4 },
-  visibilityCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: OWNER_COLORS.line, backgroundColor: '#FFF' },
+  errorTitle: { color: fg(OWNER_COLORS.ink), fontSize: 22, fontWeight: '900' },
+  reviewCard: { marginTop: 18, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: line('#EBD9A8'), backgroundColor: bg('#FFF7DE') },
+  reviewCardRejected: { borderColor: line('#E8B7AC'), backgroundColor: bg('#FBE9E5') },
+  reviewTitle: { color: fg(OWNER_COLORS.ink), fontSize: 15, fontWeight: '900' },
+  reviewCopy: { color: fg('#5A4A40'), fontSize: 12, lineHeight: 18, marginTop: 4 },
+  visibilityCard: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, padding: 15, borderRadius: 18, borderWidth: 1, borderColor: line(OWNER_COLORS.line), backgroundColor: bg('#FFF') },
   visibilityCopy: { flex: 1, gap: 3 },
-  visibilityTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
-  visibilityHelper: { color: OWNER_COLORS.muted, fontSize: 11, lineHeight: 16 },
-});
+  visibilityTitle: { color: fg(OWNER_COLORS.ink), fontSize: 15, fontWeight: '900' },
+  visibilityHelper: { color: fg(OWNER_COLORS.muted), fontSize: 11, lineHeight: 16 },
+}));

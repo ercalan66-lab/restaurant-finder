@@ -1,12 +1,13 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { fetchOverview, type AdminOverview } from '@/data/admin';
 import type { ApprovalStatus } from '@/data/restaurants';
 import { errorMessage } from '@/utils/feedback';
 
 import { ACCENT, formatMoney, LoadError, SectionHeading, type Loadable } from './admin-ui';
+import { themedStyles } from '@/theme/theme';
 
 const loadOverview = (): Promise<Loadable<AdminOverview>> =>
   fetchOverview().then((value) => ({ kind: 'ready' as const, value }), (error: unknown) => ({ kind: 'error' as const, message: errorMessage(error) }));
@@ -60,16 +61,16 @@ function Tile({ attention, caption, onPress, value }: { attention?: boolean; cap
   </Pressable>;
 }
 
-const styles = StyleSheet.create({
-  group: { color: '#8A7164', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 20, marginBottom: 8 },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  group: { color: fg('#8A7164'), fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 20, marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tile: { flexGrow: 1, flexBasis: 100, padding: 14, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 16, backgroundColor: '#FFF' },
-  tileAttention: { borderColor: '#F0B9A8', backgroundColor: '#FDEEE9' },
-  tileValue: { color: '#271812', fontSize: 26, fontWeight: '900' },
-  tileValueAttention: { color: ACCENT },
-  tileCaption: { color: '#71675F', fontSize: 11, fontWeight: '700', marginTop: 4 },
-  sales: { marginTop: 20, padding: 18, borderRadius: 20, backgroundColor: '#271812' },
-  salesLabel: { color: '#F29A52', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  salesValue: { color: '#FFF', fontSize: 28, fontWeight: '900', marginTop: 6 },
-  salesCopy: { color: '#D8CEC8', fontSize: 12, lineHeight: 18, marginTop: 6 },
-});
+  tile: { flexGrow: 1, flexBasis: 100, padding: 14, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 16, backgroundColor: bg('#FFF') },
+  tileAttention: { borderColor: line('#F0B9A8'), backgroundColor: bg('#FDEEE9') },
+  tileValue: { color: fg('#271812'), fontSize: 26, fontWeight: '900' },
+  tileValueAttention: { color: fg(ACCENT) },
+  tileCaption: { color: fg('#71675F'), fontSize: 11, fontWeight: '700', marginTop: 4 },
+  sales: { marginTop: 20, padding: 18, borderRadius: 20, backgroundColor: bg('#271812') },
+  salesLabel: { color: fg('#F29A52'), fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  salesValue: { color: fg('#FFF'), fontSize: 28, fontWeight: '900', marginTop: 6 },
+  salesCopy: { color: fg('#D8CEC8'), fontSize: 12, lineHeight: 18, marginTop: 6 },
+}));

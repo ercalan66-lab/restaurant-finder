@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
@@ -8,6 +8,7 @@ import type { Restaurant } from '@/data/restaurants';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section } from './form-controls';
+import { themedStyles } from '@/theme/theme';
 
 const MAX_GALLERY_PHOTOS = 8;
 type PhotoChanges = Partial<Pick<Restaurant, 'coverUrl' | 'galleryUrls'>>;
@@ -72,18 +73,18 @@ export function PhotoManager({ onUpdated, restaurant }: { onUpdated: (changes: P
   </Section>;
 }
 
-const styles = StyleSheet.create({
-  label: { color: OWNER_COLORS.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 16, marginBottom: 8 },
-  cover: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: '#E9DFD3' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  label: { color: fg(OWNER_COLORS.muted), fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 16, marginBottom: 8 },
+  cover: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16, backgroundColor: bg('#E9DFD3') },
   placeholder: { alignItems: 'center', justifyContent: 'center', gap: 6 },
   placeholderIcon: { fontSize: 34 },
-  placeholderText: { color: OWNER_COLORS.muted, fontSize: 12, fontWeight: '700' },
+  placeholderText: { color: fg(OWNER_COLORS.muted), fontSize: 12, fontWeight: '700' },
   gallery: { gap: 10, paddingTop: 6, paddingRight: 6 },
-  thumb: { width: 132, height: 99, borderRadius: 14, backgroundColor: '#E9DFD3' },
-  removeBadge: { position: 'absolute', top: -6, right: -6, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: OWNER_COLORS.ink },
-  removeText: { color: '#FFF', fontSize: 17, lineHeight: 19, fontWeight: '900' },
-  addTile: { alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#D3C3B5', backgroundColor: '#FFF' },
-  addIcon: { color: OWNER_COLORS.accent, fontSize: 26, fontWeight: '900', lineHeight: 28 },
-  addText: { color: OWNER_COLORS.accent, fontSize: 10, fontWeight: '800', marginTop: 2 },
+  thumb: { width: 132, height: 99, borderRadius: 14, backgroundColor: bg('#E9DFD3') },
+  removeBadge: { position: 'absolute', top: -6, right: -6, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: bg(OWNER_COLORS.ink) },
+  removeText: { color: fg('#FFF'), fontSize: 17, lineHeight: 19, fontWeight: '900' },
+  addTile: { alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: line('#D3C3B5'), backgroundColor: bg('#FFF') },
+  addIcon: { color: fg(OWNER_COLORS.accent), fontSize: 26, fontWeight: '900', lineHeight: 28 },
+  addText: { color: fg(OWNER_COLORS.accent), fontSize: 10, fontWeight: '800', marginTop: 2 },
   inactive: { opacity: 0.55 },
-});
+}));

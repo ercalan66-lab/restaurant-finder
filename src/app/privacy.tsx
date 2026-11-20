@@ -1,8 +1,9 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { APP_NAME, PRIVACY_POLICY_UPDATED, SUPPORT_EMAIL } from '@/constants/app-info';
 import { goBackOrReplace } from '@/utils/navigation';
+import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 
@@ -69,15 +70,15 @@ export default function PrivacyScreen() {
   </ScrollView></SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF8ED' },
+const styles = themedStyles(({ bg, fg }) => ({
+  safeArea: { flex: 1, backgroundColor: bg('#FFF8ED') },
   content: { width: '100%', maxWidth: 680, alignSelf: 'center', padding: 20, paddingBottom: 60 },
-  back: { color: ORANGE, fontSize: 14, fontWeight: '800', marginBottom: 25 },
-  eyebrow: { color: ORANGE, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: '#171612', fontSize: 34, fontWeight: '900', marginTop: 6 },
-  updated: { color: '#918A81', fontSize: 12, marginTop: 4 },
-  intro: { color: '#4F4A43', fontSize: 15, lineHeight: 23, marginTop: 16 },
+  back: { color: fg(ORANGE), fontSize: 14, fontWeight: '800', marginBottom: 25 },
+  eyebrow: { color: fg(ORANGE), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: fg('#171612'), fontSize: 34, fontWeight: '900', marginTop: 6 },
+  updated: { color: fg('#918A81'), fontSize: 12, marginTop: 4 },
+  intro: { color: fg('#4F4A43'), fontSize: 15, lineHeight: 23, marginTop: 16 },
   section: { marginTop: 24 },
-  sectionTitle: { color: '#171612', fontSize: 18, fontWeight: '900', marginBottom: 6 },
-  paragraph: { color: '#4F4A43', fontSize: 14, lineHeight: 21, marginTop: 6 },
-});
+  sectionTitle: { color: fg('#171612'), fontSize: 18, fontWeight: '900', marginBottom: 6 },
+  paragraph: { color: fg('#4F4A43'), fontSize: 14, lineHeight: 21, marginTop: 6 },
+}));

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 
 import { addMenuItem, deleteMenuItem, menuItemError, updateMenuItem, type MenuItemInput } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
@@ -9,6 +9,7 @@ import { formatTsh, isMenuItemAvailable, type MenuItem, type Restaurant } from '
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { Field, formStyles, OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
+import { themedStyles } from '@/theme/theme';
 
 export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu: MenuItem[]) => void; restaurant: Restaurant }) {
   const [busyItem, setBusyItem] = useState<string | null>(null);
@@ -187,28 +188,28 @@ function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => voi
   </Section>;
 }
 
-const styles = StyleSheet.create({
-  empty: { alignItems: 'center', padding: 22, marginTop: 14, borderRadius: 15, backgroundColor: OWNER_COLORS.cream },
-  emptyTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
-  card: { marginTop: 13, padding: 14, borderWidth: 1, borderColor: OWNER_COLORS.line, borderRadius: 16, backgroundColor: '#FFF' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  empty: { alignItems: 'center', padding: 22, marginTop: 14, borderRadius: 15, backgroundColor: bg(OWNER_COLORS.cream) },
+  emptyTitle: { color: fg(OWNER_COLORS.ink), fontSize: 15, fontWeight: '900' },
+  card: { marginTop: 13, padding: 14, borderWidth: 1, borderColor: line(OWNER_COLORS.line), borderRadius: 16, backgroundColor: bg('#FFF') },
   cardTop: { flexDirection: 'row', gap: 13 },
-  photo: { width: 96, height: 72, borderRadius: 12, backgroundColor: '#E9DFD3' },
+  photo: { width: 96, height: 72, borderRadius: 12, backgroundColor: bg('#E9DFD3') },
   photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   photoIcon: { fontSize: 24 },
-  photoAction: { color: OWNER_COLORS.accent, fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 5 },
+  photoAction: { color: fg(OWNER_COLORS.accent), fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 5 },
   copy: { flex: 1 },
-  name: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
-  ingredients: { color: OWNER_COLORS.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
-  price: { color: OWNER_COLORS.accent, fontSize: 12, fontWeight: '900', marginTop: 6 },
-  serving: { color: OWNER_COLORS.muted, fontSize: 10, marginTop: 4 },
+  name: { color: fg(OWNER_COLORS.ink), fontSize: 15, fontWeight: '900' },
+  ingredients: { color: fg(OWNER_COLORS.muted), fontSize: 11, lineHeight: 16, marginTop: 3 },
+  price: { color: fg(OWNER_COLORS.accent), fontSize: 12, fontWeight: '900', marginTop: 6 },
+  serving: { color: fg(OWNER_COLORS.muted), fontSize: 10, marginTop: 4 },
   availabilityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 6 },
-  status: { alignSelf: 'flex-start', color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' },
-  unavailable: { color: '#8E2F1A', backgroundColor: '#F5D8D1' },
-  stockLabel: { color: OWNER_COLORS.muted, fontSize: 9, marginTop: 5 },
-  label: { color: OWNER_COLORS.muted, fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 8 },
+  status: { alignSelf: 'flex-start', color: fg('#28734D'), backgroundColor: bg('#E8F5ED'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' },
+  unavailable: { color: fg('#8E2F1A'), backgroundColor: bg('#F5D8D1') },
+  stockLabel: { color: fg(OWNER_COLORS.muted), fontSize: 9, marginTop: 5 },
+  label: { color: fg(OWNER_COLORS.muted), fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 15, marginBottom: 8 },
   newPhotoRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   newPhotoActions: { gap: 6 },
   cardActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  editTitle: { color: OWNER_COLORS.ink, fontSize: 15, fontWeight: '900' },
+  editTitle: { color: fg(OWNER_COLORS.ink), fontSize: 15, fontWeight: '900' },
   cancelRow: { alignItems: 'center', marginTop: 10 },
-});
+}));

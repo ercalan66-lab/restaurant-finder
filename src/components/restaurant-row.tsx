@@ -1,8 +1,9 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { RestaurantCard } from '@/components/restaurant-card';
 import type { HomeSection } from '@/data/home-sections';
 import type { RestaurantSummary } from '@/data/restaurants';
+import { themedStyles } from '@/theme/theme';
 
 const CARD_WIDTH = 236;
 
@@ -32,10 +33,10 @@ export function RestaurantRow({ isSaved, onToggleSaved, section, userDistanceOf 
   </View>;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(({ fg }) => ({
   section: { marginTop: 26 },
-  title: { color: '#171612', fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
-  caption: { color: '#777268', fontSize: 12, marginTop: 3, marginBottom: 12 },
+  title: { color: fg('#171612'), fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
+  caption: { color: fg('#777268'), fontSize: 12, marginTop: 3, marginBottom: 12 },
   row: { gap: 12, paddingRight: 16 },
   card: { width: CARD_WIDTH, marginBottom: 4 },
-});
+}));

@@ -1,13 +1,14 @@
 import * as Location from 'expo-location';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { updateRestaurant } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
+import { themedStyles } from '@/theme/theme';
 
 type Changes = Pick<Restaurant, 'latitude' | 'longitude'>;
 
@@ -55,10 +56,10 @@ export function LocationManager({ onUpdated, restaurant }: { onUpdated: (changes
   </Section>;
 }
 
-const styles = StyleSheet.create({
-  status: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: OWNER_COLORS.line, backgroundColor: '#FFF' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  status: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: line(OWNER_COLORS.line), backgroundColor: bg('#FFF') },
   icon: { fontSize: 28 },
   copy: { flex: 1 },
-  title: { color: OWNER_COLORS.ink, fontSize: 14, fontWeight: '900' },
-  helper: { color: OWNER_COLORS.muted, fontSize: 12, lineHeight: 17, marginTop: 2 },
-});
+  title: { color: fg(OWNER_COLORS.ink), fontSize: 14, fontWeight: '900' },
+  helper: { color: fg(OWNER_COLORS.muted), fontSize: 12, lineHeight: 17, marginTop: 2 },
+}));

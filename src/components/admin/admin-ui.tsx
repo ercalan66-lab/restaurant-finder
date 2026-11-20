@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { themedStyles } from '@/theme/theme';
 
 export const ACCENT = '#B93F1D';
 
@@ -74,37 +75,37 @@ export function LoadError({ message, onRetry }: { message: string; onRetry: () =
   </View>;
 }
 
-export const adminStyles = StyleSheet.create({
+export const adminStyles = themedStyles(({ bg, fg, line }) => ({
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginTop: 22 },
   headingCopy: { flex: 1 },
-  sectionTitle: { color: '#271812', fontSize: 22, fontWeight: '900' },
-  helper: { color: '#71675F', fontSize: 13, lineHeight: 19, marginTop: 6 },
+  sectionTitle: { color: fg('#271812'), fontSize: 22, fontWeight: '900' },
+  helper: { color: fg('#71675F'), fontSize: 13, lineHeight: 19, marginTop: 6 },
   center: { textAlign: 'center' },
-  refresh: { color: ACCENT, fontSize: 12, fontWeight: '900', paddingVertical: 6 },
-  link: { color: ACCENT, fontSize: 12, fontWeight: '800', marginTop: 10 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 4, borderRadius: 16, backgroundColor: '#F4EAE1', marginTop: 16 },
+  refresh: { color: fg(ACCENT), fontSize: 12, fontWeight: '900', paddingVertical: 6 },
+  link: { color: fg(ACCENT), fontSize: 12, fontWeight: '800', marginTop: 10 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, padding: 4, borderRadius: 16, backgroundColor: bg('#F4EAE1'), marginTop: 16 },
   chip: { flexGrow: 1, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 8, borderRadius: 12 },
-  chipActive: { backgroundColor: '#FFF' },
-  chipText: { color: '#7B7068', fontSize: 11, fontWeight: '800' },
-  chipTextActive: { color: ACCENT },
-  card: { marginTop: 12, padding: 16, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 18, backgroundColor: '#FFF' },
+  chipActive: { backgroundColor: bg('#FFF') },
+  chipText: { color: fg('#7B7068'), fontSize: 11, fontWeight: '800' },
+  chipTextActive: { color: fg(ACCENT) },
+  card: { marginTop: 12, padding: 16, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 18, backgroundColor: bg('#FFF') },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   cardCopy: { flex: 1 },
-  eyebrow: { color: ACCENT, fontSize: 9, fontWeight: '900', letterSpacing: 0.7 },
-  name: { color: '#271812', fontSize: 17, fontWeight: '900', marginTop: 2 },
-  meta: { color: '#71675F', fontSize: 12, lineHeight: 18, marginTop: 4 },
-  label: { color: '#71675F', fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 14, marginBottom: 6 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 12, paddingHorizontal: 12, color: '#271812', backgroundColor: '#FFF' },
+  eyebrow: { color: fg(ACCENT), fontSize: 9, fontWeight: '900', letterSpacing: 0.7 },
+  name: { color: fg('#271812'), fontSize: 17, fontWeight: '900', marginTop: 2 },
+  meta: { color: fg('#71675F'), fontSize: 12, lineHeight: 18, marginTop: 4 },
+  label: { color: fg('#71675F'), fontSize: 9, fontWeight: '900', letterSpacing: 0.7, marginTop: 14, marginBottom: 6 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 12, paddingHorizontal: 12, color: fg('#271812'), backgroundColor: bg('#FFF') },
   search: { marginTop: 14 },
   multiline: { minHeight: 76, paddingTop: 12, textAlignVertical: 'top' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
-  action: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 20, backgroundColor: ACCENT },
-  actionSecondary: { borderWidth: 1, borderColor: '#D9C8BC', backgroundColor: '#FFF' },
-  actionText: { color: '#FFF', fontSize: 11, fontWeight: '900' },
-  actionSecondaryText: { color: '#8E2F1A' },
+  action: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 20, backgroundColor: bg(ACCENT) },
+  actionSecondary: { borderWidth: 1, borderColor: line('#D9C8BC'), backgroundColor: bg('#FFF') },
+  actionText: { color: fg('#FFF'), fontSize: 11, fontWeight: '900' },
+  actionSecondaryText: { color: fg('#8E2F1A') },
   disabled: { opacity: 0.55 },
-  badge: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' },
-  badgeAttention: { color: '#8E2F1A', backgroundColor: '#F5D8D1' },
-  empty: { alignItems: 'center', padding: 26, marginTop: 14, borderRadius: 16, backgroundColor: '#FFF' },
-  emptyTitle: { color: '#271812', fontSize: 16, fontWeight: '900' },
-});
+  badge: { color: fg('#28734D'), backgroundColor: bg('#E8F5ED'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' },
+  badgeAttention: { color: fg('#8E2F1A'), backgroundColor: bg('#F5D8D1') },
+  empty: { alignItems: 'center', padding: 26, marginTop: 14, borderRadius: 16, backgroundColor: bg('#FFF') },
+  emptyTitle: { color: fg('#271812'), fontSize: 16, fontWeight: '900' },
+}));

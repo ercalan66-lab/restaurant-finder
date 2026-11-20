@@ -1,8 +1,9 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { FOOD_CARD_WIDTH, FoodCard } from '@/components/food-card';
 import type { FoodSection } from '@/data/food-sections';
 import type { RestaurantSummary } from '@/data/restaurants';
+import { themedStyles } from '@/theme/theme';
 
 type Props = {
   section: FoodSection;
@@ -30,11 +31,11 @@ export function FoodRow({ distanceOf, isSaved, onToggleSaved, section }: Props) 
   </View>;
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles(({ bg, fg, line }) => ({
   section: { marginTop: 26 },
-  title: { color: '#171612', fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
-  caption: { color: '#777268', fontSize: 12, marginTop: 3, marginBottom: 12 },
+  title: { color: fg('#171612'), fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
+  caption: { color: fg('#777268'), fontSize: 12, marginTop: 3, marginBottom: 12 },
   row: { gap: 12, paddingRight: 16, paddingBottom: 4 },
-  empty: { minHeight: 64, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#E3D3C3', backgroundColor: '#FFFBF6', maxWidth: FOOD_CARD_WIDTH * 2 + 12 },
-  emptyText: { color: '#8A7164', fontSize: 12, lineHeight: 17 },
-});
+  empty: { minHeight: 64, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed', borderColor: line('#E3D3C3'), backgroundColor: bg('#FFFBF6'), maxWidth: FOOD_CARD_WIDTH * 2 + 12 },
+  emptyText: { color: fg('#8A7164'), fontSize: 12, lineHeight: 17 },
+}));

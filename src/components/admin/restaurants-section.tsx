@@ -1,12 +1,13 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { fetchRestaurantsForReview, reviewRestaurant, updateListing } from '@/data/admin';
 import type { ApprovalStatus, RestaurantSummary } from '@/data/restaurants';
 import { errorMessage, showMessage } from '@/utils/feedback';
 
 import { Action, adminStyles, Chips, Empty, LoadError, SearchField, SectionHeading, type Loadable } from './admin-ui';
+import { themedStyles } from '@/theme/theme';
 
 const loadRestaurants = (): Promise<Loadable<RestaurantSummary[]>> =>
   fetchRestaurantsForReview().then((value) => ({ kind: 'ready' as const, value }), (error: unknown) => ({ kind: 'error' as const, message: errorMessage(error) }));
@@ -122,11 +123,11 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
   </View>;
 }
 
-const styles = StyleSheet.create({
-  description: { color: '#4E453F', fontSize: 12, lineHeight: 18, marginTop: 8 },
-  reason: { color: '#8E2F1A', fontSize: 12, lineHeight: 18, marginTop: 8, padding: 10, borderRadius: 10, backgroundColor: '#FBE9E5' },
-  hidden: { color: '#6B5A30', backgroundColor: '#FFF7DE', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' },
+const styles = themedStyles(({ bg, fg }) => ({
+  description: { color: fg('#4E453F'), fontSize: 12, lineHeight: 18, marginTop: 8 },
+  reason: { color: fg('#8E2F1A'), fontSize: 12, lineHeight: 18, marginTop: 8, padding: 10, borderRadius: 10, backgroundColor: bg('#FBE9E5') },
+  hidden: { color: fg('#6B5A30'), backgroundColor: bg('#FFF7DE'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' },
   listing: { flexDirection: 'row', gap: 10 },
   listingField: { width: 110 },
   listingTag: { flex: 1 },
-});
+}));

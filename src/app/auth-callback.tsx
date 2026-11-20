@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import { router, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PASSWORD_RULE, passwordProblem } from '@/data/auth';
@@ -9,6 +9,7 @@ import { parseAuthLink } from '@/utils/auth-link';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goHome } from '@/utils/navigation';
 import { supabase } from '../../lib/supabase';
+import { themedStyles } from '@/theme/theme';
 
 const ACCENT = '#B93F1D';
 
@@ -94,16 +95,16 @@ function NewPasswordForm() {
   </View>;
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFF8EE' },
+const styles = themedStyles(({ bg, fg, line }) => ({
+  safeArea: { flex: 1, backgroundColor: bg('#FFF8EE') },
   content: { width: '100%', maxWidth: 560, alignSelf: 'center', padding: 22, paddingTop: 48, paddingBottom: 60 },
-  eyebrow: { color: ACCENT, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: '#271812', fontSize: 30, fontWeight: '900', marginTop: 6 },
-  helper: { color: '#71675F', fontSize: 14, lineHeight: 21, marginTop: 10 },
+  eyebrow: { color: fg(ACCENT), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: fg('#271812'), fontSize: 30, fontWeight: '900', marginTop: 6 },
+  helper: { color: fg('#71675F'), fontSize: 14, lineHeight: 21, marginTop: 10 },
   spinner: { marginTop: 28 },
-  label: { color: '#71675F', fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 20, marginBottom: 7 },
-  input: { height: 50, borderWidth: 1, borderColor: '#EADFD3', borderRadius: 14, paddingHorizontal: 15, color: '#271812', backgroundColor: '#FFF' },
-  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: ACCENT, marginTop: 25 },
-  buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  label: { color: fg('#71675F'), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 20, marginBottom: 7 },
+  input: { height: 50, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 14, paddingHorizontal: 15, color: fg('#271812'), backgroundColor: bg('#FFF') },
+  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: bg(ACCENT), marginTop: 25 },
+  buttonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   disabled: { opacity: 0.6 },
-});
+}));
