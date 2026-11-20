@@ -59,7 +59,7 @@ export default function OrderScreen() {
     if (phone.replace(/\D/g, '').length < 7) return Alert.alert('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return Alert.alert('Invalid email', 'Enter a valid email address or leave it blank.');
     if (fulfillment === 'Delivery' && !address.trim()) return Alert.alert('Delivery address needed', 'Enter the address for your delivery.');
-    const reference = newReference('FO');
+    const reference = newReference('KO');
     const guest = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
       setSubmitting(true);

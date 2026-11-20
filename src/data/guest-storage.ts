@@ -165,10 +165,11 @@ const orderRow = (order: OrderRecord) => ({
 });
 
 /**
- * Customer-facing reference such as "FO-7K2M9QX4". Eight random base-36 characters keep collisions between
+ * Customer-facing reference such as "KO-7K2M9QX4" (KO = Kwetu order, KB = Kwetu booking; requests made
+ * before the rename keep their FO-/FR- codes). Eight random base-36 characters keep collisions between
  * customers negligible, which matters because a duplicate reference is treated as "already sent".
  */
-export function newReference(prefix: 'FO' | 'FR') {
+export function newReference(prefix: 'KO' | 'KB') {
   const random = `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
   return `${prefix}-${random.slice(0, 8).toUpperCase()}`;
 }

@@ -1,9 +1,10 @@
 import { router, type Href } from 'expo-router';
 import Storage from 'expo-sqlite/kv-store';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PhotoBackground } from '@/components/photo-background';
 import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
 import { formatTsh, isOpenNow, useRestaurants, type RestaurantSummary } from '@/data/restaurants';
 
@@ -83,13 +84,13 @@ export default function HomeScreen() {
       <View style={styles.searchBox}><Text style={styles.searchIcon}>⌕</Text><TextInput accessibilityLabel="Search restaurants or cuisines" onChangeText={setQuery} placeholder="Search restaurants or cuisines..." placeholderTextColor="#8A847B" returnKeyType="search" style={styles.searchInput} value={query} /></View>
       <Pressable accessibilityLabel="Filter restaurants" onPress={() => setFiltersOpen(true)} style={styles.filterButton}><Text style={styles.filterIcon}>☷</Text>{filterCount > 0 && <View style={styles.filterCount}><Text style={styles.filterCountText}>{filterCount}</Text></View>}</Pressable>
     </View>
-    <ImageBackground imageStyle={styles.heroImage} source={require('../../assets/images/restaurant-hero.jpg')} style={styles.hero}>
+    <PhotoBackground imageStyle={styles.heroImage} source={require('../../assets/images/restaurant-hero.jpg')} style={styles.hero}>
       <View style={styles.heroOverlay} /><View style={styles.heroContent}>
         <Text style={styles.pill}>NEAR YOU NOW</Text><Text style={styles.heroTitle}>Find your next <Text style={styles.heroAccent}>favorite.</Text></Text>
         <Text style={styles.heroDescription}>Discover local restaurants, reserve your table, or order a meal.</Text>
         <Pressable onPress={showAll} style={styles.cta}><Text style={styles.ctaText}>FIND A RESTAURANT</Text><View style={styles.ctaArrow}><Text style={styles.orangeText}>→</Text></View></Pressable>
       </View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
-    </ImageBackground>
+    </PhotoBackground>
     <ScrollView contentContainerStyle={styles.categories} horizontal showsHorizontalScrollIndicator={false}>
       {cuisines.map((cuisine) => { const active = cuisine.name === activeCuisine && !savedOnly; return <Pressable key={cuisine.name} onPress={() => { setActiveCuisine(cuisine.name); setSavedOnly(false); }} style={styles.category}><View style={[styles.categoryCircle, active && styles.categoryCircleActive]}><Text style={styles.categoryIcon}>{cuisine.icon}</Text></View><Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{cuisine.name}</Text></Pressable>; })}
     </ScrollView>
@@ -102,9 +103,9 @@ export default function HomeScreen() {
       contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
       data={visibleRestaurants} key={columns} keyExtractor={(item) => String(item.id)} ListHeaderComponent={header} numColumns={columns} showsVerticalScrollIndicator={false}
       ListEmptyComponent={restaurants ? <View style={styles.empty}><Text style={styles.emptyTitle}>No restaurants match</Text><Text style={styles.emptyCopy}>Try another search or clear the current filters.</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>Clear filters</Text></Pressable></View> : <View style={styles.empty}><Text style={styles.emptyCopy}>Finding restaurants near you…</Text></View>}
-      ListFooterComponent={<ImageBackground imageStyle={styles.offerImage} source={require('../../assets/images/restaurant-offer.jpg')} style={styles.offer}><View style={styles.offerOverlay} /><View style={styles.offerCopy}><Text style={styles.offerEyebrow}>PICK OF THE WEEK</Text><Text style={styles.offerTitle}>Dinner plans,{`\n`}sorted.</Text><Text style={styles.offerCaption}>Top-rated tables less than 2 km away.</Text></View></ImageBackground>}
+      ListFooterComponent={<PhotoBackground imageStyle={styles.offerImage} source={require('../../assets/images/restaurant-offer.jpg')} style={styles.offer}><View style={styles.offerOverlay} /><View style={styles.offerCopy}><Text style={styles.offerEyebrow}>PICK OF THE WEEK</Text><Text style={styles.offerTitle}>Dinner plans,{`\n`}sorted.</Text><Text style={styles.offerCaption}>Top-rated tables less than 2 km away.</Text></View></PhotoBackground>}
       renderItem={({ item }) => <Pressable accessibilityRole="button" onPress={() => router.push(`/restaurant/${item.id}` as Href)} style={styles.card}>
-        <ImageBackground source={item.coverUrl ? { uri: item.coverUrl } : undefined} style={styles.cardPhoto}><View style={styles.photoShade} />{item.tag ? <Text style={styles.tag}>{item.tag.toUpperCase()}</Text> : null}<Pressable accessibilityLabel={`${saved.has(item.id) ? 'Remove' : 'Add'} saved restaurant`} hitSlop={8} onPress={() => toggleSaved(item.id)} style={styles.saveButton}><Text style={[styles.saveIcon, saved.has(item.id) && styles.orangeText]}>{saved.has(item.id) ? '♥' : '♡'}</Text></Pressable><Text style={styles.distance}>{distanceLabel(item)}</Text></ImageBackground>
+        <PhotoBackground source={item.coverUrl ? { uri: item.coverUrl } : undefined} style={styles.cardPhoto}><View style={styles.photoShade} />{item.tag ? <Text style={styles.tag}>{item.tag.toUpperCase()}</Text> : null}<Pressable accessibilityLabel={`${saved.has(item.id) ? 'Remove' : 'Add'} saved restaurant`} hitSlop={8} onPress={() => toggleSaved(item.id)} style={styles.saveButton}><Text style={[styles.saveIcon, saved.has(item.id) && styles.orangeText]}>{saved.has(item.id) ? '♥' : '♡'}</Text></Pressable><Text style={styles.distance}>{distanceLabel(item)}</Text></PhotoBackground>
         <View style={styles.cardBody}><View style={styles.titleLine}><Text numberOfLines={1} style={styles.cardTitle}>{item.name}</Text><Text style={styles.rating}>{ratingLabel(item)}</Text></View><Text style={styles.meta}>{item.cuisine} · {item.area}</Text><View style={styles.cardFooter}><Text style={styles.price}>{item.pricePerPerson > 0 ? formatTsh(item.pricePerPerson) : '—'}</Text>{isOpenNow(item) ? <Text style={styles.open}>OPEN NOW</Text> : <Text style={[styles.open, styles.closed]}>CLOSED</Text>}</View>{item.pricePerPerson > 0 && <Text style={styles.perPerson}>per person</Text>}</View>
       </Pressable>}
     />

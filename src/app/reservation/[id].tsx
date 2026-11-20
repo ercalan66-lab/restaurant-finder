@@ -63,7 +63,7 @@ export default function ReservationScreen() {
     if (phone.replace(/\D/g, '').length < 7) return Alert.alert('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
     if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return Alert.alert('Invalid email', 'Enter a valid email address or leave it blank.');
     if (!selectedTime) return Alert.alert('Choose a time', `Pick a time with room for ${guests} ${guests === 1 ? 'guest' : 'guests'}.`);
-    const reference = newReference('FR');
+    const reference = newReference('KB');
     const profile = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
       setSubmitting(true);
