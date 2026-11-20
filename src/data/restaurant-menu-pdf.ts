@@ -1,5 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 
+import { t } from '@/i18n';
 import { supabase } from '../../lib/supabase';
 
 const BUCKET = 'restaurant-menus';
@@ -16,8 +17,8 @@ export async function pickMenuPdf() {
 /** Uploads to `<restaurant id>/…` (the storage policy requires this layout) and returns the public URL. */
 export async function uploadMenuPdf(restaurantId: number, file: DocumentPicker.DocumentPickerAsset) {
   const isPdf = file.mimeType === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-  if (!isPdf) throw new Error('Please choose a PDF file.');
-  if (file.size && file.size > MAX_MENU_PDF_MB * 1024 * 1024) throw new Error(`The PDF is larger than ${MAX_MENU_PDF_MB} MB. Please choose a smaller file.`);
+  if (!isPdf) throw new Error(t('pdf.notPdf'));
+  if (file.size && file.size > MAX_MENU_PDF_MB * 1024 * 1024) throw new Error(t('pdf.tooLarge', { mb: MAX_MENU_PDF_MB }));
   const body = await (await fetch(file.uri)).arrayBuffer();
   const path = `${restaurantId}/menu-${Date.now()}.pdf`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType: 'application/pdf', upsert: false });

@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 
+import { t } from '@/i18n';
 import { supabase } from '../../lib/supabase';
 
 const BUCKET = 'restaurant-photos';
@@ -31,7 +32,7 @@ function contentTypeOf(asset: ImagePicker.ImagePickerAsset) {
 export async function uploadRestaurantPhoto(restaurantId: number, asset: ImagePicker.ImagePickerAsset, folder: PhotoFolder) {
   const contentType = contentTypeOf(asset);
   const extension = EXTENSIONS[contentType];
-  if (!extension) throw new Error('Please choose a JPG, PNG, or WebP photo.');
+  if (!extension) throw new Error(t('photos.badType'));
   const body = await (await fetch(asset.uri)).arrayBuffer();
   const path = `${restaurantId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType, upsert: false });

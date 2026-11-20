@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { MAX_MENU_PDF_MB, pickMenuPdf, removeMenuPdf, uploadMenuPdf } from '@/data/restaurant-menu-pdf';
 import type { Restaurant } from '@/data/restaurants';
+import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
@@ -27,38 +28,38 @@ export function MenuPdfManager({ onUpdated, restaurant }: { onUpdated: (changes:
       await updateRestaurant(restaurant.id, { menuPdfUrl: uploaded });
       onUpdated({ menuPdfUrl: uploaded });
       void removeMenuPdf(current);
-      showMessage('Menu published', `Customers can now view and download ${file.name} from your page.`);
+      showMessage(t('pdf.published'), t('pdf.publishedBody', { file: file.name }));
     } catch (error) {
       void removeMenuPdf(uploaded);
-      showMessage('Could not upload the menu', errorMessage(error));
+      showMessage(t('pdf.uploadFailed'), errorMessage(error));
     } finally {
       setBusy(false);
     }
   };
 
-  const remove = () => confirmAction('Remove the menu PDF?', 'Customers will no longer be able to view or download it.', 'Remove', () => {
+  const remove = () => confirmAction(t('pdf.removeTitle'), t('pdf.removeBody'), t('menu.remove'), () => {
     setBusy(true);
     updateRestaurant(restaurant.id, { menuPdfUrl: null })
       .then(() => { onUpdated({ menuPdfUrl: null }); void removeMenuPdf(current); })
-      .catch((error: unknown) => showMessage('Could not remove the menu', errorMessage(error)))
+      .catch((error: unknown) => showMessage(t('pdf.removeFailed'), errorMessage(error)))
       .finally(() => setBusy(false));
   });
 
-  return <Section helper={`Upload your full printed menu as a PDF (up to ${MAX_MENU_PDF_MB} MB). Customers can open or download it from your page, next to the dishes listed below.`} title="Menu PDF">
+  return <Section helper={t('pdf.helper', { mb: MAX_MENU_PDF_MB })} title={t('pdf.title')}>
     {current
       ? <View style={styles.file}>
         <Text style={styles.fileIcon}>📄</Text>
         <View style={styles.fileCopy}>
-          <Text style={styles.fileTitle}>Menu PDF is published</Text>
-          <TextButton disabled={busy} label="Open it ›" onPress={() => void WebBrowser.openBrowserAsync(current)} />
+          <Text style={styles.fileTitle}>{t('pdf.isPublished')}</Text>
+          <TextButton disabled={busy} label={t('pdf.open')} onPress={() => void WebBrowser.openBrowserAsync(current)} />
         </View>
       </View>
       : <View style={styles.file}>
         <Text style={styles.fileIcon}>📄</Text>
-        <View style={styles.fileCopy}><Text style={styles.empty}>No menu PDF yet</Text></View>
+        <View style={styles.fileCopy}><Text style={styles.empty}>{t('pdf.none')}</Text></View>
       </View>}
-    <PrimaryButton busy={busy} busyLabel="Uploading…" disabled={busy} label={current ? 'Replace menu PDF' : 'Upload menu PDF'} onPress={() => void upload()} />
-    {current && <TextButton destructive disabled={busy} label="Remove menu PDF" onPress={remove} />}
+    <PrimaryButton busy={busy} busyLabel={t('common.uploading')} disabled={busy} label={t(current ? 'pdf.replace' : 'pdf.upload')} onPress={() => void upload()} />
+    {current && <TextButton destructive disabled={busy} label={t('pdf.remove')} onPress={remove} />}
   </Section>;
 }
 

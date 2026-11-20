@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { t } from '@/i18n';
 import { themedStyles } from '@/theme/theme';
 
 export const OWNER_COLORS = { accent: '#B93F1D', cream: '#FFF8EE', ink: '#271812', muted: '#71675F', line: '#EADFD3' };
@@ -15,7 +16,7 @@ export function Field({ label, containerStyle, multiline, style, ...props }: Fie
 export function PrimaryButton({ busy, busyLabel, disabled, label, onPress }: { busy?: boolean; busyLabel?: string; disabled?: boolean; label: string; onPress: () => void }) {
   const inactive = busy || disabled;
   return <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: inactive }} disabled={inactive} onPress={onPress} style={[styles.button, inactive && styles.inactive]}>
-    <Text style={styles.buttonText}>{busy ? busyLabel ?? 'Saving…' : label}</Text>
+    <Text style={styles.buttonText}>{busy ? busyLabel ?? t('common.saving') : label}</Text>
   </Pressable>;
 }
 

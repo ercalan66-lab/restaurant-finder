@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { supabase } from '../../lib/supabase';
 import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuItem, type MenuRow, type Restaurant } from './restaurants';
 
@@ -12,20 +13,20 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Returns a message describing the first problem, or null when the details are valid. */
 export function restaurantDetailsError(details: RestaurantDetails): string | null {
-  if (!details.name.trim()) return 'Enter the restaurant name.';
-  if (!details.area.trim() || !details.address.trim()) return 'Enter the area and street address.';
-  if (!TIME_PATTERN.test(details.opensAt) || !TIME_PATTERN.test(details.closesAt)) return 'Use 24-hour HH:MM opening hours, for example 08:00 and 22:00.';
-  if (details.mapUrl.trim() && !/^https?:\/\//i.test(details.mapUrl.trim())) return 'Enter a full Google Maps link beginning with http:// or https://.';
-  if (details.email.trim() && !/^\S+@\S+\.\S+$/.test(details.email.trim())) return 'Enter a valid email address or leave it blank.';
-  if (!Number.isInteger(details.pricePerPerson) || details.pricePerPerson < 0) return 'Enter the average price per person as a whole number.';
-  if (!Number.isInteger(details.seatsPerSlot) || details.seatsPerSlot < 1 || details.seatsPerSlot > 500) return 'Enter how many guests you can seat per booking time (1–500).';
+  if (!details.name.trim()) return t('ownerError.name');
+  if (!details.area.trim() || !details.address.trim()) return t('ownerError.address');
+  if (!TIME_PATTERN.test(details.opensAt) || !TIME_PATTERN.test(details.closesAt)) return t('ownerError.hours');
+  if (details.mapUrl.trim() && !/^https?:\/\//i.test(details.mapUrl.trim())) return t('ownerError.mapUrl');
+  if (details.email.trim() && !/^\S+@\S+\.\S+$/.test(details.email.trim())) return t('request.emailBody');
+  if (!Number.isInteger(details.pricePerPerson) || details.pricePerPerson < 0) return t('ownerError.price');
+  if (!Number.isInteger(details.seatsPerSlot) || details.seatsPerSlot < 1 || details.seatsPerSlot > 500) return t('ownerError.seats');
   return null;
 }
 
 export function menuItemError(item: MenuItemInput): string | null {
-  if (!item.name.trim() || !item.description.trim()) return 'Enter the food name and ingredients.';
-  if (!Number.isInteger(item.price) || item.price <= 0) return 'Enter the price as a whole number of shillings.';
-  if (!TIME_PATTERN.test(item.availableFrom) || !TIME_PATTERN.test(item.availableUntil)) return 'Use 24-hour HH:MM serving hours, for example 08:00 and 22:00.';
+  if (!item.name.trim() || !item.description.trim()) return t('ownerError.food');
+  if (!Number.isInteger(item.price) || item.price <= 0) return t('ownerError.foodPrice');
+  if (!TIME_PATTERN.test(item.availableFrom) || !TIME_PATTERN.test(item.availableUntil)) return t('ownerError.servingHours');
   return null;
 }
 

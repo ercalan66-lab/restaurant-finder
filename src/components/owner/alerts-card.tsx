@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Linking, Text, View } from 'react-native';
 
+import { t, type MessageKey } from '@/i18n';
 import { getPushAvailability, registerDeviceForAccount } from '@/utils/push-notifications';
 
 import { OWNER_COLORS, PrimaryButton } from './form-controls';
@@ -8,12 +9,13 @@ import { themedStyles } from '@/theme/theme';
 
 type AlertsState = 'loading' | 'on' | 'off' | 'blocked' | 'failed' | 'unavailable';
 
-const copy: Record<Exclude<AlertsState, 'loading'>, { title: string; helper: string; action?: string }> = {
-  on: { title: 'New order alerts are on', helper: 'This phone gets a notification for every new order and booking.' },
-  off: { title: 'Get alerts for new orders', helper: 'Be notified the moment a customer orders or books a table, even when the app is closed.', action: 'Turn on alerts' },
-  blocked: { title: 'Alerts are blocked', helper: 'Allow notifications for Kwetu in your phone settings, then come back here.', action: 'Open settings' },
-  failed: { title: 'Alerts could not be set up', helper: 'This phone could not be linked to your account. Check your connection and try again.', action: 'Try again' },
-  unavailable: { title: 'Alerts need the Kwetu app on a phone', helper: 'Order notifications work in the installed app on a real phone, not in a browser or simulator.' },
+// Message keys, not text: the text is looked up when the card renders, in the current language.
+const copy: Record<Exclude<AlertsState, 'loading'>, { title: MessageKey; helper: MessageKey; action?: MessageKey }> = {
+  on: { title: 'alerts.onTitle', helper: 'alerts.onHelp' },
+  off: { title: 'alerts.offTitle', helper: 'alerts.offHelp', action: 'alerts.offAction' },
+  blocked: { title: 'alerts.blockedTitle', helper: 'alerts.blockedHelp', action: 'alerts.blockedAction' },
+  failed: { title: 'alerts.failedTitle', helper: 'alerts.failedHelp', action: 'alerts.failedAction' },
+  unavailable: { title: 'alerts.unavailableTitle', helper: 'alerts.unavailableHelp' },
 };
 
 async function currentState(): Promise<AlertsState> {
@@ -45,9 +47,9 @@ export function AlertsCard() {
   if (state === 'loading') return null;
   const { title, helper, action } = copy[state];
   return <View style={[styles.card, state === 'on' && styles.cardOn]}>
-    <Text style={styles.title}>{state === 'on' ? '🔔 ' : ''}{title}</Text>
-    <Text style={styles.helper}>{helper}</Text>
-    {action ? <PrimaryButton busy={busy} busyLabel="Turning on…" label={action} onPress={() => void act()} /> : null}
+    <Text style={styles.title}>{state === 'on' ? '🔔 ' : ''}{t(title)}</Text>
+    <Text style={styles.helper}>{t(helper)}</Text>
+    {action ? <PrimaryButton busy={busy} busyLabel={t('alerts.turningOn')} label={t(action)} onPress={() => void act()} /> : null}
   </View>;
 }
 

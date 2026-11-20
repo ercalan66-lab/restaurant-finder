@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
 import type { Restaurant } from '@/data/restaurants';
+import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section } from './form-controls';
@@ -30,7 +31,7 @@ export function PhotoManager({ onUpdated, restaurant }: { onUpdated: (changes: P
       return uploaded;
     } catch (error) {
       void removeRestaurantPhoto(uploaded);
-      showMessage('Could not upload photo', errorMessage(error));
+      showMessage(t('photos.uploadFailed'), errorMessage(error));
       return null;
     } finally {
       setBusy(null);
@@ -45,29 +46,29 @@ export function PhotoManager({ onUpdated, restaurant }: { onUpdated: (changes: P
 
   const addGalleryPhoto = () => upload('gallery', [4, 3], (url) => ({ galleryUrls: [...restaurant.galleryUrls, url] }));
 
-  const removeGalleryPhoto = (url: string) => confirmAction('Remove photo?', 'Customers will no longer see this photo.', 'Remove', () => {
+  const removeGalleryPhoto = (url: string) => confirmAction(t('photos.removeTitle'), t('photos.removeBody'), t('menu.remove'), () => {
     const galleryUrls = restaurant.galleryUrls.filter((item) => item !== url);
     updateRestaurant(restaurant.id, { galleryUrls })
       .then(() => { onUpdated({ galleryUrls }); void removeRestaurantPhoto(url); })
-      .catch((error: unknown) => showMessage('Could not remove photo', errorMessage(error)));
+      .catch((error: unknown) => showMessage(t('photos.removeFailed'), errorMessage(error)));
   });
 
-  return <Section helper="The cover appears in search results and at the top of your page. Gallery photos show your dining space." title="Photos">
-    <Text style={styles.label}>COVER PHOTO</Text>
+  return <Section helper={t('photos.helper')} title={t('photos.title')}>
+    <Text style={styles.label}>{t('photos.cover')}</Text>
     {restaurant.coverUrl
-      ? <Image accessibilityLabel="Cover photo" contentFit="cover" source={restaurant.coverUrl} style={styles.cover} transition={200} />
-      : <View style={[styles.cover, styles.placeholder]}><Text style={styles.placeholderIcon}>🏞️</Text><Text style={styles.placeholderText}>No cover photo yet</Text></View>}
-    <PrimaryButton busy={busy === 'cover'} busyLabel="Uploading…" disabled={busy !== null} label={restaurant.coverUrl ? 'Change cover photo' : 'Add cover photo'} onPress={() => void changeCover()} />
+      ? <Image accessibilityLabel={t('photos.coverA11y')} contentFit="cover" source={restaurant.coverUrl} style={styles.cover} transition={200} />
+      : <View style={[styles.cover, styles.placeholder]}><Text style={styles.placeholderIcon}>🏞️</Text><Text style={styles.placeholderText}>{t('photos.noCover')}</Text></View>}
+    <PrimaryButton busy={busy === 'cover'} busyLabel={t('common.uploading')} disabled={busy !== null} label={t(restaurant.coverUrl ? 'photos.changeCover' : 'photos.addCover')} onPress={() => void changeCover()} />
 
-    <Text style={styles.label}>GALLERY ({restaurant.galleryUrls.length}/{MAX_GALLERY_PHOTOS})</Text>
+    <Text style={styles.label}>{t('photos.gallery', { count: restaurant.galleryUrls.length, max: MAX_GALLERY_PHOTOS })}</Text>
     <ScrollView contentContainerStyle={styles.gallery} horizontal showsHorizontalScrollIndicator={false}>
       {restaurant.galleryUrls.map((url) => <View key={url}>
         <Image contentFit="cover" source={url} style={styles.thumb} transition={200} />
-        <Pressable accessibilityLabel="Remove gallery photo" disabled={busy !== null} hitSlop={6} onPress={() => removeGalleryPhoto(url)} style={styles.removeBadge}><Text style={styles.removeText}>×</Text></Pressable>
+        <Pressable accessibilityLabel={t('photos.removeGallery')} disabled={busy !== null} hitSlop={6} onPress={() => removeGalleryPhoto(url)} style={styles.removeBadge}><Text style={styles.removeText}>×</Text></Pressable>
       </View>)}
-      {restaurant.galleryUrls.length < MAX_GALLERY_PHOTOS && <Pressable accessibilityLabel="Add gallery photo" accessibilityRole="button" disabled={busy !== null} onPress={() => void addGalleryPhoto()} style={[styles.thumb, styles.addTile, busy !== null && styles.inactive]}>
+      {restaurant.galleryUrls.length < MAX_GALLERY_PHOTOS && <Pressable accessibilityLabel={t('photos.addGallery')} accessibilityRole="button" disabled={busy !== null} onPress={() => void addGalleryPhoto()} style={[styles.thumb, styles.addTile, busy !== null && styles.inactive]}>
         <Text style={styles.addIcon}>{busy === 'gallery' ? '…' : '+'}</Text>
-        <Text style={styles.addText}>{busy === 'gallery' ? 'Uploading' : 'Add photo'}</Text>
+        <Text style={styles.addText}>{t(busy === 'gallery' ? 'photos.uploading' : 'menu.addPhoto')}</Text>
       </Pressable>}
     </ScrollView>
   </Section>;

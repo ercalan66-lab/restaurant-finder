@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 
 import { updateRestaurant } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
+import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
@@ -22,37 +23,37 @@ export function LocationManager({ onUpdated, restaurant }: { onUpdated: (changes
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted) {
-        showMessage('Location is off', 'Allow location for Kwetu in your phone settings, then try again while you are at the restaurant.');
+        showMessage(t('loc.offTitle'), t('loc.offBody'));
         return;
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const changes = { latitude: position.coords.latitude, longitude: position.coords.longitude };
       confirmAction(
-        'Save this as your restaurant’s location?',
-        'Only do this while you are at the restaurant. Customers will see their distance to this spot.',
-        'Save location',
+        t('loc.confirmTitle'),
+        t('loc.confirmBody'),
+        t('loc.save'),
         () => void updateRestaurant(restaurant.id, changes)
-          .then(() => { onUpdated(changes); showMessage('Location saved', 'Customers can now see how far away your restaurant is.'); })
-          .catch((error: unknown) => showMessage('Could not save the location', errorMessage(error))),
+          .then(() => { onUpdated(changes); showMessage(t('loc.saved'), t('loc.savedBody')); })
+          .catch((error: unknown) => showMessage(t('loc.saveFailed'), errorMessage(error))),
       );
     } catch (error) {
-      showMessage('Could not find your location', errorMessage(error, 'Check that location is turned on, then try again.'));
+      showMessage(t('loc.findFailed'), errorMessage(error, t('loc.findFailedBody')));
     } finally {
       setBusy(false);
     }
   };
 
-  return <Section helper="Customers see how far your restaurant is from them. Stand at the restaurant and tap the button below." title="Location on the map">
+  return <Section helper={t('loc.helper')} title={t('loc.title')}>
     <View style={styles.status}>
       <Text style={styles.icon}>📍</Text>
       <View style={styles.copy}>
-        <Text style={styles.title}>{hasPosition ? 'Location saved' : 'No location yet'}</Text>
+        <Text style={styles.title}>{t(hasPosition ? 'loc.saved' : 'loc.none')}</Text>
         {hasPosition
-          ? <TextButton label="Check it on the map ›" onPress={() => void WebBrowser.openBrowserAsync(`https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`)} />
-          : <Text style={styles.helper}>Until you add it, customers only see your area.</Text>}
+          ? <TextButton label={t('loc.check')} onPress={() => void WebBrowser.openBrowserAsync(`https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`)} />
+          : <Text style={styles.helper}>{t('loc.noneHint')}</Text>}
       </View>
     </View>
-    <PrimaryButton busy={busy} busyLabel="Finding your location…" disabled={busy} label={hasPosition ? 'Update to my current location' : 'Use my current location'} onPress={() => void saveCurrentLocation()} />
+    <PrimaryButton busy={busy} busyLabel={t('loc.finding')} disabled={busy} label={t(hasPosition ? 'loc.update' : 'loc.use')} onPress={() => void saveCurrentLocation()} />
   </Section>;
 }
 

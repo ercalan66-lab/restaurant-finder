@@ -13,6 +13,7 @@ import { RestaurantDetailsForm } from '@/components/owner/restaurant-details-for
 import { OwnerRequests } from '@/components/owner-requests';
 import { createRestaurant, fetchMyRestaurant, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
+import { t } from '@/i18n';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
@@ -38,7 +39,7 @@ async function loadDashboard(): Promise<LoadResult> {
       return { kind: 'redirected' };
     }
     if (data.user.user_metadata?.role !== 'owner') {
-      showMessage('Owner account required', 'Create or sign in with a restaurant-owner account.');
+      showMessage(t('owner.needOwnerTitle'), t('owner.needOwnerBody'));
       router.replace('/profile');
       return { kind: 'redirected' };
     }
@@ -80,10 +81,10 @@ export default function OwnerDashboardScreen() {
     if (!owner) return;
     try {
       setRestaurant(await createRestaurant(owner.id, details));
-      showMessage('Restaurant created', 'Kwetu will review it before customers can see it. Meanwhile, add a cover photo and your menu.');
+      showMessage(t('owner.created'), t('owner.createdBody'));
     } catch (error) {
       const duplicate = typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
-      showMessage('Could not create restaurant', duplicate ? 'This account already has a restaurant. Reopen the dashboard to manage it.' : errorMessage(error));
+      showMessage(t('owner.createFailed'), duplicate ? t('owner.duplicate') : errorMessage(error));
     }
   };
 
@@ -94,9 +95,9 @@ export default function OwnerDashboardScreen() {
       // Saving a rejected restaurant sends it back for review (done by the database).
       const resubmitted = restaurant.approvalStatus === 'rejected';
       update(resubmitted ? { ...details, approvalStatus: 'pending', rejectionReason: '' } : details);
-      showMessage('Saved', resubmitted ? 'Restaurant information updated and sent to Kwetu for review again.' : 'Restaurant information updated.');
+      showMessage(t('owner.saved'), t(resubmitted ? 'owner.savedResubmitted' : 'owner.savedBody'));
     } catch (error) {
-      showMessage('Could not save', errorMessage(error));
+      showMessage(t('owner.saveFailed'), errorMessage(error));
     }
   };
 
@@ -107,58 +108,58 @@ export default function OwnerDashboardScreen() {
       await updateRestaurant(restaurant.id, { isActive });
     } catch (error) {
       update({ isActive: !isActive });
-      showMessage('Could not change visibility', errorMessage(error));
+      showMessage(t('owner.visibilityFailed'), errorMessage(error));
     }
   };
 
   if (status !== 'ready') {
     return <SafeAreaView style={[styles.safeArea, styles.centered]}>
       {status === 'loading'
-        ? <Text style={styles.subtitle}>Loading your restaurant…</Text>
+        ? <Text style={styles.subtitle}>{t('owner.loading')}</Text>
         : <View style={styles.errorBox}>
-          <Text style={styles.errorTitle}>Could not load your restaurant</Text>
+          <Text style={styles.errorTitle}>{t('owner.loadFailed')}</Text>
           <Text style={styles.subtitle}>{loadError}</Text>
-          <Text style={styles.subtitle}>Check your connection. If the app was just updated, make sure the latest Supabase migrations have been run.</Text>
-          <PrimaryButton label="Try again" onPress={retry} />
+          <Text style={styles.subtitle}>{t('owner.loadHelp')}</Text>
+          <PrimaryButton label={t('owner.tryAgain')} onPress={retry} />
         </View>}
     </SafeAreaView>;
   }
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>‹ Back</Text></Pressable>
-    <Text style={styles.eyebrow}>RESTAURANT OWNER</Text>
+    <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>{t('common.back')}</Text></Pressable>
+    <Text style={styles.eyebrow}>{t('owner.eyebrow')}</Text>
 
     {!restaurant
       ? <>
-        <Text style={styles.title}>Set up your restaurant</Text>
-        <Text style={styles.subtitle}>Tell customers about your place. You can add photos and your menu right after.</Text>
-        <Section title="Restaurant details">
-          <RestaurantDetailsForm initial={{ ...emptyDetails, email: owner?.email ?? '', phone: owner?.phone ?? '' }} onSubmit={create} submitLabel="Create restaurant" />
+        <Text style={styles.title}>{t('owner.setupTitle')}</Text>
+        <Text style={styles.subtitle}>{t('owner.setupSubtitle')}</Text>
+        <Section title={t('owner.detailsSection')}>
+          <RestaurantDetailsForm initial={{ ...emptyDetails, email: owner?.email ?? '', phone: owner?.phone ?? '' }} onSubmit={create} submitLabel={t('owner.create')} />
         </Section>
       </>
       : <>
         <Text style={styles.title}>{restaurant.name}</Text>
-        <Text style={styles.subtitle}>Manage what customers see, and handle their orders and bookings.</Text>
+        <Text style={styles.subtitle}>{t('owner.subtitle')}</Text>
         {restaurant.approvalStatus !== 'approved' && <View style={[styles.reviewCard, restaurant.approvalStatus === 'rejected' && styles.reviewCardRejected]}>
-          <Text style={styles.reviewTitle}>{restaurant.approvalStatus === 'pending' ? 'Waiting for approval' : 'Changes needed'}</Text>
+          <Text style={styles.reviewTitle}>{t(restaurant.approvalStatus === 'pending' ? 'owner.pendingTitle' : 'owner.rejectedTitle')}</Text>
           <Text style={styles.reviewCopy}>{restaurant.approvalStatus === 'pending'
-            ? 'Kwetu reviews every new restaurant before customers can see it. You will get a notification when it is approved. Meanwhile, add photos and your menu.'
-            : `${restaurant.rejectionReason || 'Kwetu asked for changes to your listing.'} Update your details and save them to send the restaurant for review again.`}</Text>
+            ? t('owner.pendingBody')
+            : t('owner.rejectedBody', { reason: restaurant.rejectionReason || t('owner.rejectedDefault') })}</Text>
         </View>}
         <View style={styles.visibilityCard}>
           <View style={styles.visibilityCopy}>
-            <Text style={styles.visibilityTitle}>{restaurant.isActive ? 'Visible to customers' : 'Hidden from customers'}</Text>
-            <Text style={styles.visibilityHelper}>{!restaurant.isActive ? 'Turn this on when your page is ready.' : restaurant.approvalStatus === 'approved' ? 'Your restaurant appears in search and accepts orders.' : 'It will appear in search once Kwetu approves it.'}</Text>
-            <TextButton label="View customer page ›" onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} />
+            <Text style={styles.visibilityTitle}>{t(restaurant.isActive ? 'owner.visible' : 'owner.hidden')}</Text>
+            <Text style={styles.visibilityHelper}>{t(!restaurant.isActive ? 'owner.turnOnHint' : restaurant.approvalStatus === 'approved' ? 'owner.liveHint' : 'owner.afterApprovalHint')}</Text>
+            <TextButton label={t('owner.viewPage')} onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} />
           </View>
-          <Switch accessibilityLabel="Visible to customers" onValueChange={(value) => void setVisible(value)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={restaurant.isActive} />
+          <Switch accessibilityLabel={t('owner.visible')} onValueChange={(value) => void setVisible(value)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={restaurant.isActive} />
         </View>
 
         <AlertsCard />
         <OwnerRequests restaurantId={restaurant.id} />
         <PhotoManager onUpdated={update} restaurant={restaurant} />
-        <Section title="Restaurant information">
-          <RestaurantDetailsForm initial={detailsOf(restaurant)} key={restaurant.id} onSubmit={saveDetails} submitLabel="Save restaurant information" />
+        <Section title={t('owner.infoSection')}>
+          <RestaurantDetailsForm initial={detailsOf(restaurant)} key={restaurant.id} onSubmit={saveDetails} submitLabel={t('owner.saveInfo')} />
         </Section>
         <LocationManager onUpdated={update} restaurant={restaurant} />
         <MenuPdfManager onUpdated={update} restaurant={restaurant} />
