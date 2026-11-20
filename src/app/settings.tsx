@@ -43,6 +43,10 @@ export default function SettingsScreen() {
     <Text style={styles.eyebrow}>{APP_NAME.toUpperCase()}</Text>
     <Text accessibilityRole="header" style={styles.title}>{t('settings.title')}</Text>
 
+    <Section title={t('settings.account')}>
+      <LinkRow icon="👤" label={t('settings.profile')} note={t('settings.profileNote')} onPress={() => router.push('/profile' as Href)} />
+    </Section>
+
     <Section title={t('settings.appearance')}>
       {THEME_OPTIONS.map((option) => <Choice hint={t(option.hint)} key={option.value} label={t(option.label)} onPress={() => update({ theme: option.value })} selected={settings.theme === option.value} />)}
     </Section>

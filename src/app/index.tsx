@@ -1,10 +1,9 @@
 import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BottomNav, type NavItem } from '@/components/bottom-nav';
 import { FoodRow } from '@/components/food-row';
 import { LocationPrompt } from '@/components/location-prompt';
 import { PhotoBackground } from '@/components/photo-background';
@@ -13,11 +12,11 @@ import { RestaurantRow } from '@/components/restaurant-row';
 import { SearchResultCard } from '@/components/search-result-card';
 import { foodSections } from '@/data/food-sections';
 import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
-import { homeSections } from '@/data/home-sections';
+import { homeSections, type HomeSection } from '@/data/home-sections';
 import { usePopularDishes } from '@/data/popular-dishes';
 import { isMenuItemAvailable, useRestaurants, type RestaurantSummary } from '@/data/restaurants';
 import { useSavedDishes } from '@/data/saved-dishes';
-import { searchRestaurants, type SearchHit } from '@/data/search';
+import { searchRestaurants } from '@/data/search';
 import { useUserLocation } from '@/data/user-location';
 import { t, tn } from '@/i18n';
 import { distanceTo, type Coords } from '@/utils/distance';
@@ -45,11 +44,9 @@ export default function HomeScreen() {
   const columns = width >= 720 ? 3 : width >= 390 ? 2 : 1;
   const [query, setQuery] = useState('');
   const [saved, setSaved] = useState<Set<number>>(new Set());
-  const [savedOnly, setSavedOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const { offline, restaurants } = useRestaurants();
-  const listRef = useRef<FlatList<SearchHit>>(null);
   const location = useUserLocation();
   const userCoords = location.coords;
   const savedDishes = useSavedDishes();
@@ -67,11 +64,10 @@ export default function HomeScreen() {
 
   const filtered = useMemo(() => (restaurants ?? []).filter((restaurant) => {
     const km = sortingDistance(userCoords, restaurant);
-    return (!savedOnly || saved.has(restaurant.id))
-      && (!filters.maxPrice || restaurant.pricePerPerson <= filters.maxPrice)
+    return (!filters.maxPrice || restaurant.pricePerPerson <= filters.maxPrice)
       && (!filters.minRating || restaurant.rating >= filters.minRating)
       && (!filters.maxDistance || (km != null && km <= filters.maxDistance));
-  }), [filters, restaurants, saved, savedOnly, userCoords]);
+  }), [filters, restaurants, userCoords]);
   // Searching matches restaurant names and the foods on their menus; with no search, hits are every restaurant.
   const searching = query.trim().length > 0;
   const hits = useMemo(() => searchRestaurants(filtered, query), [filtered, query]);
@@ -83,35 +79,31 @@ export default function HomeScreen() {
     void Storage.setItem(SAVED_STORAGE_KEY, JSON.stringify([...next]));
     return next;
   });
-  const showAll = () => { setSavedOnly(false); setQuery(''); setFilters(defaultFilters); };
+  const showAll = () => { setQuery(''); setFilters(defaultFilters); };
   const filterCount = Object.values(filters).filter(Boolean).length;
-  // The curated rows show only while browsing; searching, filtering or Saved shows plain results.
-  const browsing = !savedOnly && !query.trim() && filterCount === 0;
+  // The curated rows show only while browsing; searching or filtering shows plain results.
+  const browsing = !query.trim() && filterCount === 0;
   const foods = useMemo(() => foodSections(restaurants ?? [], {
     popular,
     savedDishIds: savedDishes.saved,
     isAvailable: isMenuItemAvailable,
   }), [restaurants, popular, savedDishes.saved]);
-  const savedFoods = foods.find((section) => section.key === 'saved');
   const foodDistance = (restaurant: Restaurant) => distanceTo(userCoords, restaurant);
-  const sections = useMemo(() => homeSections(restaurants ?? [], {
-    distanceOf: (restaurant) => sortingDistance(userCoords, restaurant),
-    fromUser: userCoords != null,
-  }), [restaurants, userCoords]);
-  const listTitle = searching ? t('home.resultsFor', { query: query.trim() }) : savedOnly ? t('home.savedPlaces') : browsing ? t('home.allRestaurants') : t('home.results');
+  // With no tab bar, saved restaurants get their own row at the top of the restaurant rows.
+  const sections = useMemo(() => {
+    const savedPlaces = (restaurants ?? []).filter((restaurant) => saved.has(restaurant.id));
+    const savedRow: HomeSection[] = savedPlaces.length ? [{ key: 'saved', title: t('rows.saved.title'), caption: t('rows.saved.caption'), restaurants: savedPlaces }] : [];
+    return [...savedRow, ...homeSections(restaurants ?? [], {
+      distanceOf: (restaurant) => sortingDistance(userCoords, restaurant),
+      fromUser: userCoords != null,
+    })];
+  }, [restaurants, saved, userCoords]);
+  const listTitle = searching ? t('home.resultsFor', { query: query.trim() }) : browsing ? t('home.allRestaurants') : t('home.results');
   const countText = !restaurants
     ? t('home.loading')
     : searching
       ? `${tn('count.restaurants', hits.length)}${dishCount ? ` · ${tn('count.matchingFoods', dishCount)}` : ''}`
       : tn('count.placesFound', hits.length);
-  const scrollToTop = () => listRef.current?.scrollToOffset({ offset: 0, animated: true });
-  // Filters stay next to the search box, so the tab bar keeps only the three places people go.
-  const navItems: NavItem[] = [
-    { label: t('nav.home'), icon: { ios: 'house', iosSelected: 'house.fill', android: 'home' }, active: !savedOnly, onPress: () => { showAll(); scrollToTop(); } },
-    { label: t('nav.saved'), icon: { ios: 'heart', iosSelected: 'heart.fill', android: 'favorite' }, active: savedOnly, onPress: () => { setSavedOnly(true); scrollToTop(); } },
-    { label: t('nav.profile'), icon: { ios: 'person.crop.circle', iosSelected: 'person.crop.circle.fill', android: 'account_circle' }, active: false, onPress: () => router.push('/profile' as Href) },
-  ];
-
   const header = <>
     <View style={styles.topbar}>
       <Brand />
@@ -134,16 +126,14 @@ export default function HomeScreen() {
       </View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
     </PhotoBackground>}
     {browsing && foods.map((section) => <FoodRow distanceOf={foodDistance} isSaved={(id) => savedDishes.saved.has(id)} key={section.key} onToggleSaved={savedDishes.toggle} section={section} />)}
-    {savedOnly && !searching && savedFoods && <FoodRow distanceOf={foodDistance} isSaved={(id) => savedDishes.saved.has(id)} onToggleSaved={savedDishes.toggle} section={savedFoods} />}
     {browsing && sections.map((section) => <RestaurantRow isSaved={(id) => saved.has(id)} key={section.key} onToggleSaved={toggleSaved} section={section} userDistanceOf={(restaurant) => distanceTo(userCoords, restaurant)} />)}
     <View style={styles.heading}><View><Text style={styles.sectionTitle}>{listTitle}</Text><Text style={styles.resultCount}>{countText}</Text>{offline && <Text style={styles.offlineNote}>{t('home.offline')}</Text>}</View>{!browsing && <Pressable onPress={showAll}><Text style={styles.viewAll}>{t('home.showAll')} <Text style={styles.orangeText}>→</Text></Text></Pressable>}</View>
   </>;
 
   return <SafeAreaView edges={['top']} style={styles.safeArea}>
     <FlatList
-      ref={listRef}
       columnWrapperStyle={!searching && columns > 1 ? styles.cardRow : undefined}
-      contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
+      contentContainerStyle={[styles.listContent, { paddingBottom: 24 + insets.bottom }]}
       // Search results are one wide card per restaurant (with its foods); browsing keeps the grid.
       data={hits} key={searching ? 'search' : `grid-${columns}`} keyExtractor={(item) => String(item.restaurant.id)} ListHeaderComponent={header} numColumns={searching ? 1 : columns} showsVerticalScrollIndicator={false}
       ListEmptyComponent={!restaurants
@@ -156,7 +146,6 @@ export default function HomeScreen() {
         ? <SearchResultCard distanceKm={distanceTo(userCoords, item.restaurant)} hit={item} onToggleSaved={() => toggleSaved(item.restaurant.id)} saved={saved.has(item.restaurant.id)} />
         : <RestaurantCard distanceKm={distanceTo(userCoords, item.restaurant)} onToggleSaved={() => toggleSaved(item.restaurant.id)} restaurant={item.restaurant} saved={saved.has(item.restaurant.id)} style={styles.gridCard} />}
     />
-    <BottomNav items={navItems} />
     <Modal animationType="slide" onRequestClose={() => setFiltersOpen(false)} transparent visible={filtersOpen}><Pressable onPress={() => setFiltersOpen(false)} style={styles.modalBackdrop}><Pressable onPress={(event) => event.stopPropagation()} style={[styles.filterSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}><View style={styles.filterHeading}><View><Text style={styles.sheetTitle}>{t('filters.title')}</Text><Text style={styles.sheetMeta}>{t('filters.subtitle')}</Text></View><Pressable accessibilityLabel={t('filters.close')} onPress={() => setFiltersOpen(false)}><Text style={styles.closeFilter}>×</Text></Pressable></View><FilterGroup label={t('filters.maxPrice')} options={[[0, t('filters.any')], [50000, 'TSh 50k'], [100000, 'TSh 100k'], [150000, 'TSh 150k']]} selected={filters.maxPrice} onSelect={(maxPrice) => setFilters((current) => ({ ...current, maxPrice }))} /><FilterGroup label={t('filters.minRating')} options={[[0, t('filters.any')], [4.5, '4.5+'], [4.7, '4.7+'], [4.8, '4.8+']]} selected={filters.minRating} onSelect={(minRating) => setFilters((current) => ({ ...current, minRating }))} /><FilterGroup label={t('filters.maxDistance')} options={[[0, t('filters.any')], [1, '1 km'], [2, '2 km'], [5, '5 km']]} selected={filters.maxDistance} onSelect={(maxDistance) => setFilters((current) => ({ ...current, maxDistance }))} /><View style={styles.filterActions}><Pressable onPress={() => setFilters(defaultFilters)} style={styles.clearButton}><Text style={styles.clearButtonText}>{t('filters.clear')}</Text></Pressable><Pressable onPress={() => setFiltersOpen(false)} style={styles.applyButton}><Text style={styles.applyButtonText}>{tn('filters.show', hits.length)}</Text></Pressable></View></Pressable></Pressable></Modal>
   </SafeAreaView>;
 }

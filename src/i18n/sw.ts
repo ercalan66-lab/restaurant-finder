@@ -12,10 +12,7 @@ export const sw: Dictionary = {
   'common.tryAgain': 'Tafadhali jaribu tena.',
   'brand.tagline': 'TAFUTA. ONJA. FURAHIA.',
 
-  // Tab bar and header
-  'nav.home': 'Nyumbani',
-  'nav.saved': 'Vipendwa',
-  'nav.profile': 'Wasifu',
+  // Header
   'nav.settings': 'Mipangilio',
 
   // Home
@@ -28,7 +25,6 @@ export const sw: Dictionary = {
   'home.heroDescription': 'Gundua migahawa ya karibu, hifadhi meza yako, au agiza chakula.',
   'home.heroCta': 'TAFUTA MGAHAWA',
   'home.resultsFor': 'Matokeo ya “{query}”',
-  'home.savedPlaces': 'Sehemu ulizohifadhi',
   'home.allRestaurants': 'Migahawa yote',
   'home.results': 'Matokeo',
   'home.loading': 'Inapakia migahawa…',
@@ -102,6 +98,8 @@ export const sw: Dictionary = {
   'foods.saved.title': 'Vyakula ulivyohifadhi',
   'foods.saved.caption': 'Vyakula ulivyohifadhi kwa ♡',
   'foods.saved.empty': 'Gusa ♡ kwenye chakula chochote ili kukihifadhi hapa.',
+  'rows.saved.title': 'Migahawa uliyohifadhi',
+  'rows.saved.caption': 'Sehemu ulizohifadhi kwa ♡',
   'rows.near.title': 'Migahawa karibu nawe',
   'rows.near.captionUser': 'Iliyo karibu zaidi na ulipo sasa',
   'rows.near.captionEstimate': 'Washa eneo ili kupanga kwa umbali kutoka ulipo',
@@ -122,6 +120,9 @@ export const sw: Dictionary = {
 
   // Settings
   'settings.title': 'Mipangilio',
+  'settings.account': 'Akaunti',
+  'settings.profile': 'Wasifu',
+  'settings.profileNote': 'Maelezo yako, oda na uhifadhi wa meza',
   'settings.appearance': 'Mwonekano',
   'settings.theme.system': 'Sawa na simu yangu',
   'settings.theme.systemHint': 'Mwanga au giza, kufuatana na mpangilio wa simu yako',
@@ -135,15 +136,15 @@ export const sw: Dictionary = {
   'settings.help': 'Msaada',
   'settings.commonQuestions': 'MASWALI YANAYOULIZWA MARA KWA MARA',
   'settings.faq.order.q': 'Ninaagizaje chakula?',
-  'settings.faq.order.a': 'Fungua mgahawa, gusa “Agiza chakula”, chagua vyakula vyako, kisha chagua Kuchukua au Kuletewa na utume. Unaweza kufuatilia oda yako chini ya Wasifu → Shughuli zako.',
+  'settings.faq.order.a': 'Fungua mgahawa, gusa “Agiza chakula”, chagua vyakula vyako, kisha chagua Kuchukua au Kuletewa na utume. Unaweza kufuatilia oda yako chini ya Mipangilio → Wasifu → Shughuli zako.',
   'settings.faq.book.q': 'Ninahifadhije meza?',
-  'settings.faq.book.a': 'Fungua mgahawa, gusa “Hifadhi meza”, kisha chagua tarehe, saa na idadi ya wageni. Mgahawa unathibitisha uhifadhi, na utaona hali yake chini ya Wasifu.',
+  'settings.faq.book.a': 'Fungua mgahawa, gusa “Hifadhi meza”, kisha chagua tarehe, saa na idadi ya wageni. Mgahawa unathibitisha uhifadhi, na utaona hali yake chini ya Mipangilio → Wasifu.',
   'settings.faq.pay.q': 'Ninalipaje?',
   'settings.faq.pay.a': 'Oda za kuchukua hulipwa kwenye kaunta ya mgahawa. Oda za kuletewa hulipwa chakula kikifika: kwenye programu kwa pesa ya simu, au kwa taslimu kwa msambazaji. Malipo ya pesa ya simu kwenye programu bado ni ya majaribio, kwa hiyo hakuna pesa halisi inayohamishwa kwa sasa.',
   'settings.faq.cancel.q': 'Naweza kughairi oda au uhifadhi wa meza?',
-  'settings.faq.cancel.a': 'Ndiyo. Oda zinaweza kughairiwa hadi mgahawa uzikubali, na uhifadhi hadi ukamilike. Fungua Wasifu → Shughuli zako kisha gusa Ghairi.',
+  'settings.faq.cancel.a': 'Ndiyo. Oda zinaweza kughairiwa hadi mgahawa uzikubali, na uhifadhi hadi ukamilike. Fungua Mipangilio → Wasifu → Shughuli zako kisha gusa Ghairi.',
   'settings.faq.owner.q': 'Ninaongezaje mgahawa wangu?',
-  'settings.faq.owner.a': 'Fungua akaunti na uchague “Mmiliki wa mgahawa”. Kisha fungua Wasifu → Fungua dashibodi ya mgahawa na ujaze maelezo, picha na menyu yako. Kwetu hukagua kila mgahawa mpya kabla wateja hawajauona.',
+  'settings.faq.owner.a': 'Fungua akaunti na uchague “Mmiliki wa mgahawa”. Kisha fungua Mipangilio → Wasifu → Fungua dashibodi ya mgahawa na ujaze maelezo, picha na menyu yako. Kwetu hukagua kila mgahawa mpya kabla wateja hawajauona.',
   'settings.faq.location.q': 'Je, Kwetu inashiriki eneo langu?',
   'settings.faq.location.a': 'Hapana. Ukiwasha eneo, linatumika kwenye simu yako tu kuonyesha umbali wa migahawa. Halitumwi kwa Kwetu wala kuhifadhiwa.',
   'settings.contact': 'WASILIANA NASI',

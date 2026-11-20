@@ -7,10 +7,7 @@ export const en = {
   'common.tryAgain': 'Please try again.',
   'brand.tagline': 'FIND. TASTE. ENJOY.',
 
-  // Tab bar and header
-  'nav.home': 'Home',
-  'nav.saved': 'Saved',
-  'nav.profile': 'Profile',
+  // Header
   'nav.settings': 'Settings',
 
   // Home
@@ -23,7 +20,6 @@ export const en = {
   'home.heroDescription': 'Discover local restaurants, reserve your table, or order a meal.',
   'home.heroCta': 'FIND A RESTAURANT',
   'home.resultsFor': 'Results for “{query}”',
-  'home.savedPlaces': 'Saved places',
   'home.allRestaurants': 'All restaurants',
   'home.results': 'Results',
   'home.loading': 'Loading restaurants…',
@@ -97,6 +93,8 @@ export const en = {
   'foods.saved.title': 'Saved foods',
   'foods.saved.caption': 'Foods you saved with ♡',
   'foods.saved.empty': 'Tap ♡ on any food to save it here.',
+  'rows.saved.title': 'Saved restaurants',
+  'rows.saved.caption': 'Places you saved with ♡',
   'rows.near.title': 'Restaurants near you',
   'rows.near.captionUser': 'Closest to where you are now',
   'rows.near.captionEstimate': 'Turn on location to sort by your own distance',
@@ -117,6 +115,9 @@ export const en = {
 
   // Settings
   'settings.title': 'Settings',
+  'settings.account': 'Account',
+  'settings.profile': 'Profile',
+  'settings.profileNote': 'Your details, orders and bookings',
   'settings.appearance': 'Appearance',
   'settings.theme.system': 'Same as my phone',
   'settings.theme.systemHint': 'Light or dark, following your phone setting',
@@ -130,15 +131,15 @@ export const en = {
   'settings.help': 'Help & support',
   'settings.commonQuestions': 'COMMON QUESTIONS',
   'settings.faq.order.q': 'How do I order food?',
-  'settings.faq.order.a': 'Open a restaurant, tap “Order food”, choose your dishes, then pick Pickup or Delivery and send. You can follow the order under Profile → Your activity.',
+  'settings.faq.order.a': 'Open a restaurant, tap “Order food”, choose your dishes, then pick Pickup or Delivery and send. You can follow the order under Settings → Profile → Your activity.',
   'settings.faq.book.q': 'How do I book a table?',
-  'settings.faq.book.a': 'Open a restaurant, tap “Reserve a table”, and choose the date, time and number of guests. The restaurant confirms the booking, and you see the status under Profile.',
+  'settings.faq.book.a': 'Open a restaurant, tap “Reserve a table”, and choose the date, time and number of guests. The restaurant confirms the booking, and you see the status under Settings → Profile.',
   'settings.faq.pay.q': 'How do I pay?',
   'settings.faq.pay.a': 'Pickup orders are paid at the restaurant counter. Delivery orders are paid when the food arrives: in the app by mobile money, or in cash to the rider. In-app mobile money is still in test mode, so no real money moves yet.',
   'settings.faq.cancel.q': 'Can I cancel an order or booking?',
-  'settings.faq.cancel.a': 'Yes. Orders can be cancelled until the restaurant accepts them, and bookings until they are completed. Open Profile → Your activity and tap Cancel.',
+  'settings.faq.cancel.a': 'Yes. Orders can be cancelled until the restaurant accepts them, and bookings until they are completed. Open Settings → Profile → Your activity and tap Cancel.',
   'settings.faq.owner.q': 'How do I add my restaurant?',
-  'settings.faq.owner.a': 'Create an account and choose “Restaurant owner”. Then open Profile → Open restaurant dashboard and fill in your details, photos and menu. Kwetu checks every new restaurant before customers can see it.',
+  'settings.faq.owner.a': 'Create an account and choose “Restaurant owner”. Then open Settings → Profile → Open restaurant dashboard and fill in your details, photos and menu. Kwetu checks every new restaurant before customers can see it.',
   'settings.faq.location.q': 'Does Kwetu share my location?',
   'settings.faq.location.a': 'No. If you turn on location, it is only used on your phone to show how far restaurants are. It is never sent to Kwetu or stored.',
   'settings.contact': 'CONTACT US',

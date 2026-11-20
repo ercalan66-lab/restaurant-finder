@@ -15,7 +15,7 @@ type Props = {
   userDistanceOf: (restaurant: RestaurantSummary) => number | null;
 };
 
-/** One home screen row ("Near you", "Most reviewed", "New on Kwetu") that scrolls sideways. */
+/** One home screen row ("Saved", "Near you", "Most reviewed", "New on Kwetu") that scrolls sideways. */
 export function RestaurantRow({ isSaved, onToggleSaved, section, userDistanceOf }: Props) {
   return <View style={styles.section}>
     <Text accessibilityRole="header" style={styles.title}>{section.title}</Text>

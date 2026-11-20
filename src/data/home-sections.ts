@@ -6,7 +6,7 @@ export const ROW_SIZE = 10;
 export const NEW_WITHIN_DAYS = 60;
 const DAY_MS = 86_400_000;
 
-export type HomeSection = { key: 'near' | 'popular' | 'new'; title: string; caption: string; restaurants: RestaurantSummary[] };
+export type HomeSection = { key: 'saved' | 'near' | 'popular' | 'new'; title: string; caption: string; restaurants: RestaurantSummary[] };
 
 type Options = {
   /** Kilometres from the person to a restaurant, or null when unknown. */

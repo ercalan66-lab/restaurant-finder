@@ -46,7 +46,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
   {
     title: 'Deleting your data',
     body: [
-      'Signed-in users can delete their account at any time from Profile → Delete account. This removes the account, removes your name, phone number and address from past orders and bookings, hides any restaurant you own, and clears the data saved on your phone.',
+      'Signed-in users can delete their account at any time from Settings → Profile → Delete account. This removes the account, removes your name, phone number and address from past orders and bookings, hides any restaurant you own, and clears the data saved on your phone.',
       'If you use the app without an account, your details are stored only on your phone and are removed when you uninstall the app.',
     ],
   },
