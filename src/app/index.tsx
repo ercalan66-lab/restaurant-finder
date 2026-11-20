@@ -1,4 +1,5 @@
 import { router, type Href } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -114,7 +115,9 @@ export default function HomeScreen() {
     <View style={styles.topbar}>
       <Brand />
       <View style={styles.headerActions}>
-        <Pressable accessibilityLabel="Show saved restaurants" onPress={() => setSavedOnly((value) => !value)} style={styles.headerButton}><Text style={[styles.headerIcon, savedOnly && styles.orangeText]}>{savedOnly ? '♥' : '♡'}</Text><View style={styles.countBadge}><Text style={styles.countText}>{saved.size}</Text></View></Pressable>
+        <Pressable accessibilityLabel="Settings" accessibilityRole="button" hitSlop={6} onPress={() => router.push('/settings' as Href)} style={styles.headerButton}>
+          <SymbolView name={{ ios: 'gearshape', android: 'settings', web: 'settings' }} size={26} tintColor="#171612" />
+        </Pressable>
       </View>
     </View>
     <View style={styles.searchRow}>
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: CREAM }, listContent: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: 16 },
   topbar: { height: 84, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }, headerButton: { width: 42, height: 44, alignItems: 'center', justifyContent: 'center' },
   brand: { position: 'absolute', left: 60, right: 60, alignItems: 'center' }, brandMark: { color: ORANGE, fontSize: 23, lineHeight: 22 }, brandName: { color: '#171612', fontSize: 21, lineHeight: 21, fontWeight: '900', letterSpacing: 0.8 }, brandTagline: { color: '#777268', fontSize: 7, fontWeight: '800', letterSpacing: 1.8, marginTop: 4 },
-  headerActions: { flexDirection: 'row' }, headerIcon: { color: '#171612', fontSize: 25 }, countBadge: { position: 'absolute', top: 2, right: 0, minWidth: 17, height: 17, paddingHorizontal: 3, borderRadius: 9, backgroundColor: ORANGE, borderWidth: 2, borderColor: CREAM, alignItems: 'center', justifyContent: 'center' }, countText: { color: '#FFF', fontSize: 8, fontWeight: '900' }, orangeText: { color: ORANGE },
+  headerActions: { flexDirection: 'row' }, orangeText: { color: ORANGE },
   searchRow: { flexDirection: 'row', gap: 10, marginBottom: 18 }, searchBox: { flex: 1, minHeight: 54, borderRadius: 18, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#F5EDE3', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, shadowColor: '#4D361F', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 3 }, searchIcon: { fontSize: 25, marginRight: 10 }, searchInput: { flex: 1, height: 52, color: '#171612', fontSize: 14 }, filterButton: { width: 54, height: 54, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 3 }, filterIcon: { fontSize: 24, transform: [{ rotate: '90deg' }] },
   filterCount: { position: 'absolute', top: 3, right: 3, minWidth: 17, height: 17, paddingHorizontal: 3, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: ORANGE }, filterCountText: { color: '#FFF', fontSize: 8, fontWeight: '900' },
   hero: { height: 316, overflow: 'hidden', borderRadius: 28, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: '#17130F' }, heroImage: { borderRadius: 28 }, heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(16,13,10,0.54)' }, heroContent: { width: '74%', maxWidth: 470 }, pill: { alignSelf: 'flex-start', color: '#FFF', backgroundColor: ORANGE, borderRadius: 20, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, fontSize: 9, fontWeight: '900' }, heroTitle: { color: '#FFF', fontSize: 38, lineHeight: 40, fontWeight: '900', letterSpacing: -1.2, marginTop: 15 }, heroAccent: { color: '#FF812D' }, heroDescription: { color: '#E3DED8', fontSize: 13, lineHeight: 19, marginTop: 12 }, cta: { alignSelf: 'flex-start', height: 43, borderRadius: 24, backgroundColor: ORANGE, paddingLeft: 16, paddingRight: 5, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }, ctaText: { color: '#FFF', fontSize: 10, fontWeight: '900' }, ctaArrow: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }, dots: { position: 'absolute', bottom: 16, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 7 }, dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.55)' }, activeDot: { width: 21, height: 7, borderRadius: 4, backgroundColor: ORANGE },
