@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -39,12 +39,12 @@ export default function AdminScreen() {
   if (access === 'checking') return <Shell><Text style={styles.helper}>Loading…</Text></Shell>;
   if (access === 'denied') return <Shell>
     <Text style={styles.title}>Admins only</Text>
-    <Text style={styles.helper}>Sign in with a Fork admin account to open the admin console. Another admin can add your account from Admins.</Text>
-    <Pressable accessibilityRole="button" onPress={() => router.push('/auth')}><Text style={styles.link}>Sign in</Text></Pressable>
+    <Text style={styles.helper}>Sign in with a Kwetu admin account to open the admin console. Another admin can add your account from Admins.</Text>
+    <Pressable accessibilityRole="button" onPress={() => router.push('/sign-in' as Href)}><Text style={styles.link}>Sign in</Text></Pressable>
   </Shell>;
 
   return <Shell>
-    <Text style={styles.eyebrow}>FORK ADMIN</Text>
+    <Text style={styles.eyebrow}>KWETU ADMIN</Text>
     <Text style={styles.title}>Admin console</Text>
     <Chips onChange={setSection} options={SECTIONS} value={section} />
     {section === 'overview' && <OverviewSection onOpenRequests={() => setSection('requests')} onOpenRestaurants={openRestaurants} />}

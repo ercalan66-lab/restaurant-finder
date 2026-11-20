@@ -23,7 +23,7 @@ const distanceLabel = (restaurant: Restaurant) => restaurant.distanceKm > 0 ? `�
 const ratingLabel = (restaurant: Restaurant) => restaurant.rating > 0 ? `★ ${restaurant.rating}` : 'NEW';
 
 function Brand() {
-  return <View style={styles.brand}><Text style={styles.brandMark}>♨</Text><Text style={styles.brandName}>FORK</Text><Text style={styles.brandTagline}>FIND. TASTE. ENJOY.</Text></View>;
+  return <View style={styles.brand}><Text style={styles.brandMark}>♨</Text><Text style={styles.brandName}>KWETU</Text><Text style={styles.brandTagline}>FIND. TASTE. ENJOY.</Text></View>;
 }
 
 export default function HomeScreen() {

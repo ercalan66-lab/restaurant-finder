@@ -31,7 +31,7 @@ async function loadDashboard(): Promise<LoadResult> {
   try {
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
-      router.replace('/auth?role=owner');
+      router.replace('/sign-in?role=owner' as Href);
       return { kind: 'redirected' };
     }
     if (data.user.user_metadata?.role !== 'owner') {
@@ -76,7 +76,7 @@ export default function OwnerDashboardScreen() {
     if (!owner) return;
     try {
       setRestaurant(await createRestaurant(owner.id, details));
-      Alert.alert('Restaurant created', 'Fork will review it before customers can see it. Meanwhile, add a cover photo and your menu.');
+      Alert.alert('Restaurant created', 'Kwetu will review it before customers can see it. Meanwhile, add a cover photo and your menu.');
     } catch (error) {
       const duplicate = typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
       Alert.alert('Could not create restaurant', duplicate ? 'This account already has a restaurant. Reopen the dashboard to manage it.' : errorMessage(error));
@@ -90,7 +90,7 @@ export default function OwnerDashboardScreen() {
       // Saving a rejected restaurant sends it back for review (done by the database).
       const resubmitted = restaurant.approvalStatus === 'rejected';
       update(resubmitted ? { ...details, approvalStatus: 'pending', rejectionReason: '' } : details);
-      Alert.alert('Saved', resubmitted ? 'Restaurant information updated and sent to Fork for review again.' : 'Restaurant information updated.');
+      Alert.alert('Saved', resubmitted ? 'Restaurant information updated and sent to Kwetu for review again.' : 'Restaurant information updated.');
     } catch (error) {
       Alert.alert('Could not save', errorMessage(error));
     }
@@ -138,13 +138,13 @@ export default function OwnerDashboardScreen() {
         {restaurant.approvalStatus !== 'approved' && <View style={[styles.reviewCard, restaurant.approvalStatus === 'rejected' && styles.reviewCardRejected]}>
           <Text style={styles.reviewTitle}>{restaurant.approvalStatus === 'pending' ? 'Waiting for approval' : 'Changes needed'}</Text>
           <Text style={styles.reviewCopy}>{restaurant.approvalStatus === 'pending'
-            ? 'Fork reviews every new restaurant before customers can see it. You will get a notification when it is approved. Meanwhile, add photos and your menu.'
-            : `${restaurant.rejectionReason || 'Fork asked for changes to your listing.'} Update your details and save them to send the restaurant for review again.`}</Text>
+            ? 'Kwetu reviews every new restaurant before customers can see it. You will get a notification when it is approved. Meanwhile, add photos and your menu.'
+            : `${restaurant.rejectionReason || 'Kwetu asked for changes to your listing.'} Update your details and save them to send the restaurant for review again.`}</Text>
         </View>}
         <View style={styles.visibilityCard}>
           <View style={styles.visibilityCopy}>
             <Text style={styles.visibilityTitle}>{restaurant.isActive ? 'Visible to customers' : 'Hidden from customers'}</Text>
-            <Text style={styles.visibilityHelper}>{!restaurant.isActive ? 'Turn this on when your page is ready.' : restaurant.approvalStatus === 'approved' ? 'Your restaurant appears in search and accepts orders.' : 'It will appear in search once Fork approves it.'}</Text>
+            <Text style={styles.visibilityHelper}>{!restaurant.isActive ? 'Turn this on when your page is ready.' : restaurant.approvalStatus === 'approved' ? 'Your restaurant appears in search and accepts orders.' : 'It will appear in search once Kwetu approves it.'}</Text>
             <TextButton label="View customer page ›" onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} />
           </View>
           <Switch accessibilityLabel="Visible to customers" onValueChange={(value) => void setVisible(value)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={restaurant.isActive} />

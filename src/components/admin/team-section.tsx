@@ -25,7 +25,7 @@ export function TeamSection({ onLeftTeam }: { onLeftTeam: () => void }) {
   const reload = () => void loadAdmins().then(setState);
 
   const add = async () => {
-    if (!account.trim()) return Alert.alert('Enter an account', 'Type the email address or phone number the person signs in to Fork with.');
+    if (!account.trim()) return Alert.alert('Enter an account', 'Type the email address or phone number the person signs in to Kwetu with.');
     setBusy(true);
     try {
       const label = await addAdmin(account);
@@ -73,7 +73,7 @@ export function TeamSection({ onLeftTeam }: { onLeftTeam: () => void }) {
 
     <View style={adminStyles.card}>
       <Text style={adminStyles.name}>Add an admin</Text>
-      <Text style={adminStyles.meta}>They need a Fork account first. Ask them to sign up in the app, then enter the email or phone number they sign in with.</Text>
+      <Text style={adminStyles.meta}>They need a Kwetu account first. Ask them to sign up in the app, then enter the email or phone number they sign in with.</Text>
       <Text style={adminStyles.label}>EMAIL OR PHONE</Text>
       <TextInput
         autoCapitalize="none"

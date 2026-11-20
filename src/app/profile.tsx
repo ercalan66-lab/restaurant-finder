@@ -79,7 +79,7 @@ export default function ProfileScreen() {
 
   const deleteAccount = () => confirmAction(
     'Delete your account?',
-    'This permanently deletes your Fork account, removes your name, phone number and address from past orders and bookings, hides any restaurant you own, and clears the data on this phone. It cannot be undone.',
+    'This permanently deletes your Kwetu account, removes your name, phone number and address from past orders and bookings, hides any restaurant you own, and clears the data on this phone. It cannot be undone.',
     'Delete account',
     () => void (async () => {
       setDeleting(true);
@@ -125,7 +125,7 @@ export default function ProfileScreen() {
       <Text style={styles.accountLabel}>ACCOUNT</Text>
       <Text style={styles.accountValue}>{account ?? 'Not signed in'}</Text>
       <View style={styles.accountActions}>
-        <Pressable disabled={deleting} onPress={account ? () => void signOut() : () => router.push('/auth')}><Text style={styles.accountAction}>{account ? 'Sign out' : 'Sign in or create account'}</Text></Pressable>
+        <Pressable disabled={deleting} onPress={account ? () => void signOut() : () => router.push('/sign-in' as Href)}><Text style={styles.accountAction}>{account ? 'Sign out' : 'Sign in or create account'}</Text></Pressable>
         {account && <Pressable disabled={deleting} onPress={deleteAccount}><Text style={[styles.accountAction, styles.deleteAction]}>{deleting ? 'Deleting…' : 'Delete account'}</Text></Pressable>}
       </View>
       {accountNotice ? <Text accessibilityRole="alert" style={styles.accountNotice}>{accountNotice}</Text> : null}
@@ -140,12 +140,12 @@ export default function ProfileScreen() {
     <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} signedIn={Boolean(account)} />
 
     {isAdmin && <Pressable accessibilityRole="button" onPress={() => router.push('/admin' as Href)} style={styles.adminCard}>
-      <Text style={styles.adminEyebrow}>FORK ADMIN</Text>
+      <Text style={styles.adminEyebrow}>KWETU ADMIN</Text>
       <Text style={styles.adminTitle}>Open admin console ›</Text>
       <Text style={styles.adminCopy}>Review restaurants, look up orders and bookings, see today’s numbers, and manage admins.</Text>
     </Pressable>}
 
-    <View style={styles.ownerCard}><Text style={styles.ownerEyebrow}>FOR RESTAURANT OWNERS</Text><Text style={styles.ownerTitle}>Manage your restaurant</Text><Text style={styles.ownerCopy}>Update facilities, location, working hours, foods, prices, ingredients, and availability.</Text><Pressable onPress={() => router.push(account ? '/owner' : '/auth?role=owner')} style={styles.ownerButton}><Text style={styles.ownerButtonText}>Open restaurant dashboard</Text></Pressable></View>
+    <View style={styles.ownerCard}><Text style={styles.ownerEyebrow}>FOR RESTAURANT OWNERS</Text><Text style={styles.ownerTitle}>Manage your restaurant</Text><Text style={styles.ownerCopy}>Update facilities, location, working hours, foods, prices, ingredients, and availability.</Text><Pressable onPress={() => router.push((account ? '/owner' : '/sign-in?role=owner') as Href)} style={styles.ownerButton}><Text style={styles.ownerButtonText}>Open restaurant dashboard</Text></Pressable></View>
 
     <Pressable onPress={() => router.push('/privacy' as Href)} style={styles.privacyLink}><Text style={styles.privacyText}>Privacy policy</Text></Pressable>
   </ScrollView></SafeAreaView>;

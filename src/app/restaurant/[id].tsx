@@ -41,7 +41,7 @@ export default function RestaurantDetailScreen() {
   const directionsUrl = restaurant.mapUrl
     || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
   const heroPhoto = restaurant.coverUrl ?? restaurant.galleryUrls[0] ?? null;
-  const meta = [restaurant.rating > 0 ? `★ ${restaurant.rating}` : 'New on Fork', restaurant.area, restaurant.distanceKm > 0 ? `${restaurant.distanceKm} km away` : null].filter(Boolean).join(' · ');
+  const meta = [restaurant.rating > 0 ? `★ ${restaurant.rating}` : 'New on Kwetu', restaurant.area, restaurant.distanceKm > 0 ? `${restaurant.distanceKm} km away` : null].filter(Boolean).join(' · ');
   const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.');
 
   return (

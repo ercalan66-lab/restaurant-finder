@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabase';
 import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuItem, type MenuRow, type Restaurant } from './restaurants';
 
-/** The restaurant fields an owner can edit. Rating, distance, and tag are managed by Fork. */
+/** The restaurant fields an owner can edit. Rating, distance, and tag are managed by Kwetu. */
 export type RestaurantDetails = Pick<Restaurant,
   'name' | 'cuisine' | 'area' | 'address' | 'description' | 'phone' | 'email' | 'opensAt' | 'closesAt'
   | 'mapUrl' | 'facilities' | 'pricePerPerson' | 'seatsPerSlot'>;

@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-/** Matches the native splash (app.json): the Fork icon on its own yellow. */
+/** Matches the native splash (app.json): the Kwetu icon on its own yellow. */
 const SPLASH_BACKGROUND = '#FDC52B';
 const DURATION = 500;
 
@@ -21,7 +21,7 @@ export function AnimatedSplashOverlay() {
 
   if (!visible) return null;
 
-  const icon = <Image accessibilityIgnoresInvertColors source={require('@/assets/images/fork-app-icon.png')} style={styles.icon} />;
+  const icon = <Image accessibilityIgnoresInvertColors source={require('@/assets/images/kwetu-app-icon.png')} style={styles.icon} />;
 
   return animate ? (
     <Animated.View

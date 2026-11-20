@@ -107,7 +107,7 @@ export default function PayScreen() {
     <Text style={styles.title}>{amount}</Text>
     <Text style={styles.copyLeft}>{order.restaurantName} · order {order.id}</Text>
 
-    <View style={styles.testBanner}><Text style={styles.testBannerTitle}>Test mode</Text><Text style={styles.testBannerCopy}>No money moves yet. Real mobile money payments start once Fork connects a payment provider.</Text></View>
+    <View style={styles.testBanner}><Text style={styles.testBannerTitle}>Test mode</Text><Text style={styles.testBannerCopy}>No money moves yet. Real mobile money payments start once Kwetu connects a payment provider.</Text></View>
 
     <Text style={styles.label}>PAY WITH</Text>
     <View accessibilityRole="radiogroup" style={styles.methods}>

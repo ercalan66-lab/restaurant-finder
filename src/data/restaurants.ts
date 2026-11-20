@@ -39,7 +39,7 @@ export type RestaurantSummary = {
   pricePerPerson: number;
   tag: string;
   isActive: boolean;
-  /** New restaurants stay hidden from customers until a Fork admin approves them. */
+  /** New restaurants stay hidden from customers until a Kwetu admin approves them. */
   approvalStatus: ApprovalStatus;
   rejectionReason: string;
   /** Guests that can be booked into one time slot. */

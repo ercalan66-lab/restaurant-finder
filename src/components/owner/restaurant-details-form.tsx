@@ -53,7 +53,7 @@ export function RestaurantDetailsForm({ initial, onSubmit, submitLabel }: { init
       <Field containerStyle={formStyles.half} label="CLOSES AT" onChangeText={set('closesAt')} placeholder="22:00" value={values.closesAt} />
     </View>
     <Field keyboardType="number-pad" label="SEATS PER BOOKING TIME" onChangeText={set('seatsPerSlot')} placeholder="40" value={values.seatsPerSlot} />
-    <Text style={formStyles.helper}>Guests you can seat at one booking time. Fork stops taking bookings for a time once it is full.</Text>
+    <Text style={formStyles.helper}>Guests you can seat at one booking time. Kwetu stops taking bookings for a time once it is full.</Text>
     <Field label="FACILITIES (SEPARATE WITH COMMAS)" onChangeText={set('facilities')} placeholder="Wi-Fi, parking, outdoor seating" value={values.facilities} />
     <PrimaryButton busy={saving} label={submitLabel} onPress={() => void submit()} />
   </>;

@@ -1,4 +1,4 @@
-# Fork restaurant finder
+# Kwetu restaurant finder
 
 An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed by Supabase.
 
@@ -15,7 +15,7 @@ An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed b
    6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
-4. Make yourself a Fork admin (see [Fork admins](#fork-admins)) so you can approve new restaurants.
+4. Make yourself a Kwetu admin (see [Kwetu admins](#kwetu-admins)) so you can approve new restaurants.
 5. Fill in `SUPPORT_EMAIL` in `src/constants/app-info.ts`. It is shown in the privacy policy.
 6. Start the app with `npx expo start`. Expo Go runs everything except push notifications on Android, which need a development build.
 
@@ -38,7 +38,7 @@ Until a provider is configured, the app shows "Phone sign-in is not enabled" whe
 | An order is accepted, ready / on its way, or declined | The customer (guest or signed in) | Profile |
 | A delivery order arrives | The customer | Payment screen |
 | A booking is confirmed or declined | The customer (guest or signed in) | Profile |
-| A new restaurant needs review | Fork admins | Admin screen |
+| A new restaurant needs review | Kwetu admins | Admin screen |
 | A restaurant is approved or needs changes | Its owner | Owner dashboard |
 
 How it works:
@@ -89,7 +89,7 @@ The app keeps a local copy of orders and reservations, so requests still receive
 
 Customers can cancel an order while it is still pending, and a booking while it is pending or confirmed. Cancelling works from the profile, for guests too (they prove it is theirs with the phone number on the request), and the owner is notified. A request that was never sent is simply not sent.
 
-## Fork admins
+## Kwetu admins
 
 New restaurants start as **waiting for approval** and are hidden from customers until an admin approves them. Restaurants that existed before this change stay live.
 
@@ -116,7 +116,7 @@ When an owner saves changes to a rejected restaurant, it goes back into review a
 ## Restaurant owners
 
 1. Register in the app and choose **Restaurant owner**.
-2. The dashboard opens with a **Set up your restaurant** form. Submitting it creates the restaurant in Supabase, linked to that account (one restaurant per owner). It stays hidden until a Fork admin approves it.
+2. The dashboard opens with a **Set up your restaurant** form. Submitting it creates the restaurant in Supabase, linked to that account (one restaurant per owner). It stays hidden until a Kwetu admin approves it.
 3. From the dashboard the owner can:
    - edit details, hours, and price per person;
    - upload a cover photo, up to eight gallery photos, and food photos;
@@ -126,7 +126,7 @@ When an owner saves changes to a rejected restaurant, it goes back into review a
 
 Changes are saved to Supabase and appear for every customer. The restaurant list and pages reload whenever a screen is opened.
 
-Ratings, distance, and the promotional tag (for example "Bestseller") cannot be edited by owners. A new restaurant shows **New on Fork** until a rating is set.
+Ratings, distance, and the promotional tag (for example "Bestseller") cannot be edited by owners. A new restaurant shows **New on Kwetu** until a rating is set.
 
 The eight demo restaurants (ids 1–8) have no owner. To hand one to a real owner instead of having them create a new listing, run this once in the SQL editor (only if that owner has not created a restaurant yet):
 
@@ -138,7 +138,7 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 
 ## Data security
 
-- Restaurant and menu information is public once a restaurant is approved and visible. Hidden or unapproved restaurants are visible only to their owner and Fork admins, and cannot receive orders or bookings.
+- Restaurant and menu information is public once a restaurant is approved and visible. Hidden or unapproved restaurants are visible only to their owner and Kwetu admins, and cannot receive orders or bookings.
 - Owners can edit only their own restaurant, menu, and photos.
 - Customers can read only requests associated with their account.
 - Restaurant owners can read and update only requests sent to their restaurant.
@@ -159,7 +159,7 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - [x] Phone (SMS code) sign-in
 - [x] Pay on delivery: mobile money in the app (simulated) or cash to the rider
 - [ ] Real mobile money gateway (Selcom / AzamPay / ClickPesa)
-- [x] Restaurant approval by Fork admins
+- [x] Restaurant approval by Kwetu admins
 - [x] Customer cancellation and live status
 - [x] In-app account deletion and privacy policy
 - [ ] Automated tests, accessibility audit, and real-device QA

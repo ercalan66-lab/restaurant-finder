@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "Fork",
+    "name": "Kwetu",
     "slug": "restaurant-finder",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/fork-app-icon.png",
+    "icon": "./assets/images/kwetu-app-icon.png",
     "scheme": "restaurantfinder",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/images/fork-app-icon.png",
-      "bundleIdentifier": "com.forktz.app"
+      "icon": "./assets/images/kwetu-app-icon.png",
+      "bundleIdentifier": "com.kwetutz.app"
     },
     "android": {
-      "package": "com.forktz.app",
+      "package": "com.kwetutz.app",
       "adaptiveIcon": {
         "backgroundColor": "#FDC52B",
-        "foregroundImage": "./assets/images/fork-app-icon.png"
+        "foregroundImage": "./assets/images/kwetu-app-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -29,7 +29,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#FDC52B",
-          "image": "./assets/images/fork-app-icon.png",
+          "image": "./assets/images/kwetu-app-icon.png",
           "imageWidth": 200
         }
       ],
@@ -37,7 +37,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Fork uses your photos so you can add pictures of your restaurant and dishes.",
+          "photosPermission": "Kwetu uses your photos so you can add pictures of your restaurant and dishes.",
           "cameraPermission": false,
           "microphonePermission": false
         }

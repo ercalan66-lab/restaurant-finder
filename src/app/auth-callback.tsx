@@ -1,9 +1,10 @@
 import * as Linking from 'expo-linking';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { homeFor } from '@/data/auth';
 import { parseAuthLink } from '@/utils/auth-link';
 import { errorMessage } from '@/utils/feedback';
 import { supabase } from '../../lib/supabase';
@@ -14,10 +15,10 @@ type Result = { kind: 'signed-in' } | { kind: 'new-password' } | { kind: 'error'
 
 async function homeForSignedInUser() {
   const { data } = await supabase.auth.getUser();
-  return data.user?.user_metadata?.role === 'owner' ? '/owner' : '/profile';
+  return homeFor(data.user);
 }
 
-/** Turns the link from a Fork email into a signed-in session. */
+/** Turns the link from a Kwetu email into a signed-in session. */
 async function completeEmailLink(url: string): Promise<Result> {
   const link = parseAuthLink(url);
   if (link.error) return { kind: 'error', message: link.error };
@@ -37,7 +38,7 @@ async function completeEmailLink(url: string): Promise<Result> {
   return link.type === 'recovery' ? { kind: 'new-password' } : { kind: 'signed-in' };
 }
 
-/** Where links in Fork's emails open the app: confirms a new account, or starts a password reset. */
+/** Where links in Kwetu's emails open the app: confirms a new account, or starts a password reset. */
 export default function AuthCallbackScreen() {
   const url = Linking.useLinkingURL();
   const [result, setResult] = useState<Result | null>(null);
@@ -49,20 +50,20 @@ export default function AuthCallbackScreen() {
     void completeEmailLink(url).then(async (outcome) => {
       if (outcome.kind !== 'signed-in') return setResult(outcome);
       router.replace(await homeForSignedInUser());
-      Alert.alert('Welcome to Fork', 'Your email is confirmed and you are signed in.');
+      Alert.alert('Welcome to Kwetu', 'Your email is confirmed and you are signed in.');
     });
   }, [url]);
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Text style={styles.eyebrow}>FORK ACCOUNT</Text>
+    <Text style={styles.eyebrow}>KWETU ACCOUNT</Text>
     {result?.kind === 'new-password'
       ? <NewPasswordForm />
       : result?.kind === 'error' || !url
         ? <>
           <Text style={styles.title}>This link did not work</Text>
-          <Text style={styles.helper}>{result?.kind === 'error' ? result.message : 'Open the link from your Fork email on this phone.'}</Text>
+          <Text style={styles.helper}>{result?.kind === 'error' ? result.message : 'Open the link from your Kwetu email on this phone.'}</Text>
           <Text style={styles.helper}>Email links work once and expire after a while. If you already confirmed your email, just sign in with your password; otherwise ask for a new email from the sign-in screen.</Text>
-          <Pressable accessibilityRole="button" onPress={() => router.replace('/auth')} style={styles.button}><Text style={styles.buttonText}>Go to sign in</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => router.replace('/sign-in' as Href)} style={styles.button}><Text style={styles.buttonText}>Go to sign in</Text></Pressable>
         </>
         : <>
           <Text style={styles.title}>Signing you in…</Text>

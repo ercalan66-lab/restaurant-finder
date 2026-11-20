@@ -29,7 +29,7 @@ export function OverviewSection({ onOpenRequests, onOpenRestaurants }: Props) {
   };
 
   return <View>
-    <SectionHeading helper="How Fork is doing right now. Tap a number to see the list behind it." loading={refreshing || state.kind === 'loading'} onRefresh={refresh} title="Overview" />
+    <SectionHeading helper="How Kwetu is doing right now. Tap a number to see the list behind it." loading={refreshing || state.kind === 'loading'} onRefresh={refresh} title="Overview" />
     {state.kind === 'error' && <LoadError message={state.message} onRetry={refresh} />}
     {state.kind === 'ready' && <>
       <Text style={styles.group}>RESTAURANTS</Text>
