@@ -11,7 +11,7 @@ import { checkIsAdmin } from '@/data/admin';
 import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
 import { fetchReviewedReferences } from '@/data/reviews';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
-import { goBackOrReplace } from '@/utils/navigation';
+import { goBackOrReplace, goHome } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
 import { onNotificationReceived, unregisterDevice } from '@/utils/push-notifications';
 import { supabase } from '../../lib/supabase';
@@ -21,6 +21,7 @@ const accountLabel = (user: User | null) => user ? user.email || formatAccountPh
 
 const ORANGE = '#ED6417';
 const ACTIVITY_REFRESH_MS = 15_000;
+const SAVED_PAUSE_MS = 900;
 
 type SaveStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'saved' } | { kind: 'error'; message: string };
 
@@ -127,6 +128,13 @@ export default function ProfileScreen() {
       setSaveStatus({ kind: 'error', message: `Your profile could not be saved (${reason}). Please try again.` });
     }
   };
+  // After a successful save, "✓ Saved" shows for a moment, then the app returns to the home page.
+  // Typing in that moment cancels it (the status goes back to idle).
+  useEffect(() => {
+    if (saveStatus.kind !== 'saved') return;
+    const timer = setTimeout(goHome, SAVED_PAUSE_MS);
+    return () => clearTimeout(timer);
+  }, [saveStatus.kind]);
   // Typing again after saving (or after a problem) brings back the normal "Save profile" button.
   const edit = (setter: (value: string) => void) => (value: string) => {
     setter(value);
@@ -153,7 +161,7 @@ export default function ProfileScreen() {
     <Pressable accessibilityRole="button" accessibilityState={{ busy: saving, disabled: saving }} disabled={saving} onPress={() => void save()} style={[styles.button, saving && styles.buttonDisabled, saveStatus.kind === 'saved' && styles.buttonSaved]}>
       <Text style={styles.buttonText}>{saving ? 'Saving…' : saveStatus.kind === 'saved' ? '✓ Saved' : 'Save profile'}</Text>
     </Pressable>
-    {saveStatus.kind === 'saved' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.savedMessage}>✓ Profile saved. Your name and phone will fill in automatically when you order food or book a table.</Text>}
+    {saveStatus.kind === 'saved' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.savedMessage}>✓ Profile saved. Taking you to the home page…</Text>}
     {saveStatus.kind === 'error' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorMessage}>{saveStatus.message}</Text>}
 
     <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} reviewed={reviewed} signedIn={Boolean(account)} />

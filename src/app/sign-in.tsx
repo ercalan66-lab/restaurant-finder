@@ -3,19 +3,27 @@ import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 
 import { AuthShell, Field, Notice, PasswordField, PrimaryButton, SwitchPrompt, TextLink } from '@/components/auth/auth-ui';
-import { authErrorMessage, homeFor, isEmail, normalizeEmail, resendConfirmationEmail, sendPasswordReset, signInWithEmail } from '@/data/auth';
+import { authErrorMessage, isEmail, normalizeEmail, resendConfirmationEmail, sendPasswordReset, signInWithEmail } from '@/data/auth';
+import { goHome } from '@/utils/navigation';
 
 type FieldErrors = { email?: string; password?: string };
 type Message = { tone: 'success' | 'error'; title: string; body: string };
 
+/** The note shown when registration sends the person here (?registered=confirm|ready). */
+function registeredMessage(registered: string | undefined, email: string): Message | null {
+  if (registered === 'confirm') return { tone: 'success', title: 'Account created', body: `We sent a confirmation link to ${email}. Open it to confirm your email, then sign in here with your new password.` };
+  if (registered === 'ready') return { tone: 'success', title: 'Account created', body: 'Sign in with your email and new password.' };
+  return null;
+}
+
 export default function SignInScreen() {
-  const params = useLocalSearchParams<{ role?: string; email?: string }>();
+  const params = useLocalSearchParams<{ role?: string; email?: string; registered?: string }>();
   const forOwner = params.role === 'owner';
   const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [message, setMessage] = useState<Message | null>(null);
-  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [message, setMessage] = useState<Message | null>(() => registeredMessage(params.registered, params.email ?? ''));
+  const [unconfirmed, setUnconfirmed] = useState(params.registered === 'confirm');
   const [loading, setLoading] = useState(false);
 
   // Problems show on the screen, not in pop-ups, so they also appear in the web version.
@@ -39,8 +47,8 @@ export default function SignInScreen() {
     setErrors(problems);
     if (problems.email || problems.password) return;
     return run('Could not sign in', async () => {
-      const user = await signInWithEmail(email, password);
-      router.replace(homeFor(user));
+      await signInWithEmail(email, password);
+      goHome();
     });
   };
 

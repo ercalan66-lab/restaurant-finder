@@ -4,19 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { homeFor, PASSWORD_RULE, passwordProblem } from '@/data/auth';
+import { PASSWORD_RULE, passwordProblem } from '@/data/auth';
 import { parseAuthLink } from '@/utils/auth-link';
 import { errorMessage, showMessage } from '@/utils/feedback';
+import { goHome } from '@/utils/navigation';
 import { supabase } from '../../lib/supabase';
 
 const ACCENT = '#B93F1D';
 
 type Result = { kind: 'signed-in' } | { kind: 'new-password' } | { kind: 'error'; message: string };
-
-async function homeForSignedInUser() {
-  const { data } = await supabase.auth.getUser();
-  return homeFor(data.user);
-}
 
 /** Turns the link from a Kwetu email into a signed-in session. */
 async function completeEmailLink(url: string): Promise<Result> {
@@ -47,9 +43,9 @@ export default function AuthCallbackScreen() {
   useEffect(() => {
     if (!url || handled.current === url) return;
     handled.current = url;
-    void completeEmailLink(url).then(async (outcome) => {
+    void completeEmailLink(url).then((outcome) => {
       if (outcome.kind !== 'signed-in') return setResult(outcome);
-      router.replace(await homeForSignedInUser());
+      goHome();
       showMessage('Welcome to Kwetu', 'Your email is confirmed and you are signed in.');
     });
   }, [url]);
@@ -85,7 +81,7 @@ function NewPasswordForm() {
       setSaving(false);
       return showMessage('Could not change password', error.message);
     }
-    router.replace(await homeForSignedInUser());
+    goHome();
     showMessage('Password changed', 'You are signed in with your new password.');
   };
 

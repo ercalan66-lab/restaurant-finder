@@ -9,9 +9,6 @@ export type AccountRole = 'customer' | 'owner';
 /** Links in Kwetu's emails open the app on this screen, which finishes signing the person in. */
 export const emailLinkTarget = () => Linking.createURL('auth-callback');
 
-/** Where a signed-in person lands: owners on their dashboard, everyone else on their profile. */
-export const homeFor = (user: User | null | undefined) => user?.user_metadata?.role === 'owner' ? '/owner' : '/profile';
-
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 export const isEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email.trim());
 
@@ -89,6 +86,11 @@ export async function registerWithEmail({ email, name, password, phone, role }: 
   // identity list instead of an error, so it does not reveal which emails have accounts.
   if (data.user && data.user.identities?.length === 0) return { user: null, needsConfirmation: false, alreadyRegistered: true };
   return { user: data.user, needsConfirmation: !data.session, alreadyRegistered: false };
+}
+
+/** Ends the session that sign-up may have started, so the person signs in themselves next. */
+export async function endSignUpSession() {
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
 }
 
 export async function resendConfirmationEmail(email: string) {
