@@ -5,7 +5,7 @@ import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuIt
 export type RestaurantDetails = Pick<Restaurant,
   'name' | 'cuisine' | 'area' | 'address' | 'description' | 'phone' | 'email' | 'opensAt' | 'closesAt'
   | 'mapUrl' | 'facilities' | 'pricePerPerson' | 'seatsPerSlot'>;
-export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'coverUrl' | 'galleryUrls' | 'isActive'>>;
+export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'coverUrl' | 'galleryUrls' | 'isActive' | 'menuPdfUrl'>>;
 export type MenuItemInput = Omit<MenuItem, 'id'>;
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -47,6 +47,7 @@ function restaurantColumns(changes: RestaurantChanges) {
   if (changes.coverUrl !== undefined) columns.cover_url = changes.coverUrl;
   if (changes.galleryUrls !== undefined) columns.gallery_urls = changes.galleryUrls;
   if (changes.isActive !== undefined) columns.is_active = changes.isActive;
+  if (changes.menuPdfUrl !== undefined) columns.menu_pdf_url = changes.menuPdfUrl;
   return columns;
 }
 

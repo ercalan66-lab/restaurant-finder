@@ -1,10 +1,12 @@
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, type Href, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RestaurantReviews } from '@/components/restaurant-reviews';
+import { menuPdfDownloadUrl } from '@/data/restaurant-menu-pdf';
 import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 
@@ -94,7 +96,22 @@ export default function RestaurantDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Menu & food</Text>
-          <Text style={styles.sectionCaption}>{restaurant.menu.length ? 'Current foods, ingredients, prices, and availability.' : 'The menu is coming soon.'}</Text>
+          <Text style={styles.sectionCaption}>{restaurant.menu.length ? 'Current foods, ingredients, prices, and availability.' : restaurant.menuPdfUrl ? 'See the full menu in the PDF below.' : 'The menu is coming soon.'}</Text>
+          {restaurant.menuPdfUrl ? <View style={styles.pdfCard}>
+            <Text style={styles.pdfIcon}>📄</Text>
+            <View style={styles.pdfCopy}>
+              <Text style={styles.pdfTitle}>Full menu (PDF)</Text>
+              <Text style={styles.pdfCaption}>The restaurant&apos;s complete menu to read or keep.</Text>
+              <View style={styles.pdfActions}>
+                <Pressable accessibilityRole="button" onPress={() => void WebBrowser.openBrowserAsync(restaurant.menuPdfUrl ?? '')} style={styles.pdfButton}>
+                  <Text style={styles.pdfButtonText}>View</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={() => void openLink(menuPdfDownloadUrl(restaurant.menuPdfUrl ?? '', restaurant.name), 'The menu could not be downloaded on this device.')} style={[styles.pdfButton, styles.pdfButtonSecondary]}>
+                  <Text style={[styles.pdfButtonText, styles.pdfButtonSecondaryText]}>Download</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View> : null}
           <View style={styles.menuList}>
             {restaurant.menu.map((item) => {
               const available = isMenuItemAvailable(item, restaurant);
@@ -173,6 +190,16 @@ const styles = StyleSheet.create({
   gallery: { gap: 10, paddingRight: 18 },
   environmentPhoto: { width: 260, height: 180, borderRadius: 18, backgroundColor: '#DDD4C9' },
   environmentPhotoFirst: { width: 300 },
+  pdfCard: { flexDirection: 'row', gap: 12, padding: 14, marginBottom: 14, borderRadius: 18, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF' },
+  pdfIcon: { fontSize: 32 },
+  pdfCopy: { flex: 1 },
+  pdfTitle: { color: '#171612', fontSize: 16, fontWeight: '900' },
+  pdfCaption: { color: '#777268', fontSize: 12, lineHeight: 17, marginTop: 3 },
+  pdfActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  pdfButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 20, backgroundColor: ORANGE },
+  pdfButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
+  pdfButtonSecondary: { borderWidth: 1, borderColor: '#E6DCCE', backgroundColor: '#FFF' },
+  pdfButtonSecondaryText: { color: '#171612' },
   menuList: { gap: 13 },
   menuCard: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: '#EEE6DA', backgroundColor: '#FFF' },
   menuCardUnavailable: { opacity: 0.68, backgroundColor: '#FFF8ED' },
