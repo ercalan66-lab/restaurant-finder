@@ -5,12 +5,15 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindo
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, type NavItem } from '@/components/bottom-nav';
+import { LocationPrompt } from '@/components/location-prompt';
 import { PhotoBackground } from '@/components/photo-background';
 import { RestaurantCard } from '@/components/restaurant-card';
 import { RestaurantRow } from '@/components/restaurant-row';
 import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
 import { homeSections } from '@/data/home-sections';
 import { useRestaurants, type RestaurantSummary } from '@/data/restaurants';
+import { useUserLocation } from '@/data/user-location';
+import { distanceTo, type Coords } from '@/utils/distance';
 
 type Restaurant = RestaurantSummary;
 type Filters = { maxPrice: number; minRating: number; maxDistance: number };
@@ -19,6 +22,9 @@ const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
 const SAVED_STORAGE_KEY = SAVED_RESTAURANTS_KEY;
 const defaultFilters: Filters = { maxPrice: 0, minRating: 0, maxDistance: 0 };
+/** Distance used for sorting and the distance filter: from the person when known, otherwise the stored estimate. */
+const sortingDistance = (user: Coords | null, restaurant: Restaurant) =>
+  user ? distanceTo(user, restaurant) : restaurant.distanceKm > 0 ? restaurant.distanceKm : null;
 
 function Brand() {
   return <View style={styles.brand}><Text style={styles.brandMark}>♨</Text><Text style={styles.brandName}>KWETU</Text><Text style={styles.brandTagline}>FIND. TASTE. ENJOY.</Text></View>;
@@ -35,6 +41,8 @@ export default function HomeScreen() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const { offline, restaurants } = useRestaurants();
   const listRef = useRef<FlatList<Restaurant>>(null);
+  const location = useUserLocation();
+  const userCoords = location.coords;
 
   useEffect(() => {
     let active = true;
@@ -48,12 +56,13 @@ export default function HomeScreen() {
 
   const visibleRestaurants = useMemo(() => (restaurants ?? []).filter((restaurant) => {
     const text = `${restaurant.name} ${restaurant.cuisine} ${restaurant.area}`.toLowerCase();
+    const km = sortingDistance(userCoords, restaurant);
     return (!savedOnly || saved.has(restaurant.id))
       && (!filters.maxPrice || restaurant.pricePerPerson <= filters.maxPrice)
       && (!filters.minRating || restaurant.rating >= filters.minRating)
-      && (!filters.maxDistance || restaurant.distanceKm <= filters.maxDistance)
+      && (!filters.maxDistance || (km != null && km <= filters.maxDistance))
       && text.includes(query.trim().toLowerCase());
-  }), [filters, query, restaurants, saved, savedOnly]);
+  }), [filters, query, restaurants, saved, savedOnly, userCoords]);
 
   const toggleSaved = (id: number) => setSaved((current) => {
     const next = new Set(current);
@@ -65,7 +74,10 @@ export default function HomeScreen() {
   const filterCount = Object.values(filters).filter(Boolean).length;
   // The curated rows show only while browsing; searching, filtering or Saved shows plain results.
   const browsing = !savedOnly && !query.trim() && filterCount === 0;
-  const sections = useMemo(() => homeSections(restaurants ?? []), [restaurants]);
+  const sections = useMemo(() => homeSections(restaurants ?? [], {
+    distanceOf: (restaurant) => sortingDistance(userCoords, restaurant),
+    fromUser: userCoords != null,
+  }), [restaurants, userCoords]);
   const listTitle = savedOnly ? 'Saved places' : browsing ? 'All restaurants' : 'Results';
   const scrollToTop = () => listRef.current?.scrollToOffset({ offset: 0, animated: true });
   // Filters stay next to the search box, so the tab bar keeps only the three places people go.
@@ -86,6 +98,7 @@ export default function HomeScreen() {
       <View style={styles.searchBox}><Text style={styles.searchIcon}>⌕</Text><TextInput accessibilityLabel="Search restaurants or cuisines" onChangeText={setQuery} placeholder="Search restaurants or cuisines..." placeholderTextColor="#8A847B" returnKeyType="search" style={styles.searchInput} value={query} /></View>
       <Pressable accessibilityLabel="Filter restaurants" onPress={() => setFiltersOpen(true)} style={styles.filterButton}><Text style={styles.filterIcon}>☷</Text>{filterCount > 0 && <View style={styles.filterCount}><Text style={styles.filterCountText}>{filterCount}</Text></View>}</Pressable>
     </View>
+    <LocationPrompt onRequest={() => void location.request()} status={location.status} />
     <PhotoBackground imageStyle={styles.heroImage} source={require('../../assets/images/restaurant-hero.jpg')} style={styles.hero}>
       <View style={styles.heroOverlay} /><View style={styles.heroContent}>
         <Text style={styles.pill}>NEAR YOU NOW</Text><Text style={styles.heroTitle}>Find your next <Text style={styles.heroAccent}>favorite.</Text></Text>
@@ -93,7 +106,7 @@ export default function HomeScreen() {
         <Pressable onPress={showAll} style={styles.cta}><Text style={styles.ctaText}>FIND A RESTAURANT</Text><View style={styles.ctaArrow}><Text style={styles.orangeText}>→</Text></View></Pressable>
       </View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
     </PhotoBackground>
-    {browsing && sections.map((section) => <RestaurantRow isSaved={(id) => saved.has(id)} key={section.key} onToggleSaved={toggleSaved} section={section} />)}
+    {browsing && sections.map((section) => <RestaurantRow isSaved={(id) => saved.has(id)} key={section.key} onToggleSaved={toggleSaved} section={section} userDistanceOf={(restaurant) => distanceTo(userCoords, restaurant)} />)}
     <View style={styles.heading}><View><Text style={styles.sectionTitle}>{listTitle}</Text><Text style={styles.resultCount}>{restaurants ? `${visibleRestaurants.length} ${visibleRestaurants.length === 1 ? 'place' : 'places'} found` : 'Loading restaurants…'}</Text>{offline && <Text style={styles.offlineNote}>Offline · showing saved sample restaurants</Text>}</View>{!browsing && <Pressable onPress={showAll}><Text style={styles.viewAll}>Show all <Text style={styles.orangeText}>→</Text></Text></Pressable>}</View>
   </>;
 
@@ -105,7 +118,7 @@ export default function HomeScreen() {
       data={visibleRestaurants} key={columns} keyExtractor={(item) => String(item.id)} ListHeaderComponent={header} numColumns={columns} showsVerticalScrollIndicator={false}
       ListEmptyComponent={restaurants ? <View style={styles.empty}><Text style={styles.emptyTitle}>No restaurants match</Text><Text style={styles.emptyCopy}>Try another search or clear the current filters.</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>Clear filters</Text></Pressable></View> : <View style={styles.empty}><Text style={styles.emptyCopy}>Finding restaurants near you…</Text></View>}
       ListFooterComponent={<PhotoBackground imageStyle={styles.offerImage} source={require('../../assets/images/restaurant-offer.jpg')} style={styles.offer}><View style={styles.offerOverlay} /><View style={styles.offerCopy}><Text style={styles.offerEyebrow}>PICK OF THE WEEK</Text><Text style={styles.offerTitle}>Dinner plans,{`\n`}sorted.</Text><Text style={styles.offerCaption}>Top-rated tables less than 2 km away.</Text></View></PhotoBackground>}
-      renderItem={({ item }) => <RestaurantCard onToggleSaved={() => toggleSaved(item.id)} restaurant={item} saved={saved.has(item.id)} style={styles.gridCard} />}
+      renderItem={({ item }) => <RestaurantCard distanceKm={distanceTo(userCoords, item)} onToggleSaved={() => toggleSaved(item.id)} restaurant={item} saved={saved.has(item.id)} style={styles.gridCard} />}
     />
     <BottomNav items={navItems} />
     <Modal animationType="slide" onRequestClose={() => setFiltersOpen(false)} transparent visible={filtersOpen}><Pressable onPress={() => setFiltersOpen(false)} style={styles.modalBackdrop}><Pressable onPress={(event) => event.stopPropagation()} style={[styles.filterSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}><View style={styles.filterHeading}><View><Text style={styles.sheetTitle}>Filter restaurants</Text><Text style={styles.sheetMeta}>Choose what matters for this meal.</Text></View><Pressable accessibilityLabel="Close filters" onPress={() => setFiltersOpen(false)}><Text style={styles.closeFilter}>×</Text></Pressable></View><FilterGroup label="MAXIMUM PRICE" options={[[0, 'Any'], [50000, 'TSh 50k'], [100000, 'TSh 100k'], [150000, 'TSh 150k']]} selected={filters.maxPrice} onSelect={(maxPrice) => setFilters((current) => ({ ...current, maxPrice }))} /><FilterGroup label="MINIMUM RATING" options={[[0, 'Any'], [4.5, '4.5+'], [4.7, '4.7+'], [4.8, '4.8+']]} selected={filters.minRating} onSelect={(minRating) => setFilters((current) => ({ ...current, minRating }))} /><FilterGroup label="MAXIMUM DISTANCE" options={[[0, 'Any'], [1, '1 km'], [2, '2 km'], [5, '5 km']]} selected={filters.maxDistance} onSelect={(maxDistance) => setFilters((current) => ({ ...current, maxDistance }))} /><View style={styles.filterActions}><Pressable onPress={() => setFilters(defaultFilters)} style={styles.clearButton}><Text style={styles.clearButtonText}>Clear</Text></Pressable><Pressable onPress={() => setFiltersOpen(false)} style={styles.applyButton}><Text style={styles.applyButtonText}>Show {visibleRestaurants.length} places</Text></Pressable></View></Pressable></Pressable></Modal>

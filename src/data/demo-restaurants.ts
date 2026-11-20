@@ -12,8 +12,13 @@ const foodPhotos = {
 };
 const dishDescriptions = ['Chef signature, prepared fresh to order.', 'A guest favorite made with local ingredients.', 'Perfect for sharing at the table.'];
 const dishPrices = [28000, 34000, 52000];
+// Same approximate neighbourhood positions as 202611200005_restaurant_location.sql.
+const positions: Record<number, [number, number]> = {
+  1: [-6.7445, 39.2805], 2: [-6.7625, 39.2870], 3: [-6.8125, 39.2895], 4: [-6.7590, 39.2535],
+  5: [-6.8040, 39.2830], 6: [-6.7520, 39.2700], 7: [-6.8195, 39.2740], 8: [-6.8180, 39.2985],
+};
 
-type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu' | 'approvalStatus' | 'rejectionReason' | 'seatsPerSlot' | 'reviewCount' | 'createdAt' | 'menuPdfUrl'> & {
+type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu' | 'approvalStatus' | 'rejectionReason' | 'seatsPerSlot' | 'reviewCount' | 'createdAt' | 'menuPdfUrl' | 'latitude' | 'longitude'> & {
   kind: keyof typeof foodPhotos;
   dishes: [string, string, string];
 };
@@ -41,6 +46,8 @@ function demo({ kind, dishes, ...restaurant }: DemoInput): Restaurant {
     // The date of the first migration, which seeds these restaurants.
     createdAt: '2026-11-10T00:00:00Z',
     menuPdfUrl: null,
+    latitude: positions[restaurant.id]?.[0] ?? null,
+    longitude: positions[restaurant.id]?.[1] ?? null,
     galleryUrls: restaurant.id % 2 === 0 ? [...interiors].reverse() : interiors,
     menu,
   };

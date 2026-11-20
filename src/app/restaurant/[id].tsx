@@ -8,6 +8,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { RestaurantReviews } from '@/components/restaurant-reviews';
 import { menuPdfDownloadUrl } from '@/data/restaurant-menu-pdf';
 import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
+import { useUserLocation } from '@/data/user-location';
+import { distanceTo, formatDistance } from '@/utils/distance';
 import { goBackOrReplace } from '@/utils/navigation';
 
 const ORANGE = '#ED6417';
@@ -17,6 +19,8 @@ export default function RestaurantDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { loading, restaurant } = useRestaurant(id);
+  // Never asks for permission here; it only uses location the person already allowed on the home screen.
+  const { coords } = useUserLocation();
 
   if (loading) {
     return <SafeAreaView style={styles.centered}><Text style={styles.sectionCaption}>Loading restaurant…</Text></SafeAreaView>;
@@ -41,11 +45,13 @@ export default function RestaurantDetailScreen() {
     }
   };
 
+  const position = restaurant.latitude != null && restaurant.longitude != null ? `${restaurant.latitude},${restaurant.longitude}` : null;
   const directionsUrl = restaurant.mapUrl
-    || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
+    || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(position ?? `${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
+  const distance = distanceTo(coords, restaurant);
   const heroPhoto = restaurant.coverUrl ?? restaurant.galleryUrls[0] ?? null;
   const ratingText = restaurant.reviewCount > 0 ? `★ ${restaurant.rating} (${restaurant.reviewCount} ${restaurant.reviewCount === 1 ? 'review' : 'reviews'})` : `★ ${restaurant.rating}`;
-  const meta = [restaurant.rating > 0 ? ratingText : 'New on Kwetu', restaurant.area, restaurant.distanceKm > 0 ? `${restaurant.distanceKm} km away` : null].filter(Boolean).join(' · ');
+  const meta = [restaurant.rating > 0 ? ratingText : 'New on Kwetu', restaurant.area, distance != null ? formatDistance(distance) : null].filter(Boolean).join(' · ');
   const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.');
 
   return (

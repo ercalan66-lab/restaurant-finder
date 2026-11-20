@@ -14,14 +14,15 @@ const SECTIONS: { title: string; body: string[] }[] = [
       'Your delivery address for delivery orders, and the dishes, totals and times of your orders and bookings.',
       'Account details if you register: your email address or phone number and a password or SMS sign-in.',
       'A notification token for your phone if you allow notifications, so we can tell you when your order or table is ready.',
-      'For restaurant owners: restaurant details, menus and the photos you upload.',
+      'For restaurant owners: restaurant details, menus, the photos and menu PDF you upload, and the restaurant’s map location if you add it.',
       'Ratings and comments you choose to leave about restaurants after a completed order or booking.',
     ],
   },
   {
     title: 'What we do not collect',
     body: [
-      'We do not track your location, and we do not sell your data or use it for advertising.',
+      'If you turn on location, the app uses your phone’s position only on your phone, to show how far restaurants are. It is never sent to Kwetu or stored, and you can turn it off at any time in your phone settings.',
+      'We do not sell your data or use it for advertising.',
       'We do not store card numbers. The mobile money number you type when paying is not saved.',
     ],
   },

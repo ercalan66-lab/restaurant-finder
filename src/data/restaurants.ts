@@ -50,12 +50,15 @@ export type RestaurantSummary = {
   createdAt: string;
   /** The full menu as a PDF that customers can view or download, if the owner uploaded one. */
   menuPdfUrl: string | null;
+  /** Map position, set by the owner. Used to show customers how far away the restaurant is. */
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type Restaurant = RestaurantSummary & { menu: MenuItem[] };
 
-export const RESTAURANT_COLUMNS = 'id, owner_id, name, cuisine, area, address, description, phone, email, opens_at, closes_at, map_url, facilities, cover_url, gallery_urls, rating, review_count, distance_km, price_per_person, tag, is_active, approval_status, rejection_reason, seats_per_slot, created_at, menu_pdf_url';
+export const RESTAURANT_COLUMNS = 'id, owner_id, name, cuisine, area, address, description, phone, email, opens_at, closes_at, map_url, facilities, cover_url, gallery_urls, rating, review_count, distance_km, price_per_person, tag, is_active, approval_status, rejection_reason, seats_per_slot, created_at, menu_pdf_url, latitude, longitude';
 export const MENU_COLUMNS = 'id, name, ingredients, price, photo_url, available_from, available_until, in_stock, created_at';
 
 type RestaurantRow = {
@@ -63,7 +66,8 @@ type RestaurantRow = {
   phone: string; email: string; opens_at: string; closes_at: string; map_url: string; facilities: string[] | null;
   cover_url: string | null; gallery_urls: string[] | null; rating: number | string; review_count: number | null; distance_km: number | string;
   price_per_person: number; tag: string; is_active: boolean; approval_status: ApprovalStatus; rejection_reason: string | null;
-  seats_per_slot: number; created_at: string | null; menu_pdf_url: string | null; menu_items?: MenuRow[];
+  seats_per_slot: number; created_at: string | null; menu_pdf_url: string | null;
+  latitude: number | null; longitude: number | null; menu_items?: MenuRow[];
 };
 export type MenuRow = {
   id: string; name: string; ingredients: string; price: number; photo_url: string | null;
@@ -125,6 +129,8 @@ export function toRestaurant(row: RestaurantRow): Restaurant {
     seatsPerSlot: row.seats_per_slot ?? 40,
     createdAt: row.created_at ?? '',
     menuPdfUrl: row.menu_pdf_url ?? null,
+    latitude: row.latitude ?? null,
+    longitude: row.longitude ?? null,
     menu: [...(row.menu_items ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at)).map(toMenuItem),
   };
 }

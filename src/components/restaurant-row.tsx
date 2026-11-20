@@ -2,18 +2,26 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RestaurantCard } from '@/components/restaurant-card';
 import type { HomeSection } from '@/data/home-sections';
+import type { RestaurantSummary } from '@/data/restaurants';
 
 const CARD_WIDTH = 236;
 
-type Props = { section: HomeSection; isSaved: (id: number) => boolean; onToggleSaved: (id: number) => void };
+type Props = {
+  section: HomeSection;
+  isSaved: (id: number) => boolean;
+  onToggleSaved: (id: number) => void;
+  /** Kilometres from the person, shown on the card when known. */
+  userDistanceOf: (restaurant: RestaurantSummary) => number | null;
+};
 
 /** One home screen row ("Near you", "Most reviewed", "New on Kwetu") that scrolls sideways. */
-export function RestaurantRow({ isSaved, onToggleSaved, section }: Props) {
+export function RestaurantRow({ isSaved, onToggleSaved, section, userDistanceOf }: Props) {
   return <View style={styles.section}>
     <Text accessibilityRole="header" style={styles.title}>{section.title}</Text>
     <Text style={styles.caption}>{section.caption}</Text>
     <ScrollView contentContainerStyle={styles.row} horizontal showsHorizontalScrollIndicator={false}>
       {section.restaurants.map((restaurant) => <RestaurantCard
+        distanceKm={userDistanceOf(restaurant)}
         key={restaurant.id}
         onToggleSaved={() => onToggleSaved(restaurant.id)}
         restaurant={restaurant}

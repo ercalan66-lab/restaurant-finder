@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AlertsCard } from '@/components/owner/alerts-card';
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from '@/components/owner/form-controls';
+import { LocationManager } from '@/components/owner/location-manager';
 import { MenuManager } from '@/components/owner/menu-manager';
 import { MenuPdfManager } from '@/components/owner/menu-pdf-manager';
 import { PhotoManager } from '@/components/owner/photo-manager';
@@ -157,6 +158,7 @@ export default function OwnerDashboardScreen() {
         <Section title="Restaurant information">
           <RestaurantDetailsForm initial={detailsOf(restaurant)} key={restaurant.id} onSubmit={saveDetails} submitLabel="Save restaurant information" />
         </Section>
+        <LocationManager onUpdated={update} restaurant={restaurant} />
         <MenuPdfManager onUpdated={update} restaurant={restaurant} />
         <MenuManager onMenuChange={(menu) => update({ menu })} restaurant={restaurant} />
       </>}
