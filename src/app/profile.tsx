@@ -22,6 +22,8 @@ const accountLabel = (user: User | null) => user ? user.email || formatAccountPh
 const ORANGE = '#ED6417';
 const ACTIVITY_REFRESH_MS = 15_000;
 
+type SaveStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'saved' } | { kind: 'error'; message: string };
+
 /** Latest statuses first (works for guests too), then this person's orders and bookings, and which completed ones are reviewed. */
 async function loadActivity() {
   await refreshRequestStatuses().catch(() => false);
@@ -35,8 +37,8 @@ export default function ProfileScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [savedMessage, setSavedMessage] = useState('');
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: 'idle' });
+  const saving = saveStatus.kind === 'saving';
   const [account, setAccount] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [accountNotice, setAccountNotice] = useState('');
@@ -103,23 +105,26 @@ export default function ProfileScreen() {
     })(),
   );
 
+  // Feedback stays on the screen (not in a pop-up), because pop-ups do not show in the web version.
   const save = async () => {
-    if (!name.trim()) return Alert.alert('Missing information', 'Enter your name.');
-    if (!phone.trim()) return Alert.alert('Missing information', 'Enter your phone number.');
-    setSaving(true);
-    setSavedMessage('');
+    if (!name.trim()) return setSaveStatus({ kind: 'error', message: 'Enter your name before saving.' });
+    if (!phone.trim()) return setSaveStatus({ kind: 'error', message: 'Enter your phone number before saving.' });
+    setSaveStatus({ kind: 'saving' });
     try {
       const saved = await saveGuestProfile({ name: name.trim(), phone: phone.trim(), email: email.trim() });
       setName(saved.name);
       setPhone(saved.phone);
       setEmail(saved.email);
-      setSavedMessage('Profile saved successfully. Your details will prefill reservations and orders.');
+      setSaveStatus({ kind: 'saved' });
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'Unknown storage error';
-      Alert.alert('Could not save profile', `${reason}\n\nPlease reload the app and try again.`);
-    } finally {
-      setSaving(false);
+      const reason = error instanceof Error ? error.message : 'unknown storage error';
+      setSaveStatus({ kind: 'error', message: `Your profile could not be saved (${reason}). Please try again.` });
     }
+  };
+  // Typing again after saving (or after a problem) brings back the normal "Save profile" button.
+  const edit = (setter: (value: string) => void) => (value: string) => {
+    setter(value);
+    if (saveStatus.kind === 'saved' || saveStatus.kind === 'error') setSaveStatus({ kind: 'idle' });
   };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -136,11 +141,14 @@ export default function ProfileScreen() {
       {accountNotice ? <Text accessibilityRole="alert" style={styles.accountNotice}>{accountNotice}</Text> : null}
     </View>
 
-    <Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" editable={!saving} onChangeText={setName} placeholder="Full name" style={styles.input} value={name} />
-    <Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" editable={!saving} keyboardType="phone-pad" onChangeText={setPhone} placeholder="+255..." style={styles.input} value={phone} />
-    <Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" editable={!saving} keyboardType="email-address" onChangeText={setEmail} placeholder="you@example.com" style={styles.input} value={email} />
-    {savedMessage ? <Text accessibilityRole="alert" style={styles.savedMessage}>{savedMessage}</Text> : null}
-    <Pressable disabled={saving} onPress={save} style={[styles.button, saving && styles.buttonDisabled]}><Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save profile'}</Text></Pressable>
+    <Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" editable={!saving} onChangeText={edit(setName)} placeholder="Full name" style={styles.input} value={name} />
+    <Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" editable={!saving} keyboardType="phone-pad" onChangeText={edit(setPhone)} placeholder="+255..." style={styles.input} value={phone} />
+    <Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" editable={!saving} keyboardType="email-address" onChangeText={edit(setEmail)} placeholder="you@example.com" style={styles.input} value={email} />
+    <Pressable accessibilityRole="button" accessibilityState={{ busy: saving, disabled: saving }} disabled={saving} onPress={() => void save()} style={[styles.button, saving && styles.buttonDisabled, saveStatus.kind === 'saved' && styles.buttonSaved]}>
+      <Text style={styles.buttonText}>{saving ? 'Saving…' : saveStatus.kind === 'saved' ? '✓ Saved' : 'Save profile'}</Text>
+    </Pressable>
+    {saveStatus.kind === 'saved' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.savedMessage}>✓ Profile saved. Your name and phone will fill in automatically when you order food or book a table.</Text>}
+    {saveStatus.kind === 'error' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorMessage}>{saveStatus.message}</Text>}
 
     <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} reviewed={reviewed} signedIn={Boolean(account)} />
 
@@ -159,7 +167,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF8ED' }, content: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: 20, paddingBottom: 60 }, back: { color: ORANGE, fontSize: 14, fontWeight: '800', marginBottom: 25 }, eyebrow: { color: ORANGE, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }, title: { color: '#171612', fontSize: 34, fontWeight: '900', marginTop: 6 }, subtitle: { color: '#777268', fontSize: 14, lineHeight: 20, marginTop: 7, marginBottom: 20 },
   accountCard: { padding: 14, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 15, backgroundColor: '#FFF' }, accountLabel: { color: '#777268', fontSize: 9, fontWeight: '900', letterSpacing: 0.7 }, accountValue: { color: '#171612', fontSize: 13, fontWeight: '800', marginTop: 5 }, accountActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 9 }, accountAction: { color: ORANGE, fontSize: 12, fontWeight: '900' }, deleteAction: { color: '#9B321C' }, accountNotice: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 10, padding: 10, fontSize: 12, lineHeight: 17, marginTop: 10 },
-  label: { color: '#777268', fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 16, marginBottom: 7 }, input: { height: 50, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, paddingHorizontal: 15, color: '#171612', backgroundColor: '#FFF' }, savedMessage: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 18 }, button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: ORANGE, marginTop: 20 }, buttonDisabled: { opacity: 0.6 }, buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  label: { color: '#777268', fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 16, marginBottom: 7 }, input: { height: 50, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, paddingHorizontal: 15, color: '#171612', backgroundColor: '#FFF' }, savedMessage: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 18 }, button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: ORANGE, marginTop: 20 }, buttonDisabled: { opacity: 0.6 }, buttonSaved: { backgroundColor: '#2E8B57' }, errorMessage: { color: '#8E2F1A', backgroundColor: '#FBE5DF', borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 12 }, buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
   adminCard: { marginTop: 28, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: '#D6CCE8', backgroundColor: '#F6F2FD' }, adminEyebrow: { color: '#5B3FA0', fontSize: 9, fontWeight: '900', letterSpacing: 1 }, adminTitle: { color: '#271A45', fontSize: 18, fontWeight: '900', marginTop: 5 }, adminCopy: { color: '#5E567A', fontSize: 12, lineHeight: 18, marginTop: 4 },
   ownerCard: { marginTop: 28, padding: 20, borderRadius: 22, backgroundColor: '#271812' }, ownerEyebrow: { color: '#F29A52', fontSize: 9, fontWeight: '900', letterSpacing: 1 }, ownerTitle: { color: '#FFF', fontSize: 21, fontWeight: '900', marginTop: 6 }, ownerCopy: { color: '#D8CEC8', fontSize: 12, lineHeight: 18, marginTop: 7 }, ownerButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 23, backgroundColor: '#B93F1D', marginTop: 16 }, ownerButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
   privacyLink: { alignSelf: 'center', paddingVertical: 12, marginTop: 18 }, privacyText: { color: '#777268', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
