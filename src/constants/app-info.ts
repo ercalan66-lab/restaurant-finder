@@ -5,4 +5,4 @@ export const APP_NAME = 'Kwetu';
 /** Where people can ask about their data or request deletion. Leave empty until you have one. */
 export const SUPPORT_EMAIL = '';
 
-export const PRIVACY_POLICY_UPDATED = '18 November 2026';
+export const PRIVACY_POLICY_UPDATED = '20 November 2026';

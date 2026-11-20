@@ -4,6 +4,7 @@ import { router, type Href, useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { RestaurantReviews } from '@/components/restaurant-reviews';
 import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 
@@ -41,7 +42,8 @@ export default function RestaurantDetailScreen() {
   const directionsUrl = restaurant.mapUrl
     || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
   const heroPhoto = restaurant.coverUrl ?? restaurant.galleryUrls[0] ?? null;
-  const meta = [restaurant.rating > 0 ? `★ ${restaurant.rating}` : 'New on Kwetu', restaurant.area, restaurant.distanceKm > 0 ? `${restaurant.distanceKm} km away` : null].filter(Boolean).join(' · ');
+  const ratingText = restaurant.reviewCount > 0 ? `★ ${restaurant.rating} (${restaurant.reviewCount} ${restaurant.reviewCount === 1 ? 'review' : 'reviews'})` : `★ ${restaurant.rating}`;
+  const meta = [restaurant.rating > 0 ? ratingText : 'New on Kwetu', restaurant.area, restaurant.distanceKm > 0 ? `${restaurant.distanceKm} km away` : null].filter(Boolean).join(' · ');
   const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.');
 
   return (
@@ -113,6 +115,8 @@ export default function RestaurantDetailScreen() {
             })}
           </View>
         </View>
+
+        <RestaurantReviews rating={restaurant.rating} restaurantId={restaurant.id} reviewCount={restaurant.reviewCount} />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact & visit</Text>

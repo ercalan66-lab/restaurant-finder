@@ -34,7 +34,9 @@ export type RestaurantSummary = {
   facilities: string[];
   coverUrl: string | null;
   galleryUrls: string[];
+  /** Average of visible customer reviews once there are any; until then the rating set by an admin. */
   rating: number;
+  reviewCount: number;
   distanceKm: number;
   pricePerPerson: number;
   tag: string;
@@ -49,13 +51,13 @@ export type RestaurantSummary = {
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type Restaurant = RestaurantSummary & { menu: MenuItem[] };
 
-export const RESTAURANT_COLUMNS = 'id, owner_id, name, cuisine, area, address, description, phone, email, opens_at, closes_at, map_url, facilities, cover_url, gallery_urls, rating, distance_km, price_per_person, tag, is_active, approval_status, rejection_reason, seats_per_slot';
+export const RESTAURANT_COLUMNS = 'id, owner_id, name, cuisine, area, address, description, phone, email, opens_at, closes_at, map_url, facilities, cover_url, gallery_urls, rating, review_count, distance_km, price_per_person, tag, is_active, approval_status, rejection_reason, seats_per_slot';
 export const MENU_COLUMNS = 'id, name, ingredients, price, photo_url, available_from, available_until, in_stock, created_at';
 
 type RestaurantRow = {
   id: number; owner_id: string | null; name: string; cuisine: string; area: string; address: string; description: string;
   phone: string; email: string; opens_at: string; closes_at: string; map_url: string; facilities: string[] | null;
-  cover_url: string | null; gallery_urls: string[] | null; rating: number | string; distance_km: number | string;
+  cover_url: string | null; gallery_urls: string[] | null; rating: number | string; review_count: number | null; distance_km: number | string;
   price_per_person: number; tag: string; is_active: boolean; approval_status: ApprovalStatus; rejection_reason: string | null;
   seats_per_slot: number; menu_items?: MenuRow[];
 };
@@ -109,6 +111,7 @@ export function toRestaurant(row: RestaurantRow): Restaurant {
     coverUrl: row.cover_url,
     galleryUrls: row.gallery_urls ?? [],
     rating: Number(row.rating),
+    reviewCount: row.review_count ?? 0,
     distanceKm: Number(row.distance_km),
     pricePerPerson: row.price_per_person,
     tag: row.tag,

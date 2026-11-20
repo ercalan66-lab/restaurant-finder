@@ -15,6 +15,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
       'Account details if you register: your email address or phone number and a password or SMS sign-in.',
       'A notification token for your phone if you allow notifications, so we can tell you when your order or table is ready.',
       'For restaurant owners: restaurant details, menus and the photos you upload.',
+      'Ratings and comments you choose to leave about restaurants after a completed order or booking.',
     ],
   },
   {
@@ -28,6 +29,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
     title: 'Who can see it',
     body: [
       'The restaurant you order from or book with sees your name, phone number, email, delivery address and order.',
+      'If you review a restaurant, your star rating, comment and first name are shown publicly on its page. Deleting your account removes your name from your reviews.',
       `${APP_NAME} administrators can see restaurant listings to review them, and can look up orders and bookings (including the customer’s name and phone number) to help customers and restaurants with problems.`,
       'Data is stored with our hosting provider (Supabase) and notifications are delivered through Expo. They process it only to run the app.',
     ],

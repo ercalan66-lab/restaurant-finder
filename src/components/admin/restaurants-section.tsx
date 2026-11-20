@@ -83,9 +83,11 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
     if (!reason.trim()) return Alert.alert('Add a reason', 'Tell the owner what needs to change.');
     return run(() => reviewRestaurant(restaurant.id, false, reason.trim()), `The owner of ${restaurant.name} has been asked for changes.`);
   };
+  // Once customers have reviewed the restaurant, its rating is their average and only the tag is editable.
+  const ratedByCustomers = restaurant.reviewCount > 0;
   const saveListing = () => {
-    const value = Number(rating.replace(',', '.'));
-    if (!rating.trim() || Number.isNaN(value) || value < 0 || value > 5) return Alert.alert('Check the rating', 'Enter a rating between 0 and 5, for example 4.6.');
+    const value = ratedByCustomers ? restaurant.rating : Number(rating.replace(',', '.'));
+    if (!ratedByCustomers && (!rating.trim() || Number.isNaN(value) || value < 0 || value > 5)) return Alert.alert('Check the rating', 'Enter a rating between 0 and 5, for example 4.6.');
     return run(() => updateListing(restaurant.id, value, tag), `${restaurant.name} listing updated.`);
   };
 
@@ -100,16 +102,19 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
     {restaurant.approvalStatus === 'rejected' && restaurant.rejectionReason ? <Text style={styles.reason}>Asked for: {restaurant.rejectionReason}</Text> : null}
     <Pressable onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)}><Text style={adminStyles.link}>View the restaurant page ›</Text></Pressable>
 
-    {restaurant.approvalStatus === 'approved' && <View style={styles.listing}>
-      <View style={styles.listingField}><Text style={adminStyles.label}>RATING (0–5)</Text><TextInput editable={!busy} keyboardType="decimal-pad" onChangeText={setRating} placeholder="4.6" style={adminStyles.input} value={rating} /></View>
-      <View style={[styles.listingField, styles.listingTag]}><Text style={adminStyles.label}>TAG</Text><TextInput editable={!busy} maxLength={24} onChangeText={setTag} placeholder="Bestseller" style={adminStyles.input} value={tag} /></View>
-    </View>}
+    {restaurant.approvalStatus === 'approved' && <>
+      <View style={styles.listing}>
+        <View style={styles.listingField}><Text style={adminStyles.label}>RATING (0–5)</Text><TextInput editable={!busy && !ratedByCustomers} keyboardType="decimal-pad" onChangeText={setRating} placeholder="4.6" style={[adminStyles.input, ratedByCustomers && adminStyles.disabled]} value={ratedByCustomers ? String(restaurant.rating) : rating} /></View>
+        <View style={[styles.listingField, styles.listingTag]}><Text style={adminStyles.label}>TAG</Text><TextInput editable={!busy} maxLength={24} onChangeText={setTag} placeholder="Bestseller" style={adminStyles.input} value={tag} /></View>
+      </View>
+      {ratedByCustomers && <Text style={adminStyles.meta}>The rating is the average of {restaurant.reviewCount} customer {restaurant.reviewCount === 1 ? 'review' : 'reviews'}. Hide unfair reviews in the Reviews section.</Text>}
+    </>}
 
     {asking && <View><Text style={adminStyles.label}>WHAT NEEDS TO CHANGE?</Text><TextInput editable={!busy} multiline onChangeText={setReason} placeholder="For example: add a cover photo and at least three dishes." style={[adminStyles.input, adminStyles.multiline]} value={reason} /></View>}
 
     <View style={adminStyles.actions}>
       {restaurant.approvalStatus !== 'approved' && !asking && <Action disabled={busy} label="Approve" onPress={() => void approve()} />}
-      {restaurant.approvalStatus === 'approved' && <Action disabled={busy} label="Save rating & tag" onPress={() => void saveListing()} />}
+      {restaurant.approvalStatus === 'approved' && <Action disabled={busy} label={ratedByCustomers ? 'Save tag' : 'Save rating & tag'} onPress={() => void saveListing()} />}
       {asking
         ? <><Action disabled={busy} label="Send to owner" onPress={() => void requestChanges()} /><Action disabled={busy} label="Cancel" onPress={() => setAsking(false)} secondary /></>
         : restaurant.approvalStatus !== 'rejected' && <Action disabled={busy} label={restaurant.approvalStatus === 'approved' ? 'Unpublish' : 'Request changes'} onPress={() => setAsking(true)} secondary />}

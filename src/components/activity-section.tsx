@@ -44,14 +44,21 @@ function reservationStatus(reservation: ReservationRecord): { label: string; ton
   }
 }
 
-/** The customer's orders and bookings, with Pay and Cancel where allowed. */
-export function ActivitySection({ loading, onChanged, orders, reservations, signedIn }: {
+/** The customer's orders and bookings, with Pay, Cancel and Rate where allowed. */
+export function ActivitySection({ loading, onChanged, orders, reservations, reviewed, signedIn }: {
   loading: boolean;
   onChanged: () => void;
   orders: OrderRecord[];
   reservations: ReservationRecord[];
+  /** References of completed requests that already have a review. */
+  reviewed: Set<string>;
   signedIn: boolean;
 }) {
+  const rateButton = (reference: string, completed: boolean) => {
+    if (!completed) return null;
+    if (reviewed.has(reference)) return <Text style={styles.reviewed}>★ Reviewed</Text>;
+    return <Action label="Rate your visit" onPress={() => router.push(`/review/${reference}` as Href)} />;
+  };
   const run = async (action: () => Promise<void>) => {
     try {
       await action();
@@ -75,6 +82,7 @@ export function ActivitySection({ loading, onChanged, orders, reservations, sign
           meta={`TSh ${order.total.toLocaleString()} · ${order.fulfillment} · ${paymentSummary(order)}`}>
           {canPayInApp(order) && <Action label={`Pay TSh ${order.total.toLocaleString()}`} onPress={() => router.push(`/pay/${order.id}` as Href)} />}
           {canCancelOrder(order) && <Action label="Cancel order" onPress={() => confirmCancelOrder(order)} secondary />}
+          {rateButton(order.id, order.status === 'completed' && !order.rejectedReason)}
         </Card>;
       }) : <Text style={styles.empty}>No food orders yet.</Text>}
       <Text style={styles.label}>RESERVATIONS</Text>
@@ -83,6 +91,7 @@ export function ActivitySection({ loading, onChanged, orders, reservations, sign
         reference={reservation.id} status={reservationStatus(reservation)}
         meta={`${formatBooking(reservation.date, reservation.time)} · ${reservation.guests} ${reservation.guests === 1 ? 'guest' : 'guests'}`}>
         {canCancelReservation(reservation) && <Action label="Cancel booking" onPress={() => confirmCancelReservation(reservation)} secondary />}
+        {rateButton(reservation.id, reservation.status === 'completed' && !reservation.rejectedReason)}
       </Card>) : <Text style={styles.empty}>No table reservations yet.</Text>}
     </>}
   </View>;
@@ -123,6 +132,7 @@ const styles = StyleSheet.create({
   actionSecondary: { borderWidth: 1, borderColor: '#E3D6CA', backgroundColor: '#FFF' },
   actionText: { color: '#FFF', fontSize: 11, fontWeight: '900' },
   actionSecondaryText: { color: '#8E2F1A' },
+  reviewed: { color: '#EAA000', fontSize: 11, fontWeight: '900', paddingVertical: 9 },
 });
 
 const tones = StyleSheet.create({

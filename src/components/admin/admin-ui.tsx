@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export const ACCENT = '#B93F1D';
 
-export type AdminSection = 'overview' | 'restaurants' | 'requests' | 'team';
+export type AdminSection = 'overview' | 'restaurants' | 'requests' | 'reviews' | 'team';
 
 /** Loading state shared by the admin sections. */
 export type Loadable<T> = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; value: T };

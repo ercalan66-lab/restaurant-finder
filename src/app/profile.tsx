@@ -9,6 +9,7 @@ import { ActivitySection } from '@/components/activity-section';
 import { deleteMyAccount } from '@/data/account';
 import { checkIsAdmin } from '@/data/admin';
 import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
+import { fetchReviewedReferences } from '@/data/reviews';
 import { confirmAction, errorMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
@@ -21,11 +22,13 @@ const accountLabel = (user: User | null) => user ? user.email || formatAccountPh
 const ORANGE = '#ED6417';
 const ACTIVITY_REFRESH_MS = 15_000;
 
-/** Latest statuses first (works for guests too), then this person's orders and bookings. */
+/** Latest statuses first (works for guests too), then this person's orders and bookings, and which completed ones are reviewed. */
 async function loadActivity() {
   await refreshRequestStatuses().catch(() => false);
   const [orders, reservations] = await Promise.all([getMyOrders(), getMyReservations()]);
-  return { orders, reservations };
+  const completed = [...orders, ...reservations].filter((record) => record.status === 'completed').map((record) => record.id);
+  const reviewed = await fetchReviewedReferences(completed);
+  return { orders, reservations, reviewed };
 }
 
 export default function ProfileScreen() {
@@ -40,6 +43,7 @@ export default function ProfileScreen() {
   const [deleting, setDeleting] = useState(false);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [reservations, setReservations] = useState<ReservationRecord[]>([]);
+  const [reviewed, setReviewed] = useState<Set<string>>(new Set());
   const [historyLoading, setHistoryLoading] = useState(true);
 
   useEffect(() => {
@@ -54,9 +58,10 @@ export default function ProfileScreen() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const applyActivity = useCallback(({ orders: nextOrders, reservations: nextReservations }: Awaited<ReturnType<typeof loadActivity>>) => {
+  const applyActivity = useCallback(({ orders: nextOrders, reservations: nextReservations, reviewed: nextReviewed }: Awaited<ReturnType<typeof loadActivity>>) => {
     setOrders(nextOrders);
     setReservations(nextReservations);
+    setReviewed(nextReviewed);
     setHistoryLoading(false);
   }, []);
   const reloadActivity = useCallback(() => void loadActivity().then(applyActivity).catch(() => setHistoryLoading(false)), [applyActivity]);
@@ -137,7 +142,7 @@ export default function ProfileScreen() {
     {savedMessage ? <Text accessibilityRole="alert" style={styles.savedMessage}>{savedMessage}</Text> : null}
     <Pressable disabled={saving} onPress={save} style={[styles.button, saving && styles.buttonDisabled]}><Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save profile'}</Text></Pressable>
 
-    <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} signedIn={Boolean(account)} />
+    <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} reviewed={reviewed} signedIn={Boolean(account)} />
 
     {isAdmin && <Pressable accessibilityRole="button" onPress={() => router.push('/admin' as Href)} style={styles.adminCard}>
       <Text style={styles.adminEyebrow}>KWETU ADMIN</Text>

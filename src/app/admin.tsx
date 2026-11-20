@@ -7,6 +7,7 @@ import { ACCENT, Chips, type AdminSection } from '@/components/admin/admin-ui';
 import { OverviewSection } from '@/components/admin/overview-section';
 import { RequestsSection } from '@/components/admin/requests-section';
 import { RestaurantsSection } from '@/components/admin/restaurants-section';
+import { ReviewsSection } from '@/components/admin/reviews-section';
 import { TeamSection } from '@/components/admin/team-section';
 import { checkIsAdmin } from '@/data/admin';
 import type { ApprovalStatus } from '@/data/restaurants';
@@ -18,6 +19,7 @@ const SECTIONS: { value: AdminSection; label: string }[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'restaurants', label: 'Restaurants' },
   { value: 'requests', label: 'Orders & bookings' },
+  { value: 'reviews', label: 'Reviews' },
   { value: 'team', label: 'Admins' },
 ];
 
@@ -50,6 +52,7 @@ export default function AdminScreen() {
     {section === 'overview' && <OverviewSection onOpenRequests={() => setSection('requests')} onOpenRestaurants={openRestaurants} />}
     {section === 'restaurants' && <RestaurantsSection onTabChange={setReviewTab} tab={reviewTab} />}
     {section === 'requests' && <RequestsSection />}
+    {section === 'reviews' && <ReviewsSection />}
     {section === 'team' && <TeamSection onLeftTeam={recheck} />}
   </Shell>;
 }
