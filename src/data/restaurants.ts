@@ -135,10 +135,13 @@ export function toRestaurant(row: RestaurantRow): Restaurant {
   };
 }
 
-/** Active restaurants for the customer list. Falls back to the bundled demo list when Supabase is unreachable. */
-export async function fetchRestaurants(): Promise<{ restaurants: RestaurantSummary[]; offline: boolean }> {
+/**
+ * Active restaurants for the customer list, with their menus so people can search for a dish.
+ * Falls back to the bundled demo list when Supabase is unreachable.
+ */
+export async function fetchRestaurants(): Promise<{ restaurants: Restaurant[]; offline: boolean }> {
   try {
-    const { data, error } = await withTimeout((signal) => supabase.from('restaurants').select(RESTAURANT_COLUMNS).eq('is_active', true).eq('approval_status', 'approved').order('id').abortSignal(signal));
+    const { data, error } = await withTimeout((signal) => supabase.from('restaurants').select(`${RESTAURANT_COLUMNS}, menu_items(${MENU_COLUMNS})`).eq('is_active', true).eq('approval_status', 'approved').order('id').abortSignal(signal));
     if (error) throw error;
     return { restaurants: (data as RestaurantRow[]).map(toRestaurant), offline: false };
   } catch (error) {
@@ -166,7 +169,7 @@ export async function fetchRestaurant(id: number): Promise<Restaurant | null> {
 
 /** Reloads every time the screen gains focus, so owner edits show up when navigating back. */
 export function useRestaurants() {
-  const [state, setState] = useState<{ restaurants: RestaurantSummary[] | null; offline: boolean }>({ restaurants: null, offline: false });
+  const [state, setState] = useState<{ restaurants: Restaurant[] | null; offline: boolean }>({ restaurants: null, offline: false });
   useFocusEffect(useCallback(() => {
     let active = true;
     void fetchRestaurants().then((result) => { if (active) setState(result); });

@@ -49,6 +49,11 @@ export default function RestaurantDetailScreen() {
   const directionsUrl = restaurant.mapUrl
     || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(position ?? `${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
   const distance = distanceTo(coords, restaurant);
+  // Foods that can be ordered right now come first.
+  const menu = restaurant.menu
+    .map((item) => ({ item, available: isMenuItemAvailable(item, restaurant) }))
+    .sort((a, b) => Number(b.available) - Number(a.available));
+  const availableNow = menu.filter((entry) => entry.available).length;
   const heroPhoto = restaurant.coverUrl ?? restaurant.galleryUrls[0] ?? null;
   const ratingText = restaurant.reviewCount > 0 ? `★ ${restaurant.rating} (${restaurant.reviewCount} ${restaurant.reviewCount === 1 ? 'review' : 'reviews'})` : `★ ${restaurant.rating}`;
   const meta = [restaurant.rating > 0 ? ratingText : 'New on Kwetu', restaurant.area, distance != null ? formatDistance(distance) : null].filter(Boolean).join(' · ');
@@ -102,7 +107,7 @@ export default function RestaurantDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Menu & food</Text>
-          <Text style={styles.sectionCaption}>{restaurant.menu.length ? 'Current foods, ingredients, prices, and availability.' : restaurant.menuPdfUrl ? 'See the full menu in the PDF below.' : 'The menu is coming soon.'}</Text>
+          <Text style={styles.sectionCaption}>{restaurant.menu.length ? `${availableNow} of ${restaurant.menu.length} foods available now. Prices, ingredients and serving times below.` : restaurant.menuPdfUrl ? 'See the full menu in the PDF below.' : 'The menu is coming soon.'}</Text>
           {restaurant.menuPdfUrl ? <View style={styles.pdfCard}>
             <Text style={styles.pdfIcon}>📄</Text>
             <View style={styles.pdfCopy}>
@@ -119,8 +124,7 @@ export default function RestaurantDetailScreen() {
             </View>
           </View> : null}
           <View style={styles.menuList}>
-            {restaurant.menu.map((item) => {
-              const available = isMenuItemAvailable(item, restaurant);
+            {menu.map(({ item, available }) => {
               return (
                 <View key={item.id} style={[styles.menuCard, !available && styles.menuCardUnavailable]}>
                   {item.photoUrl ? <Image contentFit="cover" source={item.photoUrl} style={styles.foodPhoto} transition={200} /> : <View style={styles.foodPlaceholder}><Text style={styles.foodPlaceholderIcon}>🍽️</Text></View>}
