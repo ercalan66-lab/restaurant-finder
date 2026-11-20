@@ -82,6 +82,7 @@ const PROFILE_KEY = 'fork-guest-profile';
 const RESERVATIONS_KEY = 'fork-reservations';
 const ORDERS_KEY = 'fork-orders';
 export const SAVED_RESTAURANTS_KEY = 'fork-saved-restaurants';
+export const SAVED_DISHES_KEY = 'kwetu-saved-dishes';
 
 const emptyProfile: GuestProfile = { name: '', phone: '', email: '' };
 const FINAL_STATUSES = new Set(['completed', 'declined', 'cancelled']);
@@ -132,7 +133,7 @@ export async function saveGuestProfile(profile: GuestProfile): Promise<GuestProf
 
 /** Removes everything this app stored on the phone (used after deleting an account). */
 export async function clearLocalData() {
-  await Promise.all([PROFILE_KEY, ORDERS_KEY, RESERVATIONS_KEY, SAVED_RESTAURANTS_KEY].map((key) => Storage.removeItemAsync(key)));
+  await Promise.all([PROFILE_KEY, ORDERS_KEY, RESERVATIONS_KEY, SAVED_RESTAURANTS_KEY, SAVED_DISHES_KEY].map((key) => Storage.removeItemAsync(key)));
 }
 
 const reservationRow = (reservation: ReservationRecord) => ({

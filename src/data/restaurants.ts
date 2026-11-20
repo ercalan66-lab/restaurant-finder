@@ -16,6 +16,8 @@ export type MenuItem = {
   availableFrom: string;
   availableUntil: string;
   inStock: boolean;
+  /** When the dish was added to the menu (ISO timestamp). */
+  createdAt: string;
 };
 
 export type RestaurantSummary = {
@@ -98,6 +100,7 @@ export function toMenuItem(row: MenuRow): MenuItem {
     availableFrom: hhmm(row.available_from),
     availableUntil: hhmm(row.available_until),
     inStock: row.in_stock,
+    createdAt: row.created_at,
   };
 }
 

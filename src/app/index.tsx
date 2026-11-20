@@ -1,21 +1,25 @@
 import { router, type Href } from 'expo-router';
-import Storage from '@/utils/kv-store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, type NavItem } from '@/components/bottom-nav';
+import { FoodRow } from '@/components/food-row';
 import { LocationPrompt } from '@/components/location-prompt';
 import { PhotoBackground } from '@/components/photo-background';
 import { RestaurantCard } from '@/components/restaurant-card';
 import { RestaurantRow } from '@/components/restaurant-row';
 import { SearchResultCard } from '@/components/search-result-card';
+import { foodSections } from '@/data/food-sections';
 import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
 import { homeSections } from '@/data/home-sections';
-import { useRestaurants, type RestaurantSummary } from '@/data/restaurants';
+import { usePopularDishes } from '@/data/popular-dishes';
+import { isMenuItemAvailable, useRestaurants, type RestaurantSummary } from '@/data/restaurants';
+import { useSavedDishes } from '@/data/saved-dishes';
 import { searchRestaurants, type SearchHit } from '@/data/search';
 import { useUserLocation } from '@/data/user-location';
 import { distanceTo, type Coords } from '@/utils/distance';
+import Storage from '@/utils/kv-store';
 
 type Restaurant = RestaurantSummary;
 type Filters = { maxPrice: number; minRating: number; maxDistance: number };
@@ -45,6 +49,8 @@ export default function HomeScreen() {
   const listRef = useRef<FlatList<SearchHit>>(null);
   const location = useUserLocation();
   const userCoords = location.coords;
+  const savedDishes = useSavedDishes();
+  const popular = usePopularDishes();
 
   useEffect(() => {
     let active = true;
@@ -78,6 +84,13 @@ export default function HomeScreen() {
   const filterCount = Object.values(filters).filter(Boolean).length;
   // The curated rows show only while browsing; searching, filtering or Saved shows plain results.
   const browsing = !savedOnly && !query.trim() && filterCount === 0;
+  const foods = useMemo(() => foodSections(restaurants ?? [], {
+    popular,
+    savedDishIds: savedDishes.saved,
+    isAvailable: isMenuItemAvailable,
+  }), [restaurants, popular, savedDishes.saved]);
+  const savedFoods = foods.find((section) => section.key === 'saved');
+  const foodDistance = (restaurant: Restaurant) => distanceTo(userCoords, restaurant);
   const sections = useMemo(() => homeSections(restaurants ?? [], {
     distanceOf: (restaurant) => sortingDistance(userCoords, restaurant),
     fromUser: userCoords != null,
@@ -116,6 +129,8 @@ export default function HomeScreen() {
         <Pressable onPress={showAll} style={styles.cta}><Text style={styles.ctaText}>FIND A RESTAURANT</Text><View style={styles.ctaArrow}><Text style={styles.orangeText}>→</Text></View></Pressable>
       </View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
     </PhotoBackground>}
+    {browsing && foods.map((section) => <FoodRow distanceOf={foodDistance} isSaved={(id) => savedDishes.saved.has(id)} key={section.key} onToggleSaved={savedDishes.toggle} section={section} />)}
+    {savedOnly && !searching && savedFoods && <FoodRow distanceOf={foodDistance} isSaved={(id) => savedDishes.saved.has(id)} onToggleSaved={savedDishes.toggle} section={savedFoods} />}
     {browsing && sections.map((section) => <RestaurantRow isSaved={(id) => saved.has(id)} key={section.key} onToggleSaved={toggleSaved} section={section} userDistanceOf={(restaurant) => distanceTo(userCoords, restaurant)} />)}
     <View style={styles.heading}><View><Text style={styles.sectionTitle}>{listTitle}</Text><Text style={styles.resultCount}>{countText}</Text>{offline && <Text style={styles.offlineNote}>Offline · showing saved sample restaurants</Text>}</View>{!browsing && <Pressable onPress={showAll}><Text style={styles.viewAll}>Show all <Text style={styles.orangeText}>→</Text></Text></Pressable>}</View>
   </>;

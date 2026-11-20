@@ -33,6 +33,7 @@ function demo({ kind, dishes, ...restaurant }: DemoInput): Restaurant {
     availableFrom: restaurant.opensAt,
     availableUntil: restaurant.closesAt,
     inStock: true,
+    createdAt: '2026-11-10T00:00:00Z',
   }));
   return {
     ...restaurant,

@@ -45,11 +45,11 @@ export function homeSections(restaurants: RestaurantSummary[], { distanceOf, fro
     .slice(0, ROW_SIZE);
 
   const sections: HomeSection[] = [
-    { key: 'near', title: 'Near you', caption: fromUser ? 'Closest to where you are now' : 'Turn on location to sort by your own distance', restaurants: near },
+    { key: 'near', title: 'Restaurants near you', caption: fromUser ? 'Closest to where you are now' : 'Turn on location to sort by your own distance', restaurants: near },
     mostReviewed.length
-      ? { key: 'popular', title: 'Most reviewed', caption: 'Places customers talk about most', restaurants: mostReviewed }
-      : { key: 'popular', title: 'Top rated', caption: 'The highest-rated places on Kwetu', restaurants: topRated },
-    { key: 'new', title: 'New on Kwetu', caption: `Added in the last ${NEW_WITHIN_DAYS} days`, restaurants: fresh },
+      ? { key: 'popular', title: 'Most reviewed restaurants', caption: 'Places customers talk about most', restaurants: mostReviewed }
+      : { key: 'popular', title: 'Top rated restaurants', caption: 'The highest-rated places on Kwetu', restaurants: topRated },
+    { key: 'new', title: 'New restaurants', caption: `Added to Kwetu in the last ${NEW_WITHIN_DAYS} days`, restaurants: fresh },
   ];
   return sections.filter((section) => section.restaurants.length > 0);
 }

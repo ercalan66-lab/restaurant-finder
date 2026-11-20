@@ -6,7 +6,7 @@ export type RestaurantDetails = Pick<Restaurant,
   'name' | 'cuisine' | 'area' | 'address' | 'description' | 'phone' | 'email' | 'opensAt' | 'closesAt'
   | 'mapUrl' | 'facilities' | 'pricePerPerson' | 'seatsPerSlot'>;
 export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'coverUrl' | 'galleryUrls' | 'isActive' | 'menuPdfUrl' | 'latitude' | 'longitude'>>;
-export type MenuItemInput = Omit<MenuItem, 'id'>;
+export type MenuItemInput = Omit<MenuItem, 'id' | 'createdAt'>;
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
