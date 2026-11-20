@@ -1,4 +1,5 @@
 import { isAuthError } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -21,6 +22,16 @@ function phoneAuthMessage(error: unknown, mode: AuthMode) {
       case 'over_sms_send_rate_limit': return 'Too many codes requested. Wait a minute, then try again.';
       case 'otp_expired': return 'That code is wrong or has expired. Check the SMS or request a new code.';
     }
+  }
+  return error instanceof Error ? error.message : 'Please try again.';
+}
+
+/** Links in Fork's emails open the app on this screen, which finishes signing the person in. */
+const emailLinkTarget = () => Linking.createURL('auth-callback');
+
+function emailAuthMessage(error: unknown) {
+  if (isAuthError(error) && error.code === 'over_email_send_rate_limit') {
+    return 'Too many emails were sent from Fork in the last hour. Please wait a little and try again.';
   }
   return error instanceof Error ? error.message : 'Please try again.';
 }
@@ -66,18 +77,18 @@ export default function AuthScreen() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
-          options: { data: { full_name: name.trim(), role } },
+          options: { data: { full_name: name.trim(), role }, emailRedirectTo: emailLinkTarget() },
         });
         if (error) throw error;
         if (!data.session) {
-          Alert.alert('Check your email', 'Confirm your email address, then return here to sign in.');
+          Alert.alert('Check your email', `We sent a link to ${email.trim().toLowerCase()}. Open it on this phone to confirm your account and sign in.`);
           setMode('sign-in');
         } else {
           router.replace(role === 'owner' ? '/owner' : '/profile');
         }
       }
     } catch (error) {
-      Alert.alert(mode === 'sign-in' ? 'Could not sign in' : 'Could not register', error instanceof Error ? error.message : 'Please try again.');
+      Alert.alert(mode === 'sign-in' ? 'Could not sign in' : 'Could not register', emailAuthMessage(error));
     } finally {
       setLoading(false);
     }
@@ -124,10 +135,10 @@ export default function AuthScreen() {
   const resetPassword = async () => {
     if (!email.trim()) return Alert.alert('Email required', 'Enter your account email first.');
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: emailLinkTarget() });
     setLoading(false);
-    if (error) return Alert.alert('Could not send reset email', error.message);
-    Alert.alert('Check your email', 'We sent password-reset instructions if an account exists for this address.');
+    if (error) return Alert.alert('Could not send reset email', emailAuthMessage(error));
+    Alert.alert('Check your email', 'If an account exists for this address, we sent it a link. Open it on this phone to choose a new password.');
   };
 
   const onPrimaryPress = method === 'email' ? submit : codeSentTo ? verifyCode : sendCode;
