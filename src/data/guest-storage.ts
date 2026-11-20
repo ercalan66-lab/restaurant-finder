@@ -1,4 +1,4 @@
-import Storage from 'expo-sqlite/kv-store';
+import Storage from '@/utils/kv-store';
 
 import { supabase } from '../../lib/supabase';
 

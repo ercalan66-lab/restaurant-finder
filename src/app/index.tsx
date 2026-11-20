@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import Storage from 'expo-sqlite/kv-store';
+import Storage from '@/utils/kv-store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
