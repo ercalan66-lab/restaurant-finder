@@ -9,6 +9,7 @@ import { RestaurantReviews } from '@/components/restaurant-reviews';
 import { menuPdfDownloadUrl } from '@/data/restaurant-menu-pdf';
 import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { useUserLocation } from '@/data/user-location';
+import { t, tn } from '@/i18n';
 import { distanceTo, formatDistance } from '@/utils/distance';
 import { goBackOrReplace } from '@/utils/navigation';
 import { showMessage } from '@/utils/feedback';
@@ -25,15 +26,15 @@ export default function RestaurantDetailScreen() {
   const { coords } = useUserLocation();
 
   if (loading) {
-    return <SafeAreaView style={styles.centered}><Text style={styles.sectionCaption}>Loading restaurant…</Text></SafeAreaView>;
+    return <SafeAreaView style={styles.centered}><Text style={styles.sectionCaption}>{t('restaurant.loading')}</Text></SafeAreaView>;
   }
 
   if (!restaurant) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Text style={styles.missingTitle}>Restaurant not found</Text>
+        <Text style={styles.missingTitle}>{t('restaurant.notFound')}</Text>
         <Pressable onPress={() => goBackOrReplace('/')} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Back to restaurants</Text>
+          <Text style={styles.primaryButtonText}>{t('restaurant.backToList')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -43,7 +44,7 @@ export default function RestaurantDetailScreen() {
     try {
       await Linking.openURL(url);
     } catch {
-      showMessage('Unable to open', errorMessage);
+      showMessage(t('restaurant.cantOpen'), errorMessage);
     }
   };
 
@@ -57,9 +58,12 @@ export default function RestaurantDetailScreen() {
     .sort((a, b) => Number(b.available) - Number(a.available));
   const availableNow = menu.filter((entry) => entry.available).length;
   const heroPhoto = restaurant.coverUrl ?? restaurant.galleryUrls[0] ?? null;
-  const ratingText = restaurant.reviewCount > 0 ? `★ ${restaurant.rating} (${restaurant.reviewCount} ${restaurant.reviewCount === 1 ? 'review' : 'reviews'})` : `★ ${restaurant.rating}`;
-  const meta = [restaurant.rating > 0 ? ratingText : 'New on Kwetu', restaurant.area, distance != null ? formatDistance(distance) : null].filter(Boolean).join(' · ');
-  const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, 'Calling is not available on this device.');
+  const ratingText = restaurant.reviewCount > 0 ? `★ ${restaurant.rating} (${tn('count.reviews', restaurant.reviewCount)})` : `★ ${restaurant.rating}`;
+  const meta = [restaurant.rating > 0 ? ratingText : t('restaurant.newOnKwetu'), restaurant.area, distance != null ? formatDistance(distance) : null].filter(Boolean).join(' · ');
+  const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, t('restaurant.noCalling'));
+  const menuCaption = restaurant.menu.length
+    ? t('restaurant.menuCaption', { available: availableNow, total: restaurant.menu.length })
+    : t(restaurant.menuPdfUrl ? 'restaurant.menuPdfOnly' : 'restaurant.menuSoon');
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -67,7 +71,7 @@ export default function RestaurantDetailScreen() {
         <View style={styles.heroWrap}>
           {heroPhoto && <Image contentFit="cover" source={heroPhoto} style={styles.heroImage} transition={250} />}
           <View style={styles.heroShade} />
-          <Pressable accessibilityLabel="Back" onPress={() => goBackOrReplace('/')} style={styles.backButton}>
+          <Pressable accessibilityLabel={t('restaurant.back')} onPress={() => goBackOrReplace('/')} style={styles.backButton}>
             <Text style={styles.backIcon}>‹</Text>
           </Pressable>
           <View style={styles.heroCopy}>
@@ -81,25 +85,25 @@ export default function RestaurantDetailScreen() {
           {restaurant.description ? <Text style={styles.description}>{restaurant.description}</Text> : null}
           <View style={styles.bookingActions}>
             <Pressable onPress={() => router.push(`/reservation/${restaurant.id}` as Href)} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Reserve a table</Text>
+              <Text style={styles.primaryButtonText}>{t('restaurant.reserve')}</Text>
             </Pressable>
             <Pressable onPress={() => router.push(`/order/${restaurant.id}` as Href)} style={styles.orderButton}>
-              <Text style={styles.orderButtonText}>Order food</Text>
+              <Text style={styles.orderButtonText}>{t('restaurant.order')}</Text>
             </Pressable>
           </View>
           <View style={styles.quickActions}>
             {restaurant.phone ? <Pressable onPress={callRestaurant} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Call restaurant</Text>
+              <Text style={styles.primaryButtonText}>{t('restaurant.call')}</Text>
             </Pressable> : null}
-            <Pressable onPress={() => openLink(directionsUrl, 'Maps could not be opened.')} style={styles.secondaryButton}>
-              <Text style={styles.secondaryButtonText}>Directions</Text>
+            <Pressable onPress={() => openLink(directionsUrl, t('restaurant.noMaps'))} style={styles.secondaryButton}>
+              <Text style={styles.secondaryButtonText}>{t('restaurant.directions')}</Text>
             </Pressable>
           </View>
         </View>
 
         {restaurant.galleryUrls.length > 0 && <View style={styles.section}>
-          <Text style={styles.sectionTitle}>The environment</Text>
-          <Text style={styles.sectionCaption}>See the dining space before you visit.</Text>
+          <Text style={styles.sectionTitle}>{t('restaurant.environment')}</Text>
+          <Text style={styles.sectionCaption}>{t('restaurant.environmentCaption')}</Text>
           <ScrollView contentContainerStyle={styles.gallery} horizontal showsHorizontalScrollIndicator={false}>
             {restaurant.galleryUrls.map((photo, index) => (
               <Image contentFit="cover" key={photo} source={photo} style={[styles.environmentPhoto, index === 0 && styles.environmentPhotoFirst]} transition={200} />
@@ -108,19 +112,19 @@ export default function RestaurantDetailScreen() {
         </View>}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Menu & food</Text>
-          <Text style={styles.sectionCaption}>{restaurant.menu.length ? `${availableNow} of ${restaurant.menu.length} foods available now. Prices, ingredients and serving times below.` : restaurant.menuPdfUrl ? 'See the full menu in the PDF below.' : 'The menu is coming soon.'}</Text>
+          <Text style={styles.sectionTitle}>{t('restaurant.menuTitle')}</Text>
+          <Text style={styles.sectionCaption}>{menuCaption}</Text>
           {restaurant.menuPdfUrl ? <View style={styles.pdfCard}>
             <Text style={styles.pdfIcon}>📄</Text>
             <View style={styles.pdfCopy}>
-              <Text style={styles.pdfTitle}>Full menu (PDF)</Text>
-              <Text style={styles.pdfCaption}>The restaurant&apos;s complete menu to read or keep.</Text>
+              <Text style={styles.pdfTitle}>{t('restaurant.pdfTitle')}</Text>
+              <Text style={styles.pdfCaption}>{t('restaurant.pdfCaption')}</Text>
               <View style={styles.pdfActions}>
                 <Pressable accessibilityRole="button" onPress={() => void WebBrowser.openBrowserAsync(restaurant.menuPdfUrl ?? '')} style={styles.pdfButton}>
-                  <Text style={styles.pdfButtonText}>View</Text>
+                  <Text style={styles.pdfButtonText}>{t('restaurant.pdfView')}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" onPress={() => void openLink(menuPdfDownloadUrl(restaurant.menuPdfUrl ?? '', restaurant.name), 'The menu could not be downloaded on this device.')} style={[styles.pdfButton, styles.pdfButtonSecondary]}>
-                  <Text style={[styles.pdfButtonText, styles.pdfButtonSecondaryText]}>Download</Text>
+                <Pressable accessibilityRole="button" onPress={() => void openLink(menuPdfDownloadUrl(restaurant.menuPdfUrl ?? '', restaurant.name), t('restaurant.noDownload'))} style={[styles.pdfButton, styles.pdfButtonSecondary]}>
+                  <Text style={[styles.pdfButtonText, styles.pdfButtonSecondaryText]}>{t('restaurant.pdfDownload')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -136,8 +140,8 @@ export default function RestaurantDetailScreen() {
                       <Text style={styles.menuPrice}>{formatTsh(item.price)}</Text>
                     </View>
                     <Text style={styles.menuDescription}>{item.description}</Text>
-                    <Text style={styles.servingTime}>Served {item.availableFrom}–{item.availableUntil}</Text>
-                    {!available && <Text style={styles.unavailableBadge}>UNAVAILABLE</Text>}
+                    <Text style={styles.servingTime}>{t('restaurant.served', { from: item.availableFrom, until: item.availableUntil })}</Text>
+                    {!available && <Text style={styles.unavailableBadge}>{t('restaurant.unavailable')}</Text>}
                   </View>
                 </View>
               );
@@ -148,22 +152,22 @@ export default function RestaurantDetailScreen() {
         <RestaurantReviews rating={restaurant.rating} restaurantId={restaurant.id} reviewCount={restaurant.reviewCount} />
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact & visit</Text>
+          <Text style={styles.sectionTitle}>{t('restaurant.contactTitle')}</Text>
           <View style={styles.contactCard}>
             {restaurant.phone ? <>
-              <Text style={styles.contactLabel}>PHONE</Text>
+              <Text style={styles.contactLabel}>{t('restaurant.phone')}</Text>
               <Pressable onPress={callRestaurant}><Text style={styles.contactLink}>{restaurant.phone}</Text></Pressable>
             </> : null}
             {restaurant.email ? <>
-              <Text style={styles.contactLabel}>EMAIL</Text>
-              <Pressable onPress={() => openLink(`mailto:${restaurant.email}`, 'No email application is available.')}><Text style={styles.contactLink}>{restaurant.email}</Text></Pressable>
+              <Text style={styles.contactLabel}>{t('restaurant.email')}</Text>
+              <Pressable onPress={() => openLink(`mailto:${restaurant.email}`, t('restaurant.noEmailApp'))}><Text style={styles.contactLink}>{restaurant.email}</Text></Pressable>
             </> : null}
-            <Text style={styles.contactLabel}>ADDRESS</Text>
+            <Text style={styles.contactLabel}>{t('restaurant.address')}</Text>
             <Text style={styles.contactValue}>{restaurant.address}</Text>
-            <Text style={styles.contactLabel}>OPENING HOURS</Text>
+            <Text style={styles.contactLabel}>{t('restaurant.hours')}</Text>
             <Text style={styles.contactValue}>{formatHours(restaurant)}</Text>
             {restaurant.facilities.length > 0 ? <>
-              <Text style={styles.contactLabel}>FACILITIES</Text>
+              <Text style={styles.contactLabel}>{t('restaurant.facilities')}</Text>
               <View style={styles.facilities}>{restaurant.facilities.map((facility) => <Text key={facility} style={styles.facility}>{facility}</Text>)}</View>
             </> : null}
           </View>

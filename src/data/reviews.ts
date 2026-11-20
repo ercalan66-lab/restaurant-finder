@@ -1,3 +1,4 @@
+import { dateLocale } from '@/i18n';
 import { adminSupabase, supabase } from '../../lib/supabase';
 
 export type Review = {
@@ -80,5 +81,5 @@ export const stars = (rating: number) => '★★★★★'.slice(0, Math.round(r
 
 export function formatReviewDate(iso: string) {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }

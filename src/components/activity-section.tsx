@@ -24,7 +24,8 @@ const SHOWN = 8;
 type Tone = 'ok' | 'waiting' | 'action' | 'bad';
 type Status = { label: MessageKey; tone: Tone };
 
-function orderStatus(order: OrderRecord): Status {
+/** The order's status label (a message key) and colour; also used by the payment screen. */
+export function orderStatus(order: OrderRecord): Status {
   if (order.rejectedReason) return { label: 'status.notAccepted', tone: 'bad' };
   switch (order.status ?? 'pending') {
     case 'pending': return { label: 'status.sent', tone: 'waiting' };

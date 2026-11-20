@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getGuestProfile, MOBILE_MONEY, newReference, saveGuestProfile, saveOrder } from '@/data/guest-storage';
+import { fulfillmentLabel, getGuestProfile, MOBILE_MONEY, newReference, saveGuestProfile, saveOrder } from '@/data/guest-storage';
 import { formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
+import { t } from '@/i18n';
 import { goBackOrReplace } from '@/utils/navigation';
 import { getPushToken } from '@/utils/push-notifications';
 import { showMessage } from '@/utils/feedback';
@@ -41,11 +42,11 @@ export default function OrderScreen() {
   // Quantities are keyed by menu item id; unavailable items never count toward the total.
   const total = useMemo(() => menu.reduce((sum, item) => sum + (item.available ? item.price * (quantities[item.id] ?? 0) : 0), 0), [menu, quantities]);
 
-  if (loading) return <SafeAreaView style={styles.confirmation}><Text style={styles.subtitle}>Loading menu…</Text></SafeAreaView>;
+  if (loading) return <SafeAreaView style={styles.confirmation}><Text style={styles.subtitle}>{t('order.loading')}</Text></SafeAreaView>;
   if (!restaurant) {
     return <SafeAreaView style={styles.confirmation}>
-      <Text style={styles.confirmationTitle}>Restaurant not found</Text>
-      <Pressable onPress={() => goBackOrReplace('/')} style={styles.submit}><Text style={styles.submitText}>Back to restaurants</Text></Pressable>
+      <Text style={styles.confirmationTitle}>{t('restaurant.notFound')}</Text>
+      <Pressable onPress={() => goBackOrReplace('/')} style={styles.submit}><Text style={styles.submitText}>{t('restaurant.backToList')}</Text></Pressable>
     </SafeAreaView>;
   }
 
@@ -56,11 +57,11 @@ export default function OrderScreen() {
   };
   const submit = async () => {
     const items = menu.filter((item) => item.available && (quantities[item.id] ?? 0) > 0).map((item) => ({ name: item.name, price: formatTsh(item.price), quantity: quantities[item.id] }));
-    if (!items.length) return showMessage('Empty order', 'Add at least one menu item.');
-    if (!name.trim() || !phone.trim()) return showMessage('Missing information', 'Enter your name and phone number.');
-    if (phone.replace(/\D/g, '').length < 7) return showMessage('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return showMessage('Invalid email', 'Enter a valid email address or leave it blank.');
-    if (fulfillment === 'Delivery' && !address.trim()) return showMessage('Delivery address needed', 'Enter the address for your delivery.');
+    if (!items.length) return showMessage(t('order.emptyTitle'), t('order.emptyBody'));
+    if (!name.trim() || !phone.trim()) return showMessage(t('request.missingTitle'), t('request.missingBody'));
+    if (phone.replace(/\D/g, '').length < 7) return showMessage(t('request.phoneTitle'), t('request.phoneBody'));
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return showMessage(t('request.emailTitle'), t('request.emailBody'));
+    if (fulfillment === 'Delivery' && !address.trim()) return showMessage(t('order.addressTitle'), t('order.addressBody'));
     const reference = newReference('KO');
     const guest = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
@@ -71,31 +72,33 @@ export default function OrderScreen() {
         saveGuestProfile(guest),
         saveOrder({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, guest, fulfillment, address: address.trim(), items, total, paymentMethod: 'cash', paymentStatus: 'unpaid', pushToken, createdAt: new Date().toISOString() }),
       ]);
-      if (result.outcome === 'rejected') return showMessage('Order not accepted', result.reason);
+      if (result.outcome === 'rejected') return showMessage(t('order.rejected'), result.reason);
       setDelivered(result.outcome === 'sent');
       setNotifying(Boolean(pushToken));
       setConfirmation(reference);
     } catch {
-      showMessage('Could not save order', 'Please try again.');
+      showMessage(t('order.saveFailed'), t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
   };
 
   // Payment only happens for delivery orders, after the food arrives. Pickup is paid at the counter.
-  const paymentInstruction = fulfillment === 'Delivery'
-    ? `When your food arrives, pay TSh ${total.toLocaleString()} in the app by mobile money (${MOBILE_MONEY_NAMES}) or in cash to the rider.`
-    : `Pay TSh ${total.toLocaleString()} at the restaurant when you collect your order.`;
+  const amount = formatTsh(total);
+  const delivery = fulfillment === 'Delivery';
+  const paymentInstruction = delivery
+    ? t('order.payOnDelivery', { amount, methods: MOBILE_MONEY_NAMES })
+    : t('order.payAtPickup', { amount });
 
-  if (confirmation) return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{delivered ? 'Order received' : 'Order saved'}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{fulfillment} · TSh {total.toLocaleString()}</Text>{!delivered && <Text style={styles.pendingNote}>You are offline, so the restaurant has not received this order yet. It is saved on this phone and will be sent automatically as soon as you are back online.</Text>}<Text style={styles.confirmationPayment}>{paymentInstruction}</Text>{notifying && <Text style={styles.notifyNote}>{fulfillment === 'Delivery' ? 'We will send you a notification when the restaurant accepts your order, when it is on its way, and when it arrives.' : 'We will send you a notification when the restaurant accepts your order and when it is ready.'}</Text>}<Text style={styles.reference}>REFERENCE {confirmation}</Text><Pressable onPress={() => router.replace('/')} style={styles.submit}><Text style={styles.submitText}>Back to home</Text></Pressable></SafeAreaView>;
+  if (confirmation) return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{t(delivered ? 'order.received' : 'order.saved')}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{fulfillmentLabel(fulfillment)} · {amount}</Text>{!delivered && <Text style={styles.pendingNote}>{t('order.offlineNote')}</Text>}<Text style={styles.confirmationPayment}>{paymentInstruction}</Text>{notifying && <Text style={styles.notifyNote}>{t(delivery ? 'order.notifyDelivery' : 'order.notifyPickup')}</Text>}<Text style={styles.reference}>{t('request.reference', { reference: confirmation })}</Text><Pressable onPress={() => router.replace('/')} style={styles.submit}><Text style={styles.submitText}>{t('request.backHome')}</Text></Pressable></SafeAreaView>;
 
-  return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled"><Pressable onPress={() => goBackOrReplace(`/restaurant/${restaurant.id}`)}><Text style={styles.back}>‹ Restaurant details</Text></Pressable><Text style={styles.eyebrow}>ORDER FOOD</Text><Text style={styles.title}>{restaurant.name}</Text><Text style={styles.subtitle}>Choose your dishes and quantities.</Text>
-    {menu.length === 0 && <Text style={styles.subtitle}>This restaurant has not published its menu yet.</Text>}<View style={styles.menuList}>{menu.map((item) => <View key={item.id} style={[styles.menuCard, !item.available && styles.menuCardUnavailable]}>{item.photoUrl ? <Image contentFit="cover" source={item.photoUrl} style={styles.photo} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderIcon}>🍽️</Text></View>}<View style={styles.menuCopy}><Text style={styles.menuName}>{item.name}</Text><Text style={styles.menuDescription}>{item.description}</Text><Text style={styles.price}>{formatTsh(item.price)}</Text>{!item.available && <Text style={styles.unavailableBadge}>UNAVAILABLE</Text>}<View style={styles.stepper}><Pressable accessibilityLabel={`Remove one ${item.name}`} disabled={!item.available} onPress={() => changeQuantity(item.id, -1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>−</Text></Pressable><Text style={styles.quantity}>{quantities[item.id] ?? 0}</Text><Pressable accessibilityLabel={`Add one ${item.name}`} disabled={!item.available} onPress={() => changeQuantity(item.id, 1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>+</Text></Pressable></View></View></View>)}</View>
-    <Text style={styles.sectionTitle}>How should we prepare it?</Text><View style={styles.choices}>{(['Pickup', 'Delivery'] as const).map((value) => <Pressable key={value} onPress={() => setFulfillment(value)} style={[styles.choice, fulfillment === value && styles.choiceActive]}><Text style={[styles.choiceText, fulfillment === value && styles.choiceTextActive]}>{value}</Text></Pressable>)}</View>
-    {fulfillment === 'Delivery' && <><Text style={styles.label}>DELIVERY ADDRESS</Text><TextInput multiline onChangeText={setAddress} placeholder="Street, building, and area" style={[styles.input, styles.addressInput]} value={address} /></>}
-    <Text style={styles.sectionTitle}>Guest details</Text><Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" onChangeText={setName} placeholder="Full name" style={styles.input} value={name} /><Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="+255..." style={styles.input} value={phone} /><Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="you@example.com" style={styles.input} value={email} />
-    {fulfillment === 'Delivery' && <><Text style={styles.sectionTitle}>Payment on delivery</Text><View style={styles.paymentCard}><Text style={styles.paymentTitle}>Pay when your food arrives</Text><Text style={styles.paymentDescription}>Nothing is charged now. Once the restaurant marks your order delivered, pay in the app with {MOBILE_MONEY_NAMES}, or hand cash to the rider.</Text><View style={styles.paymentChips}>{[...MOBILE_MONEY.map((option) => option.label), 'Cash to rider'].map((label) => <Text key={label} style={styles.paymentChip}>{label}</Text>)}</View></View></>}
-    <View style={styles.totalRow}><Text style={styles.totalLabel}>ORDER TOTAL</Text><Text style={styles.total}>TSh {total.toLocaleString()}</Text></View><Pressable disabled={submitting} onPress={submit} style={[styles.submit, submitting && styles.disabled]}><Text style={styles.submitText}>{submitting ? 'Sending order…' : `Confirm ${fulfillment.toLowerCase()} order`}</Text></Pressable><Text style={styles.paymentNote}>{fulfillment === 'Delivery' ? 'You pay after delivery · nothing is charged now.' : 'Pay at the counter when you collect · nothing is charged in the app.'}</Text>
+  return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled"><Pressable onPress={() => goBackOrReplace(`/restaurant/${restaurant.id}`)}><Text style={styles.back}>{t('request.backToDetails')}</Text></Pressable><Text style={styles.eyebrow}>{t('order.eyebrow')}</Text><Text style={styles.title}>{restaurant.name}</Text><Text style={styles.subtitle}>{t('order.subtitle')}</Text>
+    {menu.length === 0 && <Text style={styles.subtitle}>{t('order.noMenu')}</Text>}<View style={styles.menuList}>{menu.map((item) => <View key={item.id} style={[styles.menuCard, !item.available && styles.menuCardUnavailable]}>{item.photoUrl ? <Image contentFit="cover" source={item.photoUrl} style={styles.photo} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderIcon}>🍽️</Text></View>}<View style={styles.menuCopy}><Text style={styles.menuName}>{item.name}</Text><Text style={styles.menuDescription}>{item.description}</Text><Text style={styles.price}>{formatTsh(item.price)}</Text>{!item.available && <Text style={styles.unavailableBadge}>{t('restaurant.unavailable')}</Text>}<View style={styles.stepper}><Pressable accessibilityLabel={t('order.removeOne', { name: item.name })} disabled={!item.available} onPress={() => changeQuantity(item.id, -1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>−</Text></Pressable><Text style={styles.quantity}>{quantities[item.id] ?? 0}</Text><Pressable accessibilityLabel={t('order.addOne', { name: item.name })} disabled={!item.available} onPress={() => changeQuantity(item.id, 1)} style={styles.stepButton}><Text style={[styles.stepText, !item.available && styles.disabledText]}>+</Text></Pressable></View></View></View>)}</View>
+    <Text style={styles.sectionTitle}>{t('order.howTitle')}</Text><View style={styles.choices}>{(['Pickup', 'Delivery'] as const).map((value) => <Pressable key={value} onPress={() => setFulfillment(value)} style={[styles.choice, fulfillment === value && styles.choiceActive]}><Text style={[styles.choiceText, fulfillment === value && styles.choiceTextActive]}>{fulfillmentLabel(value)}</Text></Pressable>)}</View>
+    {delivery && <><Text style={styles.label}>{t('order.address')}</Text><TextInput multiline onChangeText={setAddress} placeholder={t('order.addressPlaceholder')} style={[styles.input, styles.addressInput]} value={address} /></>}
+    <Text style={styles.sectionTitle}>{t('order.guestDetails')}</Text><Text style={styles.label}>{t('profile.name')}</Text><TextInput autoComplete="name" onChangeText={setName} placeholder={t('profile.namePlaceholder')} style={styles.input} value={name} /><Text style={styles.label}>{t('profile.phone')}</Text><TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="+255..." style={styles.input} value={phone} /><Text style={styles.label}>{t('profile.emailOptional')}</Text><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="you@example.com" style={styles.input} value={email} />
+    {delivery && <><Text style={styles.sectionTitle}>{t('order.paymentTitle')}</Text><View style={styles.paymentCard}><Text style={styles.paymentTitle}>{t('order.paymentCardTitle')}</Text><Text style={styles.paymentDescription}>{t('order.paymentCardBody', { methods: MOBILE_MONEY_NAMES })}</Text><View style={styles.paymentChips}>{[...MOBILE_MONEY.map((option) => option.label), t('order.cashToRider')].map((label) => <Text key={label} style={styles.paymentChip}>{label}</Text>)}</View></View></>}
+    <View style={styles.totalRow}><Text style={styles.totalLabel}>{t('order.total')}</Text><Text style={styles.total}>{amount}</Text></View><Pressable disabled={submitting} onPress={submit} style={[styles.submit, submitting && styles.disabled]}><Text style={styles.submitText}>{t(submitting ? 'order.sending' : delivery ? 'order.confirmDelivery' : 'order.confirmPickup')}</Text></Pressable><Text style={styles.paymentNote}>{t(delivery ? 'order.noteDelivery' : 'order.notePickup')}</Text>
   </ScrollView></SafeAreaView>;
 }
 

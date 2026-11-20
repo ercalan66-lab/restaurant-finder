@@ -6,6 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { bookingDates, bookingSlots, fetchBookedSeats, formatBooking } from '@/data/booking';
 import { getGuestProfile, newReference, saveGuestProfile, saveReservation } from '@/data/guest-storage';
 import { useRestaurant } from '@/data/restaurants';
+import { t, tn } from '@/i18n';
 import { goBackOrReplace } from '@/utils/navigation';
 import { getPushToken } from '@/utils/push-notifications';
 import { showMessage } from '@/utils/feedback';
@@ -52,7 +53,7 @@ export default function ReservationScreen() {
     return () => { active = false; };
   }, [restaurantId, date, availabilityVersion]);
 
-  if (!restaurant) return <SafeAreaView style={styles.confirmation}><Text style={styles.subtitle}>{loading ? 'Loading restaurant…' : 'Restaurant not found.'}</Text></SafeAreaView>;
+  if (!restaurant) return <SafeAreaView style={styles.confirmation}><Text style={styles.subtitle}>{t(loading ? 'restaurant.loading' : 'restaurant.notFound')}</Text></SafeAreaView>;
 
   const slots = bookingSlots(restaurant, date);
   const seatsLeft = (slot: string) => Math.max(0, restaurant.seatsPerSlot - (booked.get(slot) ?? 0));
@@ -61,10 +62,10 @@ export default function ReservationScreen() {
   const chooseDate = (iso: string) => { setDate(iso); setTime(null); };
 
   const submit = async () => {
-    if (!name.trim() || !phone.trim()) return showMessage('Missing information', 'Enter your name and phone number.');
-    if (phone.replace(/\D/g, '').length < 7) return showMessage('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return showMessage('Invalid email', 'Enter a valid email address or leave it blank.');
-    if (!selectedTime) return showMessage('Choose a time', `Pick a time with room for ${guests} ${guests === 1 ? 'guest' : 'guests'}.`);
+    if (!name.trim() || !phone.trim()) return showMessage(t('request.missingTitle'), t('request.missingBody'));
+    if (phone.replace(/\D/g, '').length < 7) return showMessage(t('request.phoneTitle'), t('request.phoneBody'));
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return showMessage(t('request.emailTitle'), t('request.emailBody'));
+    if (!selectedTime) return showMessage(t('reserve.timeTitle'), t('reserve.timeBody', { guests: tn('count.guests', guests) }));
     const reference = newReference('KB');
     const profile = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
@@ -78,33 +79,33 @@ export default function ReservationScreen() {
         // Usually someone took the last seats first: show fresh availability so they can pick again.
         setTime(null);
         setAvailabilityVersion((version) => version + 1);
-        return showMessage('Choose another time', result.reason);
+        return showMessage(t('reserve.rejected'), result.reason);
       }
       setDelivered(result.outcome === 'sent');
       setNotifying(Boolean(pushToken));
       setConfirmation({ reference, time: selectedTime });
     } catch {
-      showMessage('Could not save reservation', 'Please try again.');
+      showMessage(t('reserve.saveFailed'), t('common.tryAgain'));
     } finally {
       setSubmitting(false);
     }
   };
 
   if (confirmation) {
-    return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{delivered ? 'Reservation requested' : 'Reservation saved'}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{formatBooking(date, confirmation.time)} · {guests} {guests === 1 ? 'guest' : 'guests'}</Text>{!delivered && <Text style={styles.pendingNote}>You are offline, so the restaurant has not received this request yet. It is saved on this phone and will be sent automatically as soon as you are back online.</Text>}{notifying && <Text style={styles.notifyNote}>We will send you a notification when the restaurant confirms your table.</Text>}<Text style={styles.reference}>REFERENCE {confirmation.reference}</Text><Pressable onPress={() => router.replace('/')} style={styles.primaryButton}><Text style={styles.primaryText}>Back to home</Text></Pressable></SafeAreaView>;
+    return <SafeAreaView style={styles.confirmation}><Text style={styles.check}>✓</Text><Text style={styles.confirmationTitle}>{t(delivered ? 'reserve.requested' : 'reserve.saved')}</Text><Text style={styles.confirmationCopy}>{restaurant.name}{'\n'}{formatBooking(date, confirmation.time)} · {tn('count.guests', guests)}</Text>{!delivered && <Text style={styles.pendingNote}>{t('reserve.offlineNote')}</Text>}{notifying && <Text style={styles.notifyNote}>{t('reserve.notify')}</Text>}<Text style={styles.reference}>{t('request.reference', { reference: confirmation.reference })}</Text><Pressable onPress={() => router.replace('/')} style={styles.primaryButton}><Text style={styles.primaryText}>{t('request.backHome')}</Text></Pressable></SafeAreaView>;
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => goBackOrReplace(`/restaurant/${restaurant.id}`)}><Text style={styles.back}>‹ Restaurant details</Text></Pressable>
-          <Text style={styles.eyebrow}>RESERVATION</Text><Text style={styles.title}>Book a table</Text><Text style={styles.subtitle}>{restaurant.name} · {restaurant.area} · open {restaurant.opensAt}–{restaurant.closesAt}</Text>
+          <Pressable onPress={() => goBackOrReplace(`/restaurant/${restaurant.id}`)}><Text style={styles.back}>{t('request.backToDetails')}</Text></Pressable>
+          <Text style={styles.eyebrow}>{t('reserve.eyebrow')}</Text><Text style={styles.title}>{t('reserve.title')}</Text><Text style={styles.subtitle}>{restaurant.name} · {restaurant.area} · {t('reserve.open', { opens: restaurant.opensAt, closes: restaurant.closesAt })}</Text>
 
-          <Text style={styles.label}>GUESTS</Text>
-          <View style={styles.stepper}><Pressable accessibilityLabel="One guest fewer" onPress={() => setGuests((value) => Math.max(1, value - 1))} style={styles.stepButton}><Text style={styles.stepText}>−</Text></Pressable><Text style={styles.guestCount}>{guests}</Text><Pressable accessibilityLabel="One guest more" onPress={() => setGuests((value) => Math.min(MAX_GUESTS, value + 1))} style={styles.stepButton}><Text style={styles.stepText}>+</Text></Pressable></View>
+          <Text style={styles.label}>{t('reserve.guests')}</Text>
+          <View style={styles.stepper}><Pressable accessibilityLabel={t('reserve.fewer')} onPress={() => setGuests((value) => Math.max(1, value - 1))} style={styles.stepButton}><Text style={styles.stepText}>−</Text></Pressable><Text style={styles.guestCount}>{guests}</Text><Pressable accessibilityLabel={t('reserve.more')} onPress={() => setGuests((value) => Math.min(MAX_GUESTS, value + 1))} style={styles.stepButton}><Text style={styles.stepText}>+</Text></Pressable></View>
 
-          <Text style={styles.label}>DATE</Text>
+          <Text style={styles.label}>{t('reserve.date')}</Text>
           <ScrollView contentContainerStyle={styles.dates} horizontal showsHorizontalScrollIndicator={false}>
             {dates.map((day) => {
               const active = day.iso === date;
@@ -115,25 +116,25 @@ export default function ReservationScreen() {
             })}
           </ScrollView>
 
-          <Text style={styles.label}>TIME</Text>
+          <Text style={styles.label}>{t('reserve.time')}</Text>
           {slots.length === 0
-            ? <Text style={styles.noSlots}>No more booking times on this day. Choose another day.</Text>
+            ? <Text style={styles.noSlots}>{t('reserve.noSlots')}</Text>
             : <View style={styles.slots}>{slots.map((slot) => {
               const left = seatsLeft(slot);
               const fits = left >= guests;
               const active = slot === selectedTime;
-              return <Pressable accessibilityLabel={`${slot}, ${left === 0 ? 'full' : `${left} seats left`}`} accessibilityRole="radio" accessibilityState={{ checked: active, disabled: !fits }} disabled={!fits} key={slot} onPress={() => setTime(slot)} style={[styles.slot, active && styles.chipActive, !fits && styles.slotFull]}>
+              return <Pressable accessibilityLabel={left === 0 ? t('reserve.slotFullA11y', { time: slot }) : t('reserve.slotLeftA11y', { time: slot, count: left })} accessibilityRole="radio" accessibilityState={{ checked: active, disabled: !fits }} disabled={!fits} key={slot} onPress={() => setTime(slot)} style={[styles.slot, active && styles.chipActive, !fits && styles.slotFull]}>
                 <Text style={[styles.slotTime, active && styles.chipTextActive, !fits && styles.slotFullText]}>{slot}</Text>
-                {(!fits || left <= FEW_SEATS) && <Text style={[styles.slotNote, active && styles.chipTextActive, !fits && styles.slotFullText]}>{left === 0 ? 'Full' : `${left} left`}</Text>}
+                {(!fits || left <= FEW_SEATS) && <Text style={[styles.slotNote, active && styles.chipTextActive, !fits && styles.slotFullText]}>{left === 0 ? t('reserve.slotFull') : t('reserve.slotLeft', { count: left })}</Text>}
               </Pressable>;
             })}</View>}
 
-          <Text style={styles.sectionTitle}>Your details</Text>
-          <Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" onChangeText={setName} placeholder="Full name" style={styles.input} value={name} />
-          <Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="+255..." style={styles.input} value={phone} />
-          <Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="you@example.com" style={styles.input} value={email} />
+          <Text style={styles.sectionTitle}>{t('reserve.yourDetails')}</Text>
+          <Text style={styles.label}>{t('profile.name')}</Text><TextInput autoComplete="name" onChangeText={setName} placeholder={t('profile.namePlaceholder')} style={styles.input} value={name} />
+          <Text style={styles.label}>{t('profile.phone')}</Text><TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="+255..." style={styles.input} value={phone} />
+          <Text style={styles.label}>{t('profile.emailOptional')}</Text><TextInput autoCapitalize="none" autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="you@example.com" style={styles.input} value={email} />
 
-          <Pressable disabled={submitting} onPress={submit} style={[styles.primaryButton, submitting && styles.disabled]}><Text style={styles.primaryText}>{submitting ? 'Sending request…' : selectedTime ? `Request ${formatBooking(date, selectedTime)}` : 'Confirm reservation request'}</Text></Pressable>
+          <Pressable disabled={submitting} onPress={submit} style={[styles.primaryButton, submitting && styles.disabled]}><Text style={styles.primaryText}>{submitting ? t('reserve.sending') : selectedTime ? t('reserve.requestAt', { when: formatBooking(date, selectedTime) }) : t('reserve.confirm')}</Text></Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

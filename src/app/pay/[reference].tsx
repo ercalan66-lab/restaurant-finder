@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { orderStatus } from '@/components/activity-section';
 import {
   getMyOrders,
   MOBILE_MONEY,
@@ -12,6 +13,8 @@ import {
   type MobileMoneyMethod,
   type OrderRecord,
 } from '@/data/guest-storage';
+import { formatTsh } from '@/data/restaurants';
+import { t } from '@/i18n';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { toE164 } from '@/utils/phone';
@@ -46,56 +49,56 @@ export default function PayScreen() {
 
   const refresh = () => void loadOrder(reference).then(setOrder);
 
-  if (order === undefined) return <Centered><Text style={styles.copy}>Loading your order…</Text></Centered>;
+  if (order === undefined) return <Centered><Text style={styles.copy}>{t('pay.loading')}</Text></Centered>;
   if (order === null) {
     return <Centered>
-      <Text style={styles.title}>Order not found</Text>
-      <Text style={styles.copy}>Payments can be made from the phone that placed the order.</Text>
-      <PrimaryButton label="Back to your orders" onPress={() => router.replace('/profile')} />
+      <Text style={styles.title}>{t('pay.notFound')}</Text>
+      <Text style={styles.copy}>{t('pay.notFoundBody')}</Text>
+      <PrimaryButton label={t('pay.backToOrders')} onPress={() => router.replace('/profile')} />
     </Centered>;
   }
 
-  const amount = `TSh ${order.total.toLocaleString()}`;
+  const amount = formatTsh(order.total);
   const methodLabel = paymentMethodLabel(method);
 
   if (order.paymentStatus === 'paid') {
     const simulated = order.paymentReference?.startsWith('SIM-');
     return <Centered>
       <Text style={styles.check}>✓</Text>
-      <Text style={styles.title}>Payment received</Text>
+      <Text style={styles.title}>{t('pay.received')}</Text>
       <Text style={styles.copy}>{order.restaurantName}{'\n'}{amount} · {paymentMethodLabel(order.paymentMethod)}</Text>
-      {order.paymentReference ? <Text style={styles.reference}>PAYMENT {order.paymentReference}</Text> : null}
-      {simulated && <Text style={styles.testNote}>Test payment: no money was moved.</Text>}
-      <PrimaryButton label="Back to your orders" onPress={() => router.replace('/profile')} />
+      {order.paymentReference ? <Text style={styles.reference}>{t('pay.reference', { reference: order.paymentReference })}</Text> : null}
+      {simulated && <Text style={styles.testNote}>{t('pay.testDone')}</Text>}
+      <PrimaryButton label={t('pay.backToOrders')} onPress={() => router.replace('/profile')} />
     </Centered>;
   }
 
   if (order.fulfillment !== 'Delivery') {
     return <Centered>
-      <Text style={styles.title}>Pay at the restaurant</Text>
-      <Text style={styles.copy}>Pickup orders are paid at the counter when you collect your food.</Text>
-      <PrimaryButton label="Back to your orders" onPress={() => router.replace('/profile')} />
+      <Text style={styles.title}>{t('payment.atRestaurant')}</Text>
+      <Text style={styles.copy}>{t('pay.atRestaurantBody')}</Text>
+      <PrimaryButton label={t('pay.backToOrders')} onPress={() => router.replace('/profile')} />
     </Centered>;
   }
 
   if (order.status !== 'delivered') {
     return <Centered>
-      <Text style={styles.title}>Not delivered yet</Text>
-      <Text style={styles.copy}>You can pay once the restaurant marks your order delivered. We will notify you when it arrives.</Text>
-      <Text style={styles.reference}>STATUS {(order.status ?? 'pending').toUpperCase()}</Text>
-      <PrimaryButton label="Check again" onPress={refresh} />
+      <Text style={styles.title}>{t('pay.notDelivered')}</Text>
+      <Text style={styles.copy}>{t('pay.notDeliveredBody')}</Text>
+      <Text style={styles.reference}>{t('pay.status', { status: t(orderStatus(order).label) })}</Text>
+      <PrimaryButton label={t('pay.checkAgain')} onPress={refresh} />
     </Centered>;
   }
 
   const pay = async () => {
-    if (!toE164(payerPhone)) return showMessage('Check the number', `Enter the ${methodLabel} number to pay from, for example 0712 345 678.`);
+    if (!toE164(payerPhone)) return showMessage(t('pay.checkNumber'), t('pay.checkNumberBody', { method: methodLabel }));
     setStage('approving');
     try {
       await new Promise((resolve) => setTimeout(resolve, SIMULATED_APPROVAL_MS));
       await payOrder(order, method);
       setOrder(await loadOrder(reference));
     } catch (error) {
-      showMessage('Payment not completed', errorMessage(error));
+      showMessage(t('pay.failed'), errorMessage(error));
       refresh();
     } finally {
       setStage('choose');
@@ -103,14 +106,14 @@ export default function PayScreen() {
   };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>‹ Your orders</Text></Pressable>
-    <Text style={styles.eyebrow}>PAY ON DELIVERY</Text>
+    <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>{t('pay.back')}</Text></Pressable>
+    <Text style={styles.eyebrow}>{t('pay.eyebrow')}</Text>
     <Text style={styles.title}>{amount}</Text>
-    <Text style={styles.copyLeft}>{order.restaurantName} · order {order.id}</Text>
+    <Text style={styles.copyLeft}>{t('pay.orderLine', { restaurant: order.restaurantName, reference: order.id })}</Text>
 
-    <View style={styles.testBanner}><Text style={styles.testBannerTitle}>Test mode</Text><Text style={styles.testBannerCopy}>No money moves yet. Real mobile money payments start once Kwetu connects a payment provider.</Text></View>
+    <View style={styles.testBanner}><Text style={styles.testBannerTitle}>{t('pay.testTitle')}</Text><Text style={styles.testBannerCopy}>{t('pay.testBody')}</Text></View>
 
-    <Text style={styles.label}>PAY WITH</Text>
+    <Text style={styles.label}>{t('pay.with')}</Text>
     <View accessibilityRole="radiogroup" style={styles.methods}>
       {MOBILE_MONEY.map((option) => {
         const selected = option.method === method;
@@ -121,11 +124,11 @@ export default function PayScreen() {
       })}
     </View>
 
-    <Text style={styles.label}>{methodLabel.toUpperCase()} NUMBER</Text>
+    <Text style={styles.label}>{t('pay.number', { method: methodLabel.toUpperCase() })}</Text>
     <TextInput autoComplete="tel" editable={stage === 'choose'} keyboardType="phone-pad" onChangeText={setPayerPhone} placeholder="0712 345 678" style={styles.input} value={payerPhone} />
 
-    <PrimaryButton disabled={stage !== 'choose'} label={stage === 'approving' ? `Approve on your phone…` : `Pay ${amount} with ${methodLabel}`} onPress={() => void pay()} />
-    <Text style={styles.cashNote}>Paying cash instead? Hand {amount} to the rider. The restaurant will mark it paid.</Text>
+    <PrimaryButton disabled={stage !== 'choose'} label={stage === 'approving' ? t('pay.approving') : t('pay.button', { amount, method: methodLabel })} onPress={() => void pay()} />
+    <Text style={styles.cashNote}>{t('pay.cashNote', { amount })}</Text>
   </ScrollView></SafeAreaView>;
 }
 

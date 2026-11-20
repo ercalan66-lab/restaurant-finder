@@ -5,12 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getMyOrders, getMyReservations } from '@/data/guest-storage';
 import { MAX_REVIEW_COMMENT, submitReview } from '@/data/reviews';
+import { t, tn, type MessageKey } from '@/i18n';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
-const RATING_WORDS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent'];
+const RATING_WORDS: MessageKey[] = ['review.rating1', 'review.rating2', 'review.rating3', 'review.rating4', 'review.rating5'];
 
 type Visit = { reference: string; restaurantName: string; phone: string; kind: 'order' | 'booking'; completed: boolean };
 
@@ -39,39 +40,39 @@ export default function ReviewScreen() {
 
   const send = async () => {
     if (!visit) return;
-    if (!rating) return showMessage('Choose a rating', 'Tap the stars to rate your visit from 1 to 5.');
+    if (!rating) return showMessage(t('review.chooseTitle'), t('review.chooseBody'));
     setSending(true);
     try {
       await submitReview(visit.reference, visit.phone, rating, comment);
-      showMessage('Thank you!', `Your review of ${visit.restaurantName} is now on its Kwetu page.`);
+      showMessage(t('review.thanks'), t('review.thanksBody', { restaurant: visit.restaurantName }));
       goBackOrReplace('/profile');
     } catch (error) {
-      showMessage('Could not send your review', errorMessage(error));
+      showMessage(t('review.failed'), errorMessage(error));
     } finally {
       setSending(false);
     }
   };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Pressable accessibilityRole="button" onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>‹ Back</Text></Pressable>
-    <Text style={styles.eyebrow}>RATE YOUR VISIT</Text>
+    <Pressable accessibilityRole="button" onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>{t('common.back')}</Text></Pressable>
+    <Text style={styles.eyebrow}>{t('review.eyebrow')}</Text>
 
-    {visit === undefined && <Text style={styles.helper}>Loading…</Text>}
+    {visit === undefined && <Text style={styles.helper}>{t('common.loading')}</Text>}
     {visit === null && <>
-      <Text style={styles.title}>Visit not found</Text>
-      <Text style={styles.helper}>This order or booking is not saved on this phone or account, so it cannot be reviewed from here.</Text>
+      <Text style={styles.title}>{t('review.notFound')}</Text>
+      <Text style={styles.helper}>{t('review.notFoundBody')}</Text>
     </>}
     {visit && !visit.completed && <>
       <Text style={styles.title}>{visit.restaurantName}</Text>
-      <Text style={styles.helper}>You can rate this {visit.kind} once the restaurant marks it as completed.</Text>
+      <Text style={styles.helper}>{t(visit.kind === 'order' ? 'review.notCompletedOrder' : 'review.notCompletedBooking')}</Text>
     </>}
     {visit && visit.completed && <>
       <Text style={styles.title}>{visit.restaurantName}</Text>
-      <Text style={styles.helper}>How was your {visit.kind === 'order' ? 'food' : 'visit'}? Your rating, comment and first name appear on the restaurant&apos;s page.</Text>
+      <Text style={styles.helper}>{t(visit.kind === 'order' ? 'review.howFood' : 'review.howVisit')}</Text>
 
-      <View accessibilityLabel="Rating" accessibilityRole="adjustable" style={styles.stars}>
+      <View accessibilityLabel={t('review.rating')} accessibilityRole="adjustable" style={styles.stars}>
         {[1, 2, 3, 4, 5].map((value) => <Pressable
-          accessibilityLabel={`${value} ${value === 1 ? 'star' : 'stars'}`}
+          accessibilityLabel={tn('count.stars', value)}
           accessibilityRole="button"
           accessibilityState={{ selected: rating === value }}
           disabled={sending}
@@ -81,15 +82,15 @@ export default function ReviewScreen() {
           <Text style={[styles.star, value <= rating && styles.starOn]}>★</Text>
         </Pressable>)}
       </View>
-      <Text style={styles.ratingWord}>{rating ? RATING_WORDS[rating] : 'Tap a star'}</Text>
+      <Text style={styles.ratingWord}>{rating ? t(RATING_WORDS[rating - 1]) : t('review.tapStar')}</Text>
 
-      <Text style={styles.label}>COMMENT (OPTIONAL)</Text>
+      <Text style={styles.label}>{t('review.comment')}</Text>
       <TextInput
         editable={!sending}
         maxLength={MAX_REVIEW_COMMENT}
         multiline
         onChangeText={setComment}
-        placeholder="What did you enjoy? What could be better?"
+        placeholder={t('review.commentPlaceholder')}
         placeholderTextColor="#B5A99F"
         style={styles.input}
         value={comment}
@@ -97,7 +98,7 @@ export default function ReviewScreen() {
       <Text style={styles.counter}>{comment.length}/{MAX_REVIEW_COMMENT}</Text>
 
       <Pressable accessibilityRole="button" disabled={sending} onPress={() => void send()} style={[styles.button, sending && styles.disabled]}>
-        <Text style={styles.buttonText}>{sending ? 'Sending…' : 'Send review'}</Text>
+        <Text style={styles.buttonText}>{t(sending ? 'review.sending' : 'review.send')}</Text>
       </Pressable>
     </>}
   </ScrollView></SafeAreaView>;

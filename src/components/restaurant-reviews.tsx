@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { fetchRestaurantReviews, formatReviewDate, stars, type Review } from '@/data/reviews';
+import { t, tn } from '@/i18n';
 import { themedStyles } from '@/theme/theme';
 
 const SHOWN = 10;
@@ -22,18 +23,18 @@ export function RestaurantReviews({ rating, restaurantId, reviewCount }: { ratin
   }, [restaurantId]));
 
   return <View style={styles.section}>
-    <Text style={styles.title}>Reviews</Text>
+    <Text style={styles.title}>{t('reviews.title')}</Text>
     {reviewCount > 0
       ? <View style={styles.summary}>
         <Text style={styles.average}>{rating.toFixed(1)}</Text>
         <View>
           <Text style={styles.summaryStars}>{stars(rating)}</Text>
-          <Text style={styles.caption}>{reviewCount} {reviewCount === 1 ? 'review' : 'reviews'} from customers</Text>
+          <Text style={styles.caption}>{tn('reviews.fromCustomers', reviewCount)}</Text>
         </View>
       </View>
-      : <Text style={styles.caption}>No reviews yet. Customers can rate their visit after a completed order or booking.</Text>}
+      : <Text style={styles.caption}>{t('reviews.none')}</Text>}
 
-    {state.kind === 'error' && reviewCount > 0 && <Text style={styles.caption}>Reviews could not be loaded right now.</Text>}
+    {state.kind === 'error' && reviewCount > 0 && <Text style={styles.caption}>{t('reviews.loadFailed')}</Text>}
     {state.kind === 'ready' && state.reviews.map((review) => <View key={review.id} style={styles.card}>
       <View style={styles.cardTop}>
         <Text style={styles.cardStars}>{stars(review.rating)}</Text>
