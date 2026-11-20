@@ -13,7 +13,7 @@ const foodPhotos = {
 const dishDescriptions = ['Chef signature, prepared fresh to order.', 'A guest favorite made with local ingredients.', 'Perfect for sharing at the table.'];
 const dishPrices = [28000, 34000, 52000];
 
-type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu' | 'approvalStatus' | 'rejectionReason' | 'seatsPerSlot' | 'reviewCount'> & {
+type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu' | 'approvalStatus' | 'rejectionReason' | 'seatsPerSlot' | 'reviewCount' | 'createdAt'> & {
   kind: keyof typeof foodPhotos;
   dishes: [string, string, string];
 };
@@ -38,6 +38,8 @@ function demo({ kind, dishes, ...restaurant }: DemoInput): Restaurant {
     rejectionReason: '',
     seatsPerSlot: 40,
     reviewCount: 0,
+    // The date of the first migration, which seeds these restaurants.
+    createdAt: '2026-11-10T00:00:00Z',
     galleryUrls: restaurant.id % 2 === 0 ? [...interiors].reverse() : interiors,
     menu,
   };
