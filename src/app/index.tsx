@@ -1,7 +1,7 @@
 import { router, type Href } from 'expo-router';
 import Storage from 'expo-sqlite/kv-store';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomNav, type NavItem } from '@/components/bottom-nav';
@@ -9,16 +9,11 @@ import { PhotoBackground } from '@/components/photo-background';
 import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
 import { formatTsh, isOpenNow, useRestaurants, type RestaurantSummary } from '@/data/restaurants';
 
-type Cuisine = 'All' | 'African' | 'Italian' | 'Asian' | 'Indian' | 'Cafe';
 type Restaurant = RestaurantSummary;
 type Filters = { maxPrice: number; minRating: number; maxDistance: number };
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
-const cuisines: { name: Cuisine; icon: string }[] = [
-  { name: 'All', icon: '🍽️' }, { name: 'African', icon: '🥘' }, { name: 'Italian', icon: '🍕' },
-  { name: 'Asian', icon: '🍣' }, { name: 'Indian', icon: '🍛' }, { name: 'Cafe', icon: '☕' },
-];
 const SAVED_STORAGE_KEY = SAVED_RESTAURANTS_KEY;
 const defaultFilters: Filters = { maxPrice: 0, minRating: 0, maxDistance: 0 };
 const distanceLabel = (restaurant: Restaurant) => restaurant.distanceKm > 0 ? `⌖ ${restaurant.distanceKm} km · ${restaurant.area}` : `⌖ ${restaurant.area}`;
@@ -33,7 +28,6 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const columns = width >= 720 ? 3 : width >= 390 ? 2 : 1;
   const [query, setQuery] = useState('');
-  const [activeCuisine, setActiveCuisine] = useState<Cuisine>('All');
   const [saved, setSaved] = useState<Set<number>>(new Set());
   const [savedOnly, setSavedOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -53,12 +47,12 @@ export default function HomeScreen() {
 
   const visibleRestaurants = useMemo(() => (restaurants ?? []).filter((restaurant) => {
     const text = `${restaurant.name} ${restaurant.cuisine} ${restaurant.area}`.toLowerCase();
-    return (activeCuisine === 'All' || restaurant.cuisine === activeCuisine) && (!savedOnly || saved.has(restaurant.id))
+    return (!savedOnly || saved.has(restaurant.id))
       && (!filters.maxPrice || restaurant.pricePerPerson <= filters.maxPrice)
       && (!filters.minRating || restaurant.rating >= filters.minRating)
       && (!filters.maxDistance || restaurant.distanceKm <= filters.maxDistance)
       && text.includes(query.trim().toLowerCase());
-  }), [activeCuisine, filters, query, restaurants, saved, savedOnly]);
+  }), [filters, query, restaurants, saved, savedOnly]);
 
   const toggleSaved = (id: number) => setSaved((current) => {
     const next = new Set(current);
@@ -66,7 +60,7 @@ export default function HomeScreen() {
     void Storage.setItem(SAVED_STORAGE_KEY, JSON.stringify([...next]));
     return next;
   });
-  const showAll = () => { setActiveCuisine('All'); setSavedOnly(false); setQuery(''); setFilters(defaultFilters); };
+  const showAll = () => { setSavedOnly(false); setQuery(''); setFilters(defaultFilters); };
   const filterCount = Object.values(filters).filter(Boolean).length;
   const scrollToTop = () => listRef.current?.scrollToOffset({ offset: 0, animated: true });
   // Filters stay next to the search box, so the tab bar keeps only the three places people go.
@@ -94,9 +88,6 @@ export default function HomeScreen() {
         <Pressable onPress={showAll} style={styles.cta}><Text style={styles.ctaText}>FIND A RESTAURANT</Text><View style={styles.ctaArrow}><Text style={styles.orangeText}>→</Text></View></Pressable>
       </View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
     </PhotoBackground>
-    <ScrollView contentContainerStyle={styles.categories} horizontal showsHorizontalScrollIndicator={false}>
-      {cuisines.map((cuisine) => { const active = cuisine.name === activeCuisine && !savedOnly; return <Pressable key={cuisine.name} onPress={() => { setActiveCuisine(cuisine.name); setSavedOnly(false); }} style={styles.category}><View style={[styles.categoryCircle, active && styles.categoryCircleActive]}><Text style={styles.categoryIcon}>{cuisine.icon}</Text></View><Text style={[styles.categoryLabel, active && styles.categoryLabelActive]}>{cuisine.name}</Text></Pressable>; })}
-    </ScrollView>
     <View style={styles.heading}><View><Text style={styles.sectionTitle}>{savedOnly ? 'Saved places' : 'Popular near you'}</Text><Text style={styles.resultCount}>{restaurants ? `${visibleRestaurants.length} ${visibleRestaurants.length === 1 ? 'place' : 'places'} found` : 'Loading restaurants…'}</Text>{offline && <Text style={styles.offlineNote}>Offline · showing saved sample restaurants</Text>}</View><Pressable onPress={showAll}><Text style={styles.viewAll}>View All <Text style={styles.orangeText}>→</Text></Text></Pressable></View>
   </>;
 
@@ -130,8 +121,7 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', gap: 10, marginBottom: 18 }, searchBox: { flex: 1, minHeight: 54, borderRadius: 18, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#F5EDE3', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, shadowColor: '#4D361F', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 3 }, searchIcon: { fontSize: 25, marginRight: 10 }, searchInput: { flex: 1, height: 52, color: '#171612', fontSize: 14 }, filterButton: { width: 54, height: 54, borderRadius: 18, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 3 }, filterIcon: { fontSize: 24, transform: [{ rotate: '90deg' }] },
   filterCount: { position: 'absolute', top: 3, right: 3, minWidth: 17, height: 17, paddingHorizontal: 3, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: ORANGE }, filterCountText: { color: '#FFF', fontSize: 8, fontWeight: '900' },
   hero: { height: 316, overflow: 'hidden', borderRadius: 28, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: '#17130F' }, heroImage: { borderRadius: 28 }, heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(16,13,10,0.54)' }, heroContent: { width: '74%', maxWidth: 470 }, pill: { alignSelf: 'flex-start', color: '#FFF', backgroundColor: ORANGE, borderRadius: 20, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, fontSize: 9, fontWeight: '900' }, heroTitle: { color: '#FFF', fontSize: 38, lineHeight: 40, fontWeight: '900', letterSpacing: -1.2, marginTop: 15 }, heroAccent: { color: '#FF812D' }, heroDescription: { color: '#E3DED8', fontSize: 13, lineHeight: 19, marginTop: 12 }, cta: { alignSelf: 'flex-start', height: 43, borderRadius: 24, backgroundColor: ORANGE, paddingLeft: 16, paddingRight: 5, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }, ctaText: { color: '#FFF', fontSize: 10, fontWeight: '900' }, ctaArrow: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' }, dots: { position: 'absolute', bottom: 16, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 7 }, dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.55)' }, activeDot: { width: 21, height: 7, borderRadius: 4, backgroundColor: ORANGE },
-  categories: { paddingVertical: 26, gap: 13 }, category: { width: 68, alignItems: 'center' }, categoryCircle: { width: 62, height: 62, borderRadius: 31, backgroundColor: '#FFF', borderWidth: 2, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center', elevation: 2 }, categoryCircleActive: { borderColor: ORANGE, backgroundColor: '#FFF0DF' }, categoryIcon: { fontSize: 28 }, categoryLabel: { color: '#302C27', fontSize: 11, fontWeight: '700', marginTop: 8 }, categoryLabelActive: { color: ORANGE },
-  heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 15 }, sectionTitle: { color: '#171612', fontSize: 23, fontWeight: '900', letterSpacing: -0.5 }, resultCount: { color: '#777268', fontSize: 12, marginTop: 4 }, viewAll: { color: '#312E29', fontSize: 12, fontWeight: '800', paddingBottom: 2 },
+  heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 26, marginBottom: 15 }, sectionTitle: { color: '#171612', fontSize: 23, fontWeight: '900', letterSpacing: -0.5 }, resultCount: { color: '#777268', fontSize: 12, marginTop: 4 }, viewAll: { color: '#312E29', fontSize: 12, fontWeight: '800', paddingBottom: 2 },
   cardRow: { gap: 12 }, card: { flex: 1, minWidth: 0, marginBottom: 12, borderRadius: 20, overflow: 'hidden', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EEE6DA', elevation: 2 }, cardPhoto: { height: 155, backgroundColor: '#D6D0C8' }, photoShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.12)' }, tag: { position: 'absolute', top: 10, left: 10, color: '#FFF', backgroundColor: ORANGE, borderRadius: 12, overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 5, fontSize: 7, fontWeight: '900' }, saveButton: { position: 'absolute', top: 9, right: 9, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' }, saveIcon: { fontSize: 20 }, distance: { position: 'absolute', bottom: 9, left: 10, color: '#FFF', fontSize: 9, fontWeight: '800' },
   cardBody: { padding: 12 }, titleLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }, cardTitle: { flex: 1, color: '#171612', fontSize: 14, fontWeight: '900' }, rating: { color: '#EAA000', fontSize: 11, fontWeight: '900' }, meta: { color: '#777268', fontSize: 10, marginTop: 5 }, cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }, price: { color: '#171612', fontSize: 12, fontWeight: '900' }, open: { color: '#3F8B54', backgroundColor: '#EAF7ED', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 6, paddingVertical: 4, fontSize: 7, fontWeight: '900' }, perPerson: { color: '#918A81', fontSize: 8, marginTop: 2 }, closed: { color: '#8E2F1A', backgroundColor: '#F5D8D1' }, offlineNote: { color: '#8E2F1A', fontSize: 10, fontWeight: '700', marginTop: 4 },
   empty: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24, backgroundColor: '#FFF', borderRadius: 20, marginBottom: 14 }, emptyTitle: { color: '#171612', fontSize: 18, fontWeight: '900' }, emptyCopy: { color: '#777268', textAlign: 'center', fontSize: 13, marginTop: 6 }, emptyButton: { backgroundColor: ORANGE, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10, marginTop: 16 }, emptyButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
