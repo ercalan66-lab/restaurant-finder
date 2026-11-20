@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { homeFor } from '@/data/auth';
+import { homeFor, PASSWORD_RULE, passwordProblem } from '@/data/auth';
 import { parseAuthLink } from '@/utils/auth-link';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { supabase } from '../../lib/supabase';
@@ -77,7 +77,8 @@ function NewPasswordForm() {
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    if (password.length < 6) return showMessage('Choose a longer password', 'Use at least 6 characters.');
+    const problem = passwordProblem(password);
+    if (problem) return showMessage('Choose a stronger password', `${problem} ${PASSWORD_RULE}`);
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
@@ -92,7 +93,7 @@ function NewPasswordForm() {
     <Text style={styles.title}>Choose a new password</Text>
     <Text style={styles.helper}>You opened a password reset link. Enter the password you want to use from now on.</Text>
     <Text style={styles.label}>NEW PASSWORD</Text>
-    <TextInput autoCapitalize="none" autoComplete="new-password" autoFocus editable={!saving} onChangeText={setPassword} onSubmitEditing={() => void save()} placeholder="At least 6 characters" secureTextEntry style={styles.input} value={password} />
+    <TextInput autoCapitalize="none" autoComplete="new-password" autoFocus editable={!saving} onChangeText={setPassword} onSubmitEditing={() => void save()} placeholder={PASSWORD_RULE} secureTextEntry style={styles.input} value={password} />
     <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.button, saving && styles.disabled]}><Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save password'}</Text></Pressable>
   </View>;
 }

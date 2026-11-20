@@ -41,7 +41,8 @@ async function loadDashboard(): Promise<LoadResult> {
       router.replace('/profile');
       return { kind: 'redirected' };
     }
-    const owner = { id: data.user.id, email: data.user.email ?? '', phone: formatAccountPhone(data.user.phone) ?? '' };
+    const registeredPhone = typeof data.user.user_metadata?.phone === 'string' ? data.user.user_metadata.phone : '';
+    const owner = { id: data.user.id, email: data.user.email ?? '', phone: formatAccountPhone(data.user.phone) ?? registeredPhone };
     return { kind: 'ready', owner, restaurant: await fetchMyRestaurant(owner.id) };
   } catch (error) {
     return { kind: 'error', message: errorMessage(error) };

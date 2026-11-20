@@ -12,7 +12,7 @@ const SECTIONS: { title: string; body: string[] }[] = [
     body: [
       'Your name, phone number and, if you give it, your email address, so restaurants can confirm your order or table.',
       'Your delivery address for delivery orders, and the dishes, totals and times of your orders and bookings.',
-      'Account details if you register: your email address or phone number and a password or SMS sign-in.',
+      'Account details if you register: your full name, phone number, email address and a password (stored only as a secure hash by our hosting provider), and whether you are a customer or a restaurant owner.',
       'A notification token for your phone if you allow notifications, so we can tell you when your order or table is ready.',
       'For restaurant owners: restaurant details, menus, the photos and menu PDF you upload, and the restaurant’s map location if you add it.',
       'Ratings and comments you choose to leave about restaurants after a completed order or booking.',

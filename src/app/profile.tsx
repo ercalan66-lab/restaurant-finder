@@ -52,8 +52,14 @@ export default function ProfileScreen() {
     getGuestProfile().then((profile) => { setName((current) => current || profile.name); setPhone((current) => current || profile.phone); setEmail((current) => current || profile.email); }).catch(() => undefined);
     const applyUser = (user: User | null) => {
       setAccount(accountLabel(user));
-      if (user) void checkIsAdmin().then(setIsAdmin);
-      else setIsAdmin(false);
+      if (user) {
+        void checkIsAdmin().then(setIsAdmin);
+        // Fill empty fields with the details given at registration.
+        const details = user.user_metadata ?? {};
+        setName((current) => current || (typeof details.full_name === 'string' ? details.full_name : ''));
+        setPhone((current) => current || (typeof details.phone === 'string' ? details.phone : '') || formatAccountPhone(user.phone) || '');
+        setEmail((current) => current || user.email || '');
+      } else setIsAdmin(false);
     };
     supabase.auth.getUser().then(({ data }) => applyUser(data.user)).catch(() => undefined);
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => applyUser(session?.user ?? null));
