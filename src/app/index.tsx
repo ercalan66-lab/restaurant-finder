@@ -34,8 +34,9 @@ const defaultFilters: Filters = { maxPrice: 0, minRating: 0, maxDistance: 0 };
 const sortingDistance = (user: Coords | null, restaurant: Restaurant) =>
   user ? distanceTo(user, restaurant) : restaurant.distanceKm > 0 ? restaurant.distanceKm : null;
 
+/** Holding the logo for 2 seconds opens the admin sign-in, which is deliberately not shown to customers. */
 function Brand() {
-  return <View style={styles.brand}><Text style={styles.brandMark}>♨</Text><Text style={styles.brandName}>KWETU</Text><Text style={styles.brandTagline}>{t('brand.tagline')}</Text></View>;
+  return <Pressable delayLongPress={2000} onLongPress={() => router.push('/admin' as Href)} style={styles.brand}><Text style={styles.brandMark}>♨</Text><Text style={styles.brandName}>KWETU</Text><Text style={styles.brandTagline}>{t('brand.tagline')}</Text></Pressable>;
 }
 
 export default function HomeScreen() {

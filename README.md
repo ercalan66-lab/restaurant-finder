@@ -99,7 +99,7 @@ To make an account an admin, copy its user UUID from Supabase **Authentication â
 insert into public.admins (user_id) values ('YOUR_USER_UUID');
 ```
 
-Admins see **Review restaurants** on their profile. From there they can:
+The admin console is not shown anywhere customers look. To open it, **press and hold the KWETU logo** at the top of the home screen for 2 seconds, then sign in with the admin account. This admin sign-in is separate from the customer account on the phone: signing in or out of one does not affect the other. In the console admins can:
 
 - approve a restaurant, or request changes with a reason the owner sees;
 - unpublish a live restaurant;

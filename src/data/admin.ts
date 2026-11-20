@@ -1,13 +1,30 @@
-import { supabase } from '../../lib/supabase';
+// Everything here runs on the admin console's own session (adminSupabase), never the customer's.
+import { adminSupabase as supabase } from '../../lib/supabase';
+import { normalizeEmail } from './auth';
 import type { PaymentMethod, PaymentStatus } from './guest-storage';
 import { RESTAURANT_COLUMNS, toRestaurant, type RestaurantSummary } from './restaurants';
 
-/** True when the signed-in account is listed in public.admins. */
+/** True when the account signed in to the admin console is listed in public.admins. */
 export async function checkIsAdmin() {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) return false;
   const { data, error } = await supabase.rpc('is_admin');
   return !error && data === true;
+}
+
+/** Signs in to the admin console only. An account that is not an admin is signed straight back out. */
+export async function adminSignIn(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
+  if (error) throw error;
+  if (!(await checkIsAdmin())) {
+    await adminSignOut();
+    throw new Error('This account is not a Kwetu admin. Ask another admin to add it from Admins.');
+  }
+}
+
+/** Ends the admin session on this phone only ('local'), so the same account stays signed in elsewhere. */
+export async function adminSignOut() {
+  await supabase.auth.signOut({ scope: 'local' });
 }
 
 /** Every restaurant, including ones waiting for review (admins can see them all). */

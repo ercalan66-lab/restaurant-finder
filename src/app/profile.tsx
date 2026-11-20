@@ -7,7 +7,6 @@ import type { User } from '@supabase/supabase-js';
 
 import { ActivitySection } from '@/components/activity-section';
 import { deleteMyAccount } from '@/data/account';
-import { checkIsAdmin } from '@/data/admin';
 import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type GuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
 import { fetchReviewedReferences } from '@/data/reviews';
 import { t } from '@/i18n';
@@ -48,7 +47,6 @@ export default function ProfileScreen() {
   const [editing, setEditing] = useState(false);
   const locked = savedProfile !== null && !editing;
   const [account, setAccount] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [accountNotice, setAccountNotice] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
@@ -66,13 +64,12 @@ export default function ProfileScreen() {
     const applyUser = (user: User | null) => {
       setAccount(accountLabel(user));
       if (user) {
-        void checkIsAdmin().then(setIsAdmin);
         // Fill empty fields with the details given at registration.
         const details = user.user_metadata ?? {};
         setName((current) => current || (typeof details.full_name === 'string' ? details.full_name : ''));
         setPhone((current) => current || (typeof details.phone === 'string' ? details.phone : '') || formatAccountPhone(user.phone) || '');
         setEmail((current) => current || user.email || '');
-      } else setIsAdmin(false);
+      }
     };
     supabase.auth.getUser().then(({ data }) => applyUser(data.user)).catch(() => undefined);
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => applyUser(session?.user ?? null));
@@ -112,7 +109,6 @@ export default function ProfileScreen() {
       try {
         await deleteMyAccount();
         setAccount(null);
-        setIsAdmin(false);
         setName(''); setPhone(''); setEmail('');
         setSavedProfile(null); setEditing(false);
         setOrders([]); setReservations([]);
@@ -196,12 +192,6 @@ export default function ProfileScreen() {
 
     <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} reviewed={reviewed} signedIn={Boolean(account)} />
 
-    {isAdmin && <Pressable accessibilityRole="button" onPress={() => router.push('/admin' as Href)} style={styles.adminCard}>
-      <Text style={styles.adminEyebrow}>{t('profile.adminEyebrow')}</Text>
-      <Text style={styles.adminTitle}>{t('profile.adminTitle')}</Text>
-      <Text style={styles.adminCopy}>{t('profile.adminCopy')}</Text>
-    </Pressable>}
-
     <View style={styles.ownerCard}><Text style={styles.ownerEyebrow}>{t('profile.ownerEyebrow')}</Text><Text style={styles.ownerTitle}>{t('profile.ownerTitle')}</Text><Text style={styles.ownerCopy}>{t('profile.ownerCopy')}</Text><Pressable onPress={() => router.push((account ? '/owner' : '/sign-in?role=owner') as Href)} style={styles.ownerButton}><Text style={styles.ownerButtonText}>{t('profile.ownerButton')}</Text></Pressable></View>
 
     <Pressable onPress={() => router.push('/privacy' as Href)} style={styles.privacyLink}><Text style={styles.privacyText}>{t('settings.privacy')}</Text></Pressable>
@@ -212,7 +202,6 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   safeArea: { flex: 1, backgroundColor: bg('#FFF8ED') }, content: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: 20, paddingBottom: 60 }, back: { color: fg(ORANGE), fontSize: 14, fontWeight: '800', marginBottom: 25 }, eyebrow: { color: fg(ORANGE), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }, title: { color: fg('#171612'), fontSize: 34, fontWeight: '900', marginTop: 6 }, subtitle: { color: fg('#777268'), fontSize: 14, lineHeight: 20, marginTop: 7, marginBottom: 20 },
   accountCard: { padding: 14, borderWidth: 1, borderColor: line('#E9DFD2'), borderRadius: 15, backgroundColor: bg('#FFF') }, accountLabel: { color: fg('#777268'), fontSize: 9, fontWeight: '900', letterSpacing: 0.7 }, accountValue: { color: fg('#171612'), fontSize: 13, fontWeight: '800', marginTop: 5 }, accountActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 9 }, accountAction: { color: fg(ORANGE), fontSize: 12, fontWeight: '900' }, deleteAction: { color: fg('#9B321C') }, accountNotice: { color: fg('#28734D'), backgroundColor: bg('#E8F5ED'), borderRadius: 10, padding: 10, fontSize: 12, lineHeight: 17, marginTop: 10 },
   label: { color: fg('#777268'), fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 16, marginBottom: 7 }, input: { height: 50, borderWidth: 1, borderColor: line('#E9DFD2'), borderRadius: 14, paddingHorizontal: 15, color: fg('#171612'), backgroundColor: bg('#FFF') }, savedMessage: { color: fg('#28734D'), backgroundColor: bg('#E8F5ED'), borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 18 }, button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: bg(ORANGE), marginTop: 20 }, buttonDisabled: { opacity: 0.6 }, buttonSaved: { backgroundColor: bg('#2E8B57') }, buttonRow: { flexDirection: 'row', gap: 10, marginTop: 20 }, rowButton: { flex: 1, marginTop: 0 }, secondaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, borderWidth: 1.5, borderColor: line(ORANGE), backgroundColor: bg('#FFF') }, secondaryButtonText: { color: fg(ORANGE), fontSize: 13, fontWeight: '900' }, inputLocked: { backgroundColor: bg('#F6F0E8'), color: fg('#4F4A43') }, errorMessage: { color: fg('#8E2F1A'), backgroundColor: bg('#FBE5DF'), borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 12 }, buttonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
-  adminCard: { marginTop: 28, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: line('#D6CCE8'), backgroundColor: bg('#F6F2FD') }, adminEyebrow: { color: fg('#5B3FA0'), fontSize: 9, fontWeight: '900', letterSpacing: 1 }, adminTitle: { color: fg('#271A45'), fontSize: 18, fontWeight: '900', marginTop: 5 }, adminCopy: { color: fg('#5E567A'), fontSize: 12, lineHeight: 18, marginTop: 4 },
   ownerCard: { marginTop: 28, padding: 20, borderRadius: 22, backgroundColor: bg('#271812') }, ownerEyebrow: { color: fg('#F29A52'), fontSize: 9, fontWeight: '900', letterSpacing: 1 }, ownerTitle: { color: fg('#FFF'), fontSize: 21, fontWeight: '900', marginTop: 6 }, ownerCopy: { color: fg('#D8CEC8'), fontSize: 12, lineHeight: 18, marginTop: 7 }, ownerButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 23, backgroundColor: bg('#B93F1D'), marginTop: 16 }, ownerButtonText: { color: fg('#FFF'), fontSize: 12, fontWeight: '900' },
   privacyLink: { alignSelf: 'center', paddingVertical: 12, marginTop: 18 }, privacyText: { color: fg('#777268'), fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
 }));

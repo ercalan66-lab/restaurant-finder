@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { adminSupabase, supabase } from '../../lib/supabase';
 
 export type Review = {
   id: string;
@@ -57,9 +57,9 @@ export async function fetchReviewedReferences(references: string[]): Promise<Set
   return new Set(data as string[]);
 }
 
-/** Admin console: newest reviews across all restaurants, hidden ones included. */
+/** Admin console (admin session): newest reviews across all restaurants, hidden ones included. */
 export async function fetchLatestReviews(limit = 50): Promise<AdminReview[]> {
-  const { data, error } = await supabase
+  const { data, error } = await adminSupabase
     .from('reviews')
     .select(`${REVIEW_COLUMNS}, restaurants(name)`)
     .order('created_at', { ascending: false })
@@ -72,7 +72,7 @@ export async function fetchLatestReviews(limit = 50): Promise<AdminReview[]> {
 }
 
 export async function setReviewHidden(id: string, hidden: boolean) {
-  const { error } = await supabase.rpc('admin_set_review_hidden', { p_review_id: id, p_hidden: hidden });
+  const { error } = await adminSupabase.rpc('admin_set_review_hidden', { p_review_id: id, p_hidden: hidden });
   if (error) throw error;
 }
 
