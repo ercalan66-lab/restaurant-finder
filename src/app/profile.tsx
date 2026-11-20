@@ -8,7 +8,7 @@ import type { User } from '@supabase/supabase-js';
 import { ActivitySection } from '@/components/activity-section';
 import { deleteMyAccount } from '@/data/account';
 import { checkIsAdmin } from '@/data/admin';
-import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
+import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type GuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
 import { fetchReviewedReferences } from '@/data/reviews';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace, goHome } from '@/utils/navigation';
@@ -40,6 +40,11 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: 'idle' });
   const saving = saveStatus.kind === 'saving';
+  // The details last saved on this device. While they exist and are not being edited, the form is
+  // locked and shows "✓ Saved" with an "Edit profile" button.
+  const [savedProfile, setSavedProfile] = useState<GuestProfile | null>(null);
+  const [editing, setEditing] = useState(false);
+  const locked = savedProfile !== null && !editing;
   const [account, setAccount] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [accountNotice, setAccountNotice] = useState('');
@@ -50,7 +55,12 @@ export default function ProfileScreen() {
   const [historyLoading, setHistoryLoading] = useState(true);
 
   useEffect(() => {
-    getGuestProfile().then((profile) => { setName((current) => current || profile.name); setPhone((current) => current || profile.phone); setEmail((current) => current || profile.email); }).catch(() => undefined);
+    getGuestProfile().then((profile) => {
+      setName((current) => current || profile.name);
+      setPhone((current) => current || profile.phone);
+      setEmail((current) => current || profile.email);
+      if (profile.name && profile.phone) setSavedProfile(profile);
+    }).catch(() => undefined);
     const applyUser = (user: User | null) => {
       setAccount(accountLabel(user));
       if (user) {
@@ -102,6 +112,7 @@ export default function ProfileScreen() {
         setAccount(null);
         setIsAdmin(false);
         setName(''); setPhone(''); setEmail('');
+        setSavedProfile(null); setEditing(false);
         setOrders([]); setReservations([]);
         setAccountNotice('Your account and its personal details have been deleted.');
       } catch (error) {
@@ -122,6 +133,8 @@ export default function ProfileScreen() {
       setName(saved.name);
       setPhone(saved.phone);
       setEmail(saved.email);
+      setSavedProfile(saved);
+      setEditing(false);
       setSaveStatus({ kind: 'saved' });
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'unknown storage error';
@@ -135,10 +148,17 @@ export default function ProfileScreen() {
     const timer = setTimeout(goHome, SAVED_PAUSE_MS);
     return () => clearTimeout(timer);
   }, [saveStatus.kind]);
-  // Typing again after saving (or after a problem) brings back the normal "Save profile" button.
+  // Typing again after a problem clears the red message.
   const edit = (setter: (value: string) => void) => (value: string) => {
     setter(value);
     if (saveStatus.kind === 'saved' || saveStatus.kind === 'error') setSaveStatus({ kind: 'idle' });
+  };
+  const startEditing = () => { setEditing(true); setSaveStatus({ kind: 'idle' }); };
+  // Cancel puts back the saved details and locks the form again.
+  const cancelEditing = () => {
+    if (savedProfile) { setName(savedProfile.name); setPhone(savedProfile.phone); setEmail(savedProfile.email); }
+    setEditing(false);
+    setSaveStatus({ kind: 'idle' });
   };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -155,12 +175,20 @@ export default function ProfileScreen() {
       {accountNotice ? <Text accessibilityRole="alert" style={styles.accountNotice}>{accountNotice}</Text> : null}
     </View>
 
-    <Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" editable={!saving} onChangeText={edit(setName)} placeholder="Full name" style={styles.input} value={name} />
-    <Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" editable={!saving} keyboardType="phone-pad" onChangeText={edit(setPhone)} placeholder="+255..." style={styles.input} value={phone} />
-    <Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" editable={!saving} keyboardType="email-address" onChangeText={edit(setEmail)} placeholder="you@example.com" style={styles.input} value={email} />
-    <Pressable accessibilityRole="button" accessibilityState={{ busy: saving, disabled: saving }} disabled={saving} onPress={() => void save()} style={[styles.button, saving && styles.buttonDisabled, saveStatus.kind === 'saved' && styles.buttonSaved]}>
-      <Text style={styles.buttonText}>{saving ? 'Saving…' : saveStatus.kind === 'saved' ? '✓ Saved' : 'Save profile'}</Text>
-    </Pressable>
+    <Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" editable={!locked && !saving} onChangeText={edit(setName)} placeholder="Full name" style={[styles.input, locked && styles.inputLocked]} value={name} />
+    <Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" editable={!locked && !saving} keyboardType="phone-pad" onChangeText={edit(setPhone)} placeholder="+255..." style={[styles.input, locked && styles.inputLocked]} value={phone} />
+    <Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" editable={!locked && !saving} keyboardType="email-address" onChangeText={edit(setEmail)} placeholder="you@example.com" style={[styles.input, locked && styles.inputLocked]} value={email} />
+    {locked
+      ? <View style={styles.buttonRow}>
+        <View accessibilityLabel="Profile saved" accessibilityRole="text" style={[styles.button, styles.buttonSaved, styles.rowButton]}><Text style={styles.buttonText}>✓ Saved</Text></View>
+        <Pressable accessibilityRole="button" onPress={startEditing} style={[styles.secondaryButton, styles.rowButton]}><Text style={styles.secondaryButtonText}>✎ Edit profile</Text></Pressable>
+      </View>
+      : <View style={styles.buttonRow}>
+        <Pressable accessibilityRole="button" accessibilityState={{ busy: saving, disabled: saving }} disabled={saving} onPress={() => void save()} style={[styles.button, styles.rowButton, saving && styles.buttonDisabled]}>
+          <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save profile'}</Text>
+        </Pressable>
+        {savedProfile && <Pressable accessibilityRole="button" disabled={saving} onPress={cancelEditing} style={[styles.secondaryButton, styles.rowButton]}><Text style={styles.secondaryButtonText}>Cancel</Text></Pressable>}
+      </View>}
     {saveStatus.kind === 'saved' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.savedMessage}>✓ Profile saved. Taking you to the home page…</Text>}
     {saveStatus.kind === 'error' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorMessage}>{saveStatus.message}</Text>}
 
@@ -181,7 +209,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF8ED' }, content: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: 20, paddingBottom: 60 }, back: { color: ORANGE, fontSize: 14, fontWeight: '800', marginBottom: 25 }, eyebrow: { color: ORANGE, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }, title: { color: '#171612', fontSize: 34, fontWeight: '900', marginTop: 6 }, subtitle: { color: '#777268', fontSize: 14, lineHeight: 20, marginTop: 7, marginBottom: 20 },
   accountCard: { padding: 14, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 15, backgroundColor: '#FFF' }, accountLabel: { color: '#777268', fontSize: 9, fontWeight: '900', letterSpacing: 0.7 }, accountValue: { color: '#171612', fontSize: 13, fontWeight: '800', marginTop: 5 }, accountActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 9 }, accountAction: { color: ORANGE, fontSize: 12, fontWeight: '900' }, deleteAction: { color: '#9B321C' }, accountNotice: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 10, padding: 10, fontSize: 12, lineHeight: 17, marginTop: 10 },
-  label: { color: '#777268', fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 16, marginBottom: 7 }, input: { height: 50, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, paddingHorizontal: 15, color: '#171612', backgroundColor: '#FFF' }, savedMessage: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 18 }, button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: ORANGE, marginTop: 20 }, buttonDisabled: { opacity: 0.6 }, buttonSaved: { backgroundColor: '#2E8B57' }, errorMessage: { color: '#8E2F1A', backgroundColor: '#FBE5DF', borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 12 }, buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
+  label: { color: '#777268', fontSize: 10, fontWeight: '900', letterSpacing: 0.7, marginTop: 16, marginBottom: 7 }, input: { height: 50, borderWidth: 1, borderColor: '#E9DFD2', borderRadius: 14, paddingHorizontal: 15, color: '#171612', backgroundColor: '#FFF' }, savedMessage: { color: '#28734D', backgroundColor: '#E8F5ED', borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 18 }, button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, backgroundColor: ORANGE, marginTop: 20 }, buttonDisabled: { opacity: 0.6 }, buttonSaved: { backgroundColor: '#2E8B57' }, buttonRow: { flexDirection: 'row', gap: 10, marginTop: 20 }, rowButton: { flex: 1, marginTop: 0 }, secondaryButton: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 26, borderWidth: 1.5, borderColor: ORANGE, backgroundColor: '#FFF' }, secondaryButtonText: { color: ORANGE, fontSize: 13, fontWeight: '900' }, inputLocked: { backgroundColor: '#F6F0E8', color: '#4F4A43' }, errorMessage: { color: '#8E2F1A', backgroundColor: '#FBE5DF', borderRadius: 12, padding: 12, fontSize: 12, lineHeight: 17, marginTop: 12 }, buttonText: { color: '#FFF', fontSize: 13, fontWeight: '900' },
   adminCard: { marginTop: 28, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: '#D6CCE8', backgroundColor: '#F6F2FD' }, adminEyebrow: { color: '#5B3FA0', fontSize: 9, fontWeight: '900', letterSpacing: 1 }, adminTitle: { color: '#271A45', fontSize: 18, fontWeight: '900', marginTop: 5 }, adminCopy: { color: '#5E567A', fontSize: 12, lineHeight: 18, marginTop: 4 },
   ownerCard: { marginTop: 28, padding: 20, borderRadius: 22, backgroundColor: '#271812' }, ownerEyebrow: { color: '#F29A52', fontSize: 9, fontWeight: '900', letterSpacing: 1 }, ownerTitle: { color: '#FFF', fontSize: 21, fontWeight: '900', marginTop: 6 }, ownerCopy: { color: '#D8CEC8', fontSize: 12, lineHeight: 18, marginTop: 7 }, ownerButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 23, backgroundColor: '#B93F1D', marginTop: 16 }, ownerButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
   privacyLink: { alignSelf: 'center', paddingVertical: 12, marginTop: 18 }, privacyText: { color: '#777268', fontSize: 12, fontWeight: '700', textDecorationLine: 'underline' },
