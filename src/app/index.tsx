@@ -1,9 +1,10 @@
 import { router, type Href } from 'expo-router';
 import Storage from 'expo-sqlite/kv-store';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BottomNav, type NavItem } from '@/components/bottom-nav';
 import { PhotoBackground } from '@/components/photo-background';
 import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
 import { formatTsh, isOpenNow, useRestaurants, type RestaurantSummary } from '@/data/restaurants';
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const { offline, restaurants } = useRestaurants();
+  const listRef = useRef<FlatList<Restaurant>>(null);
 
   useEffect(() => {
     let active = true;
@@ -66,11 +68,12 @@ export default function HomeScreen() {
   });
   const showAll = () => { setActiveCuisine('All'); setSavedOnly(false); setQuery(''); setFilters(defaultFilters); };
   const filterCount = Object.values(filters).filter(Boolean).length;
-  const navItems = [
-    { icon: '⌂', label: 'Home', active: !savedOnly, onPress: showAll },
-    { icon: '☷', label: 'Filters', active: filterCount > 0, onPress: () => setFiltersOpen(true) },
-    { icon: savedOnly ? '♥' : '♡', label: 'Saved', active: savedOnly, onPress: () => setSavedOnly(true) },
-    { icon: '♙', label: 'Profile', active: false, onPress: () => router.push('/profile' as Href) },
+  const scrollToTop = () => listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  // Filters stay next to the search box, so the tab bar keeps only the three places people go.
+  const navItems: NavItem[] = [
+    { label: 'Home', icon: { ios: 'house', iosSelected: 'house.fill', android: 'home' }, active: !savedOnly, onPress: () => { showAll(); scrollToTop(); } },
+    { label: 'Saved', icon: { ios: 'heart', iosSelected: 'heart.fill', android: 'favorite' }, active: savedOnly, onPress: () => { setSavedOnly(true); scrollToTop(); } },
+    { label: 'Profile', icon: { ios: 'person.crop.circle', iosSelected: 'person.crop.circle.fill', android: 'account_circle' }, active: false, onPress: () => router.push('/profile' as Href) },
   ];
 
   const header = <>
@@ -99,6 +102,7 @@ export default function HomeScreen() {
 
   return <SafeAreaView edges={['top']} style={styles.safeArea}>
     <FlatList
+      ref={listRef}
       columnWrapperStyle={columns > 1 ? styles.cardRow : undefined}
       contentContainerStyle={[styles.listContent, { paddingBottom: 100 + insets.bottom }]}
       data={visibleRestaurants} key={columns} keyExtractor={(item) => String(item.id)} ListHeaderComponent={header} numColumns={columns} showsVerticalScrollIndicator={false}
@@ -109,7 +113,7 @@ export default function HomeScreen() {
         <View style={styles.cardBody}><View style={styles.titleLine}><Text numberOfLines={1} style={styles.cardTitle}>{item.name}</Text><Text style={styles.rating}>{ratingLabel(item)}</Text></View><Text style={styles.meta}>{item.cuisine} · {item.area}</Text><View style={styles.cardFooter}><Text style={styles.price}>{item.pricePerPerson > 0 ? formatTsh(item.pricePerPerson) : '—'}</Text>{isOpenNow(item) ? <Text style={styles.open}>OPEN NOW</Text> : <Text style={[styles.open, styles.closed]}>CLOSED</Text>}</View>{item.pricePerPerson > 0 && <Text style={styles.perPerson}>per person</Text>}</View>
       </Pressable>}
     />
-    <View accessibilityRole="tablist" style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 8) }]}>{navItems.map((item) => <Pressable accessibilityRole="tab" accessibilityState={{ selected: item.active }} key={item.label} onPress={item.onPress} style={styles.navItem}><Text style={[styles.navIcon, item.active && styles.orangeText]}>{item.icon}</Text><Text style={[styles.navLabel, item.active && styles.orangeText]}>{item.label}</Text></Pressable>)}</View>
+    <BottomNav items={navItems} />
     <Modal animationType="slide" onRequestClose={() => setFiltersOpen(false)} transparent visible={filtersOpen}><Pressable onPress={() => setFiltersOpen(false)} style={styles.modalBackdrop}><Pressable onPress={(event) => event.stopPropagation()} style={[styles.filterSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}><View style={styles.filterHeading}><View><Text style={styles.sheetTitle}>Filter restaurants</Text><Text style={styles.sheetMeta}>Choose what matters for this meal.</Text></View><Pressable accessibilityLabel="Close filters" onPress={() => setFiltersOpen(false)}><Text style={styles.closeFilter}>×</Text></Pressable></View><FilterGroup label="MAXIMUM PRICE" options={[[0, 'Any'], [50000, 'TSh 50k'], [100000, 'TSh 100k'], [150000, 'TSh 150k']]} selected={filters.maxPrice} onSelect={(maxPrice) => setFilters((current) => ({ ...current, maxPrice }))} /><FilterGroup label="MINIMUM RATING" options={[[0, 'Any'], [4.5, '4.5+'], [4.7, '4.7+'], [4.8, '4.8+']]} selected={filters.minRating} onSelect={(minRating) => setFilters((current) => ({ ...current, minRating }))} /><FilterGroup label="MAXIMUM DISTANCE" options={[[0, 'Any'], [1, '1 km'], [2, '2 km'], [5, '5 km']]} selected={filters.maxDistance} onSelect={(maxDistance) => setFilters((current) => ({ ...current, maxDistance }))} /><View style={styles.filterActions}><Pressable onPress={() => setFilters(defaultFilters)} style={styles.clearButton}><Text style={styles.clearButtonText}>Clear</Text></Pressable><Pressable onPress={() => setFiltersOpen(false)} style={styles.applyButton}><Text style={styles.applyButtonText}>Show {visibleRestaurants.length} places</Text></Pressable></View></Pressable></Pressable></Modal>
   </SafeAreaView>;
 }
@@ -132,7 +136,6 @@ const styles = StyleSheet.create({
   cardBody: { padding: 12 }, titleLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }, cardTitle: { flex: 1, color: '#171612', fontSize: 14, fontWeight: '900' }, rating: { color: '#EAA000', fontSize: 11, fontWeight: '900' }, meta: { color: '#777268', fontSize: 10, marginTop: 5 }, cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }, price: { color: '#171612', fontSize: 12, fontWeight: '900' }, open: { color: '#3F8B54', backgroundColor: '#EAF7ED', borderRadius: 9, overflow: 'hidden', paddingHorizontal: 6, paddingVertical: 4, fontSize: 7, fontWeight: '900' }, perPerson: { color: '#918A81', fontSize: 8, marginTop: 2 }, closed: { color: '#8E2F1A', backgroundColor: '#F5D8D1' }, offlineNote: { color: '#8E2F1A', fontSize: 10, fontWeight: '700', marginTop: 4 },
   empty: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24, backgroundColor: '#FFF', borderRadius: 20, marginBottom: 14 }, emptyTitle: { color: '#171612', fontSize: 18, fontWeight: '900' }, emptyCopy: { color: '#777268', textAlign: 'center', fontSize: 13, marginTop: 6 }, emptyButton: { backgroundColor: ORANGE, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10, marginTop: 16 }, emptyButtonText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
   offer: { height: 155, borderRadius: 22, overflow: 'hidden', justifyContent: 'center', marginTop: 7 }, offerImage: { borderRadius: 22 }, offerOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(20,13,8,0.48)' }, offerCopy: { paddingHorizontal: 21 }, offerEyebrow: { color: '#FF9A52', fontSize: 9, fontWeight: '900' }, offerTitle: { color: '#FFF', fontSize: 24, lineHeight: 25, fontWeight: '900', marginTop: 5 }, offerCaption: { color: '#E7DED5', fontSize: 10, marginTop: 7 },
-  bottomNav: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 76, paddingTop: 8, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: '#FFF', borderTopLeftRadius: 26, borderTopRightRadius: 26, elevation: 14 }, navItem: { flex: 1, alignItems: 'center', justifyContent: 'center' }, navIcon: { color: '#403B35', fontSize: 21, lineHeight: 23 }, navLabel: { color: '#777268', fontSize: 9, marginTop: 3 },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(18,14,10,0.56)' }, sheetTitle: { flex: 1, color: '#171612', fontSize: 24, fontWeight: '900' }, sheetMeta: { color: '#777268', fontSize: 12, marginTop: 7 },
   filterSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, backgroundColor: CREAM }, filterHeading: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }, closeFilter: { color: '#171612', fontSize: 30, lineHeight: 30, paddingHorizontal: 8 }, filterLabel: { color: '#777268', fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 18, marginBottom: 8 }, filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, filterOption: { paddingHorizontal: 13, paddingVertical: 10, borderWidth: 1, borderColor: '#E6DCCE', borderRadius: 20, backgroundColor: '#FFF' }, filterOptionActive: { borderColor: ORANGE, backgroundColor: ORANGE }, filterOptionText: { color: '#4F4A43', fontSize: 11, fontWeight: '800' }, filterOptionTextActive: { color: '#FFF' }, filterActions: { flexDirection: 'row', gap: 10, marginTop: 24 }, clearButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 24, borderWidth: 1, borderColor: '#E6DCCE', borderRadius: 24, backgroundColor: '#FFF' }, clearButtonText: { color: '#171612', fontWeight: '900' }, applyButton: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: ORANGE }, applyButtonText: { color: '#FFF', fontWeight: '900' },
 });
