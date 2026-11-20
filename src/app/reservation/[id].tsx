@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { bookingDates, bookingSlots, fetchBookedSeats, formatBooking } from '@/data/booking';
@@ -8,6 +8,7 @@ import { getGuestProfile, newReference, saveGuestProfile, saveReservation } from
 import { useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 import { getPushToken } from '@/utils/push-notifications';
+import { showMessage } from '@/utils/feedback';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -59,10 +60,10 @@ export default function ReservationScreen() {
   const chooseDate = (iso: string) => { setDate(iso); setTime(null); };
 
   const submit = async () => {
-    if (!name.trim() || !phone.trim()) return Alert.alert('Missing information', 'Enter your name and phone number.');
-    if (phone.replace(/\D/g, '').length < 7) return Alert.alert('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return Alert.alert('Invalid email', 'Enter a valid email address or leave it blank.');
-    if (!selectedTime) return Alert.alert('Choose a time', `Pick a time with room for ${guests} ${guests === 1 ? 'guest' : 'guests'}.`);
+    if (!name.trim() || !phone.trim()) return showMessage('Missing information', 'Enter your name and phone number.');
+    if (phone.replace(/\D/g, '').length < 7) return showMessage('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return showMessage('Invalid email', 'Enter a valid email address or leave it blank.');
+    if (!selectedTime) return showMessage('Choose a time', `Pick a time with room for ${guests} ${guests === 1 ? 'guest' : 'guests'}.`);
     const reference = newReference('KB');
     const profile = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
@@ -76,13 +77,13 @@ export default function ReservationScreen() {
         // Usually someone took the last seats first: show fresh availability so they can pick again.
         setTime(null);
         setAvailabilityVersion((version) => version + 1);
-        return Alert.alert('Choose another time', result.reason);
+        return showMessage('Choose another time', result.reason);
       }
       setDelivered(result.outcome === 'sent');
       setNotifying(Boolean(pushToken));
       setConfirmation({ reference, time: selectedTime });
     } catch {
-      Alert.alert('Could not save reservation', 'Please try again.');
+      showMessage('Could not save reservation', 'Please try again.');
     } finally {
       setSubmitting(false);
     }

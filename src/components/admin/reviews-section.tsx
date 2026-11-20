@@ -1,9 +1,9 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { fetchLatestReviews, formatReviewDate, setReviewHidden, stars, type AdminReview } from '@/data/reviews';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { Action, adminStyles, Badge, Chips, Empty, LoadError, SectionHeading, type Loadable } from './admin-ui';
 
@@ -32,7 +32,7 @@ export function ReviewsSection() {
       await setReviewHidden(review.id, hidden);
       reload();
     } catch (error) {
-      Alert.alert('Could not update the review', errorMessage(error));
+      showMessage('Could not update the review', errorMessage(error));
     } finally {
       setBusyId(null);
     }

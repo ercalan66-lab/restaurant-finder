@@ -1,11 +1,11 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { MAX_MENU_PDF_MB, pickMenuPdf, removeMenuPdf, uploadMenuPdf } from '@/data/restaurant-menu-pdf';
 import type { Restaurant } from '@/data/restaurants';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
 
@@ -26,10 +26,10 @@ export function MenuPdfManager({ onUpdated, restaurant }: { onUpdated: (changes:
       await updateRestaurant(restaurant.id, { menuPdfUrl: uploaded });
       onUpdated({ menuPdfUrl: uploaded });
       void removeMenuPdf(current);
-      Alert.alert('Menu published', `Customers can now view and download ${file.name} from your page.`);
+      showMessage('Menu published', `Customers can now view and download ${file.name} from your page.`);
     } catch (error) {
       void removeMenuPdf(uploaded);
-      Alert.alert('Could not upload the menu', errorMessage(error));
+      showMessage('Could not upload the menu', errorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -39,7 +39,7 @@ export function MenuPdfManager({ onUpdated, restaurant }: { onUpdated: (changes:
     setBusy(true);
     updateRestaurant(restaurant.id, { menuPdfUrl: null })
       .then(() => { onUpdated({ menuPdfUrl: null }); void removeMenuPdf(current); })
-      .catch((error: unknown) => Alert.alert('Could not remove the menu', errorMessage(error)))
+      .catch((error: unknown) => showMessage('Could not remove the menu', errorMessage(error)))
       .finally(() => setBusy(false));
   });
 

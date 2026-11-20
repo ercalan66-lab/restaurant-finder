@@ -1,12 +1,12 @@
 import * as Linking from 'expo-linking';
 import { router, type Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { homeFor } from '@/data/auth';
 import { parseAuthLink } from '@/utils/auth-link';
-import { errorMessage } from '@/utils/feedback';
+import { errorMessage, showMessage } from '@/utils/feedback';
 import { supabase } from '../../lib/supabase';
 
 const ACCENT = '#B93F1D';
@@ -50,7 +50,7 @@ export default function AuthCallbackScreen() {
     void completeEmailLink(url).then(async (outcome) => {
       if (outcome.kind !== 'signed-in') return setResult(outcome);
       router.replace(await homeForSignedInUser());
-      Alert.alert('Welcome to Kwetu', 'Your email is confirmed and you are signed in.');
+      showMessage('Welcome to Kwetu', 'Your email is confirmed and you are signed in.');
     });
   }, [url]);
 
@@ -77,15 +77,15 @@ function NewPasswordForm() {
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    if (password.length < 6) return Alert.alert('Choose a longer password', 'Use at least 6 characters.');
+    if (password.length < 6) return showMessage('Choose a longer password', 'Use at least 6 characters.');
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
       setSaving(false);
-      return Alert.alert('Could not change password', error.message);
+      return showMessage('Could not change password', error.message);
     }
     router.replace(await homeForSignedInUser());
-    Alert.alert('Password changed', 'You are signed in with your new password.');
+    showMessage('Password changed', 'You are signed in with your new password.');
   };
 
   return <View>

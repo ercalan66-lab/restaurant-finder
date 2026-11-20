@@ -1,6 +1,6 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { User } from '@supabase/supabase-js';
@@ -10,7 +10,7 @@ import { deleteMyAccount } from '@/data/account';
 import { checkIsAdmin } from '@/data/admin';
 import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
 import { fetchReviewedReferences } from '@/data/reviews';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
 import { onNotificationReceived, unregisterDevice } from '@/utils/push-notifications';
@@ -79,7 +79,7 @@ export default function ProfileScreen() {
   const signOut = async () => {
     await unregisterDevice();
     const { error } = await supabase.auth.signOut();
-    if (error) return Alert.alert('Could not sign out', error.message);
+    if (error) return showMessage('Could not sign out', error.message);
     setAccount(null);
     setAccountNotice('Signed out. Your saved details stay on this phone.');
   };
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
         setOrders([]); setReservations([]);
         setAccountNotice('Your account and its personal details have been deleted.');
       } catch (error) {
-        Alert.alert('Could not delete account', errorMessage(error));
+        showMessage('Could not delete account', errorMessage(error));
       } finally {
         setDeleting(false);
       }

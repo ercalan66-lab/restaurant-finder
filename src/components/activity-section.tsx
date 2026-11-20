@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatBooking } from '@/data/booking';
 import {
@@ -12,7 +12,7 @@ import {
   type OrderRecord,
   type ReservationRecord,
 } from '@/data/guest-storage';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 const ORANGE = '#ED6417';
 const SHOWN = 8;
@@ -63,7 +63,7 @@ export function ActivitySection({ loading, onChanged, orders, reservations, revi
     try {
       await action();
     } catch (error) {
-      Alert.alert('Could not cancel', errorMessage(error));
+      showMessage('Could not cancel', errorMessage(error));
     }
     onChanged();
   };

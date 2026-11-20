@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AlertsCard } from '@/components/owner/alerts-card';
@@ -13,7 +13,7 @@ import { RestaurantDetailsForm } from '@/components/owner/restaurant-details-for
 import { OwnerRequests } from '@/components/owner-requests';
 import { createRestaurant, fetchMyRestaurant, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
-import { errorMessage } from '@/utils/feedback';
+import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
@@ -37,7 +37,7 @@ async function loadDashboard(): Promise<LoadResult> {
       return { kind: 'redirected' };
     }
     if (data.user.user_metadata?.role !== 'owner') {
-      Alert.alert('Owner account required', 'Create or sign in with a restaurant-owner account.');
+      showMessage('Owner account required', 'Create or sign in with a restaurant-owner account.');
       router.replace('/profile');
       return { kind: 'redirected' };
     }
@@ -78,10 +78,10 @@ export default function OwnerDashboardScreen() {
     if (!owner) return;
     try {
       setRestaurant(await createRestaurant(owner.id, details));
-      Alert.alert('Restaurant created', 'Kwetu will review it before customers can see it. Meanwhile, add a cover photo and your menu.');
+      showMessage('Restaurant created', 'Kwetu will review it before customers can see it. Meanwhile, add a cover photo and your menu.');
     } catch (error) {
       const duplicate = typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
-      Alert.alert('Could not create restaurant', duplicate ? 'This account already has a restaurant. Reopen the dashboard to manage it.' : errorMessage(error));
+      showMessage('Could not create restaurant', duplicate ? 'This account already has a restaurant. Reopen the dashboard to manage it.' : errorMessage(error));
     }
   };
 
@@ -92,9 +92,9 @@ export default function OwnerDashboardScreen() {
       // Saving a rejected restaurant sends it back for review (done by the database).
       const resubmitted = restaurant.approvalStatus === 'rejected';
       update(resubmitted ? { ...details, approvalStatus: 'pending', rejectionReason: '' } : details);
-      Alert.alert('Saved', resubmitted ? 'Restaurant information updated and sent to Kwetu for review again.' : 'Restaurant information updated.');
+      showMessage('Saved', resubmitted ? 'Restaurant information updated and sent to Kwetu for review again.' : 'Restaurant information updated.');
     } catch (error) {
-      Alert.alert('Could not save', errorMessage(error));
+      showMessage('Could not save', errorMessage(error));
     }
   };
 
@@ -105,7 +105,7 @@ export default function OwnerDashboardScreen() {
       await updateRestaurant(restaurant.id, { isActive });
     } catch (error) {
       update({ isActive: !isActive });
-      Alert.alert('Could not change visibility', errorMessage(error));
+      showMessage('Could not change visibility', errorMessage(error));
     }
   };
 

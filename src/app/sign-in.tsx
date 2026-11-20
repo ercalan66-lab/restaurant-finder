@@ -1,11 +1,12 @@
 import { isAuthError, type User } from '@supabase/supabase-js';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { AuthShell, authStyles, Field, METHOD_OPTIONS, Notice, PasswordField, PhoneCodeStep, PrimaryButton, Segmented, SwitchPrompt, TextLink } from '@/components/auth/auth-ui';
 import { authErrorMessage, homeFor, isEmail, normalizeEmail, resendConfirmationEmail, sendPasswordReset, sendPhoneCode, signInWithEmail, verifyPhoneCode, type AuthMethod } from '@/data/auth';
 import { toE164 } from '@/utils/phone';
+import { showMessage } from '@/utils/feedback';
 
 export default function SignInScreen() {
   const params = useLocalSearchParams<{ role?: string; email?: string }>();
@@ -29,20 +30,20 @@ export default function SignInScreen() {
       await action();
     } catch (error) {
       if (isAuthError(error) && error.code === 'email_not_confirmed') setUnconfirmed(true);
-      Alert.alert(failTitle, authErrorMessage(error, 'sign-in'));
+      showMessage(failTitle, authErrorMessage(error, 'sign-in'));
     } finally {
       setLoading(false);
     }
   };
 
   const signIn = () => {
-    if (!isEmail(email)) return Alert.alert('Check your email', 'Enter the email address you registered with.');
-    if (!password) return Alert.alert('Enter your password', 'Type the password for your Kwetu account.');
+    if (!isEmail(email)) return showMessage('Check your email', 'Enter the email address you registered with.');
+    if (!password) return showMessage('Enter your password', 'Type the password for your Kwetu account.');
     return run('Could not sign in', async () => finish(await signInWithEmail(email, password)));
   };
 
   const forgotPassword = () => {
-    if (!isEmail(email)) return Alert.alert('Enter your email first', 'Type your account email above, then tap “Forgot password?” again.');
+    if (!isEmail(email)) return showMessage('Enter your email first', 'Type your account email above, then tap “Forgot password?” again.');
     return run('Could not send the email', async () => {
       await sendPasswordReset(email);
       setNotice({ title: 'Check your email', body: `If ${normalizeEmail(email)} has a Kwetu account, we sent it a link. Open it on this phone to choose a new password.` });
@@ -57,7 +58,7 @@ export default function SignInScreen() {
 
   const sendCode = () => {
     const e164 = toE164(phone);
-    if (!e164) return Alert.alert('Check your number', 'Enter a mobile number such as 0712 345 678 or +255 712 345 678.');
+    if (!e164) return showMessage('Check your number', 'Enter a mobile number such as 0712 345 678 or +255 712 345 678.');
     return run('Could not send code', async () => {
       await sendPhoneCode(e164);
       setCode('');
@@ -67,7 +68,7 @@ export default function SignInScreen() {
 
   const verifyCode = () => {
     if (!codeSentTo) return;
-    if (!/^\d{6,10}$/.test(code)) return Alert.alert('Enter the code', 'Type the code from the SMS we sent you.');
+    if (!/^\d{6,10}$/.test(code)) return showMessage('Enter the code', 'Type the code from the SMS we sent you.');
     return run('Could not verify code', async () => finish(await verifyPhoneCode(codeSentTo, code)));
   };
 

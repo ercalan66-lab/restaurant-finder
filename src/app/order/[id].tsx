@@ -1,13 +1,14 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getGuestProfile, MOBILE_MONEY, newReference, saveGuestProfile, saveOrder } from '@/data/guest-storage';
 import { formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 import { getPushToken } from '@/utils/push-notifications';
+import { showMessage } from '@/utils/feedback';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -54,11 +55,11 @@ export default function OrderScreen() {
   };
   const submit = async () => {
     const items = menu.filter((item) => item.available && (quantities[item.id] ?? 0) > 0).map((item) => ({ name: item.name, price: formatTsh(item.price), quantity: quantities[item.id] }));
-    if (!items.length) return Alert.alert('Empty order', 'Add at least one menu item.');
-    if (!name.trim() || !phone.trim()) return Alert.alert('Missing information', 'Enter your name and phone number.');
-    if (phone.replace(/\D/g, '').length < 7) return Alert.alert('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
-    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return Alert.alert('Invalid email', 'Enter a valid email address or leave it blank.');
-    if (fulfillment === 'Delivery' && !address.trim()) return Alert.alert('Delivery address needed', 'Enter the address for your delivery.');
+    if (!items.length) return showMessage('Empty order', 'Add at least one menu item.');
+    if (!name.trim() || !phone.trim()) return showMessage('Missing information', 'Enter your name and phone number.');
+    if (phone.replace(/\D/g, '').length < 7) return showMessage('Invalid phone number', 'Enter a valid phone number with at least 7 digits.');
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return showMessage('Invalid email', 'Enter a valid email address or leave it blank.');
+    if (fulfillment === 'Delivery' && !address.trim()) return showMessage('Delivery address needed', 'Enter the address for your delivery.');
     const reference = newReference('KO');
     const guest = { name: name.trim(), phone: phone.trim(), email: email.trim() };
     try {
@@ -69,12 +70,12 @@ export default function OrderScreen() {
         saveGuestProfile(guest),
         saveOrder({ id: reference, restaurantId: restaurant.id, restaurantName: restaurant.name, guest, fulfillment, address: address.trim(), items, total, paymentMethod: 'cash', paymentStatus: 'unpaid', pushToken, createdAt: new Date().toISOString() }),
       ]);
-      if (result.outcome === 'rejected') return Alert.alert('Order not accepted', result.reason);
+      if (result.outcome === 'rejected') return showMessage('Order not accepted', result.reason);
       setDelivered(result.outcome === 'sent');
       setNotifying(Boolean(pushToken));
       setConfirmation(reference);
     } catch {
-      Alert.alert('Could not save order', 'Please try again.');
+      showMessage('Could not save order', 'Please try again.');
     } finally {
       setSubmitting(false);
     }

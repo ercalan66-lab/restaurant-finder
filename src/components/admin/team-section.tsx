@@ -1,9 +1,9 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 
 import { addAdmin, fetchAdmins, removeAdmin, type AdminMember } from '@/data/admin';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { Action, adminStyles, Badge, LoadError, SectionHeading, type Loadable } from './admin-ui';
 
@@ -25,15 +25,15 @@ export function TeamSection({ onLeftTeam }: { onLeftTeam: () => void }) {
   const reload = () => void loadAdmins().then(setState);
 
   const add = async () => {
-    if (!account.trim()) return Alert.alert('Enter an account', 'Type the email address or phone number the person signs in to Kwetu with.');
+    if (!account.trim()) return showMessage('Enter an account', 'Type the email address or phone number the person signs in to Kwetu with.');
     setBusy(true);
     try {
       const label = await addAdmin(account);
       setAccount('');
-      Alert.alert('Admin added', `${label} can now open the admin console from their profile.`);
+      showMessage('Admin added', `${label} can now open the admin console from their profile.`);
       reload();
     } catch (error) {
-      Alert.alert('Could not add admin', errorMessage(error));
+      showMessage('Could not add admin', errorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -50,7 +50,7 @@ export function TeamSection({ onLeftTeam }: { onLeftTeam: () => void }) {
         if (member.isMe) return onLeftTeam();
         reload();
       } catch (error) {
-        Alert.alert('Could not remove admin', errorMessage(error));
+        showMessage('Could not remove admin', errorMessage(error));
       } finally {
         setBusy(false);
       }

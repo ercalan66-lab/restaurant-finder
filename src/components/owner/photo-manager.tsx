@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
 import type { Restaurant } from '@/data/restaurants';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section } from './form-controls';
 
@@ -29,7 +29,7 @@ export function PhotoManager({ onUpdated, restaurant }: { onUpdated: (changes: P
       return uploaded;
     } catch (error) {
       void removeRestaurantPhoto(uploaded);
-      Alert.alert('Could not upload photo', errorMessage(error));
+      showMessage('Could not upload photo', errorMessage(error));
       return null;
     } finally {
       setBusy(null);
@@ -48,7 +48,7 @@ export function PhotoManager({ onUpdated, restaurant }: { onUpdated: (changes: P
     const galleryUrls = restaurant.galleryUrls.filter((item) => item !== url);
     updateRestaurant(restaurant.id, { galleryUrls })
       .then(() => { onUpdated({ galleryUrls }); void removeRestaurantPhoto(url); })
-      .catch((error: unknown) => Alert.alert('Could not remove photo', errorMessage(error)));
+      .catch((error: unknown) => showMessage('Could not remove photo', errorMessage(error)));
   });
 
   return <Section helper="The cover appears in search results and at the top of your page. Gallery photos show your dining space." title="Photos">

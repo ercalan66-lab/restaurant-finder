@@ -1,10 +1,10 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { fetchRestaurantsForReview, reviewRestaurant, updateListing } from '@/data/admin';
 import type { ApprovalStatus, RestaurantSummary } from '@/data/restaurants';
-import { errorMessage } from '@/utils/feedback';
+import { errorMessage, showMessage } from '@/utils/feedback';
 
 import { Action, adminStyles, Chips, Empty, LoadError, SearchField, SectionHeading, type Loadable } from './admin-ui';
 
@@ -69,10 +69,10 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
     setBusy(true);
     try {
       await action();
-      Alert.alert('Saved', done);
+      showMessage('Saved', done);
       onChanged();
     } catch (error) {
-      Alert.alert('Could not save', errorMessage(error));
+      showMessage('Could not save', errorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -80,14 +80,14 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
 
   const approve = () => run(() => reviewRestaurant(restaurant.id, true), `${restaurant.name} is now live. The owner has been notified.`);
   const requestChanges = () => {
-    if (!reason.trim()) return Alert.alert('Add a reason', 'Tell the owner what needs to change.');
+    if (!reason.trim()) return showMessage('Add a reason', 'Tell the owner what needs to change.');
     return run(() => reviewRestaurant(restaurant.id, false, reason.trim()), `The owner of ${restaurant.name} has been asked for changes.`);
   };
   // Once customers have reviewed the restaurant, its rating is their average and only the tag is editable.
   const ratedByCustomers = restaurant.reviewCount > 0;
   const saveListing = () => {
     const value = ratedByCustomers ? restaurant.rating : Number(rating.replace(',', '.'));
-    if (!ratedByCustomers && (!rating.trim() || Number.isNaN(value) || value < 0 || value > 5)) return Alert.alert('Check the rating', 'Enter a rating between 0 and 5, for example 4.6.');
+    if (!ratedByCustomers && (!rating.trim() || Number.isNaN(value) || value < 0 || value > 5)) return showMessage('Check the rating', 'Enter a rating between 0 and 5, for example 4.6.');
     return run(() => updateListing(restaurant.id, value, tag), `${restaurant.name} listing updated.`);
   };
 

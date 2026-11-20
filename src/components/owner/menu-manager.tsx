@@ -1,12 +1,12 @@
 import { Image } from 'expo-image';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { addMenuItem, deleteMenuItem, menuItemError, updateMenuItem, type MenuItemInput } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
 import { formatTsh, isMenuItemAvailable, type MenuItem, type Restaurant } from '@/data/restaurants';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { Field, formStyles, OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
 
@@ -21,7 +21,7 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
       await updateMenuItem(item.id, { inStock });
     } catch (error) {
       replaceItem(item.id, { inStock: item.inStock });
-      Alert.alert('Could not update availability', errorMessage(error));
+      showMessage('Could not update availability', errorMessage(error));
     }
   };
 
@@ -37,7 +37,7 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
       void removeRestaurantPhoto(item.photoUrl);
     } catch (error) {
       void removeRestaurantPhoto(uploaded);
-      Alert.alert('Could not upload photo', errorMessage(error));
+      showMessage('Could not upload photo', errorMessage(error));
     } finally {
       setBusyItem(null);
     }
@@ -47,7 +47,7 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
     setBusyItem(item.id);
     deleteMenuItem(item.id)
       .then(() => { onMenuChange(restaurant.menu.filter((food) => food.id !== item.id)); void removeRestaurantPhoto(item.photoUrl); })
-      .catch((error: unknown) => Alert.alert('Could not remove food', errorMessage(error)))
+      .catch((error: unknown) => showMessage('Could not remove food', errorMessage(error)))
       .finally(() => setBusyItem(null));
   });
 
@@ -109,13 +109,13 @@ function EditFoodForm({ item, onCancel, onSaved }: { item: MenuItem; onCancel: (
   const save = async () => {
     const changes: EditableFields = { name: name.trim(), description: ingredients.trim(), price: Number(price.replace(/[,\s]/g, '')), availableFrom, availableUntil };
     const problem = menuItemError({ ...item, ...changes });
-    if (problem) return Alert.alert('Check the food details', problem);
+    if (problem) return showMessage('Check the food details', problem);
     setSaving(true);
     try {
       await updateMenuItem(item.id, changes);
       onSaved(changes);
     } catch (error) {
-      Alert.alert('Could not save food', errorMessage(error));
+      showMessage('Could not save food', errorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -152,7 +152,7 @@ function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => voi
   const add = async () => {
     const input: MenuItemInput = { name, description: ingredients, price: Number(price.replace(/[,\s]/g, '')), availableFrom, availableUntil, inStock: true, photoUrl: null };
     const problem = menuItemError(input);
-    if (problem) return Alert.alert('Check the food details', problem);
+    if (problem) return showMessage('Check the food details', problem);
     setSaving(true);
     let uploaded: string | null = null;
     try {
@@ -161,7 +161,7 @@ function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => voi
       setName(''); setIngredients(''); setPrice(''); setPhoto(null);
     } catch (error) {
       void removeRestaurantPhoto(uploaded);
-      Alert.alert('Could not add food', errorMessage(error));
+      showMessage('Could not add food', errorMessage(error));
     } finally {
       setSaving(false);
     }

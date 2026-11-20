@@ -1,11 +1,12 @@
 import type { User } from '@supabase/supabase-js';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { AuthShell, authStyles, Field, METHOD_OPTIONS, Notice, PasswordField, PhoneCodeStep, PrimaryButton, Segmented, SwitchPrompt, TextLink } from '@/components/auth/auth-ui';
 import { authErrorMessage, homeFor, isEmail, normalizeEmail, registerWithEmail, resendConfirmationEmail, sendPhoneCode, verifyPhoneCode, type AccountRole, type AuthMethod } from '@/data/auth';
 import { toE164 } from '@/utils/phone';
+import { showMessage } from '@/utils/feedback';
 
 const ROLE_OPTIONS: { value: AccountRole; label: string }[] = [{ value: 'customer', label: 'Customer' }, { value: 'owner', label: 'Restaurant owner' }];
 const MIN_PASSWORD = 6;
@@ -34,20 +35,20 @@ export default function RegisterScreen() {
     try {
       await action();
     } catch (error) {
-      Alert.alert(failTitle, authErrorMessage(error, 'register'));
+      showMessage(failTitle, authErrorMessage(error, 'register'));
     } finally {
       setLoading(false);
     }
   };
 
   const createEmailAccount = () => {
-    if (!name.trim()) return Alert.alert('Name required', 'Enter your name.');
-    if (!isEmail(email)) return Alert.alert('Check your email', 'Enter a valid email address, for example you@example.com.');
-    if (password.length < MIN_PASSWORD) return Alert.alert('Choose a longer password', `Use at least ${MIN_PASSWORD} characters.`);
+    if (!name.trim()) return showMessage('Name required', 'Enter your name.');
+    if (!isEmail(email)) return showMessage('Check your email', 'Enter a valid email address, for example you@example.com.');
+    if (password.length < MIN_PASSWORD) return showMessage('Choose a longer password', `Use at least ${MIN_PASSWORD} characters.`);
     return run('Could not create account', async () => {
       const result = await registerWithEmail(email, password, { name, role });
       if (result.alreadyRegistered) {
-        Alert.alert('You already have an account', `${normalizeEmail(email)} is already registered. Sign in instead, or use “Forgot password?”.`);
+        showMessage('You already have an account', `${normalizeEmail(email)} is already registered. Sign in instead, or use “Forgot password?”.`);
         return goToSignIn(normalizeEmail(email));
       }
       if (result.needsConfirmation) return setEmailSentTo(normalizeEmail(email));
@@ -58,13 +59,13 @@ export default function RegisterScreen() {
   const resend = () => run('Could not send the email', async () => {
     if (!emailSentTo) return;
     await resendConfirmationEmail(emailSentTo);
-    Alert.alert('Email sent again', `Check ${emailSentTo}, including the spam folder.`);
+    showMessage('Email sent again', `Check ${emailSentTo}, including the spam folder.`);
   });
 
   const sendCode = () => {
-    if (!name.trim()) return Alert.alert('Name required', 'Enter your name.');
+    if (!name.trim()) return showMessage('Name required', 'Enter your name.');
     const e164 = toE164(phone);
-    if (!e164) return Alert.alert('Check your number', 'Enter a mobile number such as 0712 345 678 or +255 712 345 678.');
+    if (!e164) return showMessage('Check your number', 'Enter a mobile number such as 0712 345 678 or +255 712 345 678.');
     return run('Could not send code', async () => {
       await sendPhoneCode(e164, { name, role });
       setCode('');
@@ -74,7 +75,7 @@ export default function RegisterScreen() {
 
   const verifyCode = () => {
     if (!codeSentTo) return;
-    if (!/^\d{6,10}$/.test(code)) return Alert.alert('Enter the code', 'Type the code from the SMS we sent you.');
+    if (!/^\d{6,10}$/.test(code)) return showMessage('Enter the code', 'Type the code from the SMS we sent you.');
     return run('Could not verify code', async () => finish(await verifyPhoneCode(codeSentTo, code)));
   };
 

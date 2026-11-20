@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -12,7 +12,7 @@ import {
   type MobileMoneyMethod,
   type OrderRecord,
 } from '@/data/guest-storage';
-import { errorMessage } from '@/utils/feedback';
+import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { toE164 } from '@/utils/phone';
 
@@ -87,14 +87,14 @@ export default function PayScreen() {
   }
 
   const pay = async () => {
-    if (!toE164(payerPhone)) return Alert.alert('Check the number', `Enter the ${methodLabel} number to pay from, for example 0712 345 678.`);
+    if (!toE164(payerPhone)) return showMessage('Check the number', `Enter the ${methodLabel} number to pay from, for example 0712 345 678.`);
     setStage('approving');
     try {
       await new Promise((resolve) => setTimeout(resolve, SIMULATED_APPROVAL_MS));
       await payOrder(order, method);
       setOrder(await loadOrder(reference));
     } catch (error) {
-      Alert.alert('Payment not completed', errorMessage(error));
+      showMessage('Payment not completed', errorMessage(error));
       refresh();
     } finally {
       setStage('choose');

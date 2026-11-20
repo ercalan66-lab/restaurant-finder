@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { restaurantDetailsError, type RestaurantDetails } from '@/data/owner-restaurant';
 import { CUISINES } from '@/data/restaurants';
 
 import { ChoiceChips, Field, formStyles, PrimaryButton } from './form-controls';
+import { showMessage } from '@/utils/feedback';
 
 type Cuisine = (typeof CUISINES)[number];
 const asCuisine = (value: string): Cuisine => (CUISINES as readonly string[]).includes(value) ? value as Cuisine : 'Other';
@@ -29,7 +30,7 @@ export function RestaurantDetailsForm({ initial, onSubmit, submitLabel }: { init
       seatsPerSlot: Number(values.seatsPerSlot.replace(/[,\s]/g, '')),
     };
     const problem = restaurantDetailsError(details);
-    if (problem) return Alert.alert('Check the restaurant details', problem);
+    if (problem) return showMessage('Check the restaurant details', problem);
     setSaving(true);
     try {
       await onSubmit(details);

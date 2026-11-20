@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatBooking } from '@/data/booking';
 import {
@@ -14,7 +14,7 @@ import {
   updateOrderStatus,
   updateReservationStatus,
 } from '@/data/guest-storage';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { onNotificationReceived } from '@/utils/push-notifications';
 
 const ORANGE = '#B93F1D';
@@ -49,7 +49,7 @@ export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
       setOrders(savedOrders.filter((order) => order.restaurantId === restaurantId));
       setReservations(savedReservations.filter((reservation) => reservation.restaurantId === restaurantId));
     } catch {
-      if (!silent) Alert.alert('Could not load requests', 'Please try again.');
+      if (!silent) showMessage('Could not load requests', 'Please try again.');
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
         setOrders(savedOrders.filter((order) => order.restaurantId === restaurantId));
         setReservations(savedReservations.filter((reservation) => reservation.restaurantId === restaurantId));
       })
-      .catch(() => { if (active) Alert.alert('Could not load requests', 'Please try again.'); })
+      .catch(() => { if (active) showMessage('Could not load requests', 'Please try again.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [restaurantId]);
@@ -79,7 +79,7 @@ export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
     try {
       await action();
     } catch (error) {
-      Alert.alert('Could not update the request', errorMessage(error));
+      showMessage('Could not update the request', errorMessage(error));
     }
     await load({ silent: true });
   };

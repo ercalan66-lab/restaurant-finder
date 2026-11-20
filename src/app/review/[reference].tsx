@@ -1,11 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getMyOrders, getMyReservations } from '@/data/guest-storage';
 import { MAX_REVIEW_COMMENT, submitReview } from '@/data/reviews';
-import { errorMessage } from '@/utils/feedback';
+import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 
 const ORANGE = '#ED6417';
@@ -38,14 +38,14 @@ export default function ReviewScreen() {
 
   const send = async () => {
     if (!visit) return;
-    if (!rating) return Alert.alert('Choose a rating', 'Tap the stars to rate your visit from 1 to 5.');
+    if (!rating) return showMessage('Choose a rating', 'Tap the stars to rate your visit from 1 to 5.');
     setSending(true);
     try {
       await submitReview(visit.reference, visit.phone, rating, comment);
-      Alert.alert('Thank you!', `Your review of ${visit.restaurantName} is now on its Kwetu page.`);
+      showMessage('Thank you!', `Your review of ${visit.restaurantName} is now on its Kwetu page.`);
       goBackOrReplace('/profile');
     } catch (error) {
-      Alert.alert('Could not send your review', errorMessage(error));
+      showMessage('Could not send your review', errorMessage(error));
     } finally {
       setSending(false);
     }

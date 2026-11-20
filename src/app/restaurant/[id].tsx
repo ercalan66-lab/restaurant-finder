@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, type Href, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RestaurantReviews } from '@/components/restaurant-reviews';
@@ -11,6 +11,7 @@ import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/da
 import { useUserLocation } from '@/data/user-location';
 import { distanceTo, formatDistance } from '@/utils/distance';
 import { goBackOrReplace } from '@/utils/navigation';
+import { showMessage } from '@/utils/feedback';
 
 const ORANGE = '#ED6417';
 const CREAM = '#FFF8ED';
@@ -41,7 +42,7 @@ export default function RestaurantDetailScreen() {
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert('Unable to open', errorMessage);
+      showMessage('Unable to open', errorMessage);
     }
   };
 

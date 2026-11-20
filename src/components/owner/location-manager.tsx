@@ -1,11 +1,11 @@
 import * as Location from 'expo-location';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { updateRestaurant } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
-import { confirmAction, errorMessage } from '@/utils/feedback';
+import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
 import { OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
 
@@ -21,7 +21,7 @@ export function LocationManager({ onUpdated, restaurant }: { onUpdated: (changes
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Location is off', 'Allow location for Kwetu in your phone settings, then try again while you are at the restaurant.');
+        showMessage('Location is off', 'Allow location for Kwetu in your phone settings, then try again while you are at the restaurant.');
         return;
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
@@ -31,11 +31,11 @@ export function LocationManager({ onUpdated, restaurant }: { onUpdated: (changes
         'Only do this while you are at the restaurant. Customers will see their distance to this spot.',
         'Save location',
         () => void updateRestaurant(restaurant.id, changes)
-          .then(() => { onUpdated(changes); Alert.alert('Location saved', 'Customers can now see how far away your restaurant is.'); })
-          .catch((error: unknown) => Alert.alert('Could not save the location', errorMessage(error))),
+          .then(() => { onUpdated(changes); showMessage('Location saved', 'Customers can now see how far away your restaurant is.'); })
+          .catch((error: unknown) => showMessage('Could not save the location', errorMessage(error))),
       );
     } catch (error) {
-      Alert.alert('Could not find your location', errorMessage(error, 'Check that location is turned on, then try again.'));
+      showMessage('Could not find your location', errorMessage(error, 'Check that location is turned on, then try again.'));
     } finally {
       setBusy(false);
     }
