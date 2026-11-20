@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import type { FoodItem } from '@/data/food-sections';
 import { formatTsh, isMenuItemAvailable } from '@/data/restaurants';
+import { t } from '@/i18n';
 import { formatDistance } from '@/utils/distance';
 import { themedStyles } from '@/theme/theme';
 
@@ -17,12 +18,12 @@ export function FoodCard({ distanceKm, item, onToggleSaved, saved }: Props) {
   const { dish, restaurant } = item;
   const available = isMenuItemAvailable(dish, restaurant);
   const where = [restaurant.area, distanceKm != null ? formatDistance(distanceKm) : null].filter(Boolean).join(' · ');
-  return <Pressable accessibilityHint={`Opens ${restaurant.name}`} accessibilityRole="button" onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} style={styles.card}>
+  return <Pressable accessibilityHint={t('food.opens', { restaurant: restaurant.name })} accessibilityRole="button" onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} style={styles.card}>
     <View style={styles.photoWrap}>
       {dish.photoUrl
         ? <Image accessibilityIgnoresInvertColors contentFit="cover" source={dish.photoUrl} style={styles.photo} transition={150} />
         : <View style={[styles.photo, styles.photoEmpty]}><Text style={styles.photoIcon}>🍲</Text></View>}
-      <Pressable accessibilityLabel={saved ? `Remove ${dish.name} from saved foods` : `Save ${dish.name}`} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
+      <Pressable accessibilityLabel={t(saved ? 'food.unsave' : 'card.save', { name: dish.name })} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
         <Text style={[styles.saveIcon, saved && styles.savedIcon]}>{saved ? '♥' : '♡'}</Text>
       </Pressable>
       <Text style={styles.price}>{formatTsh(dish.price)}</Text>
@@ -31,7 +32,7 @@ export function FoodCard({ distanceKm, item, onToggleSaved, saved }: Props) {
       <Text numberOfLines={2} style={styles.name}>{dish.name}</Text>
       <Text numberOfLines={1} style={styles.restaurant}>{restaurant.name}</Text>
       <Text numberOfLines={1} style={styles.where}>📍 {where}</Text>
-      <Text style={[styles.status, !available && styles.statusOff]}>{available ? 'Available now' : `Served from ${dish.availableFrom}`}</Text>
+      <Text style={[styles.status, !available && styles.statusOff]}>{available ? t('food.availableNow') : t('food.servedFrom', { time: dish.availableFrom })}</Text>
     </View>
   </Pressable>;
 }

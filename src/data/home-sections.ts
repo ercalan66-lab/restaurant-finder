@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import type { RestaurantSummary } from './restaurants';
 
 export const ROW_SIZE = 10;
@@ -45,11 +46,11 @@ export function homeSections(restaurants: RestaurantSummary[], { distanceOf, fro
     .slice(0, ROW_SIZE);
 
   const sections: HomeSection[] = [
-    { key: 'near', title: 'Restaurants near you', caption: fromUser ? 'Closest to where you are now' : 'Turn on location to sort by your own distance', restaurants: near },
+    { key: 'near', title: t('rows.near.title'), caption: t(fromUser ? 'rows.near.captionUser' : 'rows.near.captionEstimate'), restaurants: near },
     mostReviewed.length
-      ? { key: 'popular', title: 'Most reviewed restaurants', caption: 'Places customers talk about most', restaurants: mostReviewed }
-      : { key: 'popular', title: 'Top rated restaurants', caption: 'The highest-rated places on Kwetu', restaurants: topRated },
-    { key: 'new', title: 'New restaurants', caption: `Added to Kwetu in the last ${NEW_WITHIN_DAYS} days`, restaurants: fresh },
+      ? { key: 'popular', title: t('rows.mostReviewed.title'), caption: t('rows.mostReviewed.caption'), restaurants: mostReviewed }
+      : { key: 'popular', title: t('rows.topRated.title'), caption: t('rows.topRated.caption'), restaurants: topRated },
+    { key: 'new', title: t('rows.new.title'), caption: t('rows.new.caption', { days: NEW_WITHIN_DAYS }), restaurants: fresh },
   ];
   return sections.filter((section) => section.restaurants.length > 0);
 }

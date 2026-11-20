@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
+import { t } from '@/i18n';
 import { errorMessage } from '@/utils/feedback';
 import { supabase } from '../../lib/supabase';
 import { demoRestaurants } from './demo-restaurants';
@@ -194,7 +195,7 @@ export function useRestaurant(id: string | undefined) {
 }
 
 export const formatTsh = (amount: number) => `TSh ${amount.toLocaleString()}`;
-export const formatHours = (restaurant: Pick<RestaurantSummary, 'opensAt' | 'closesAt'>) => `Daily · ${restaurant.opensAt}–${restaurant.closesAt}`;
+export const formatHours = (restaurant: Pick<RestaurantSummary, 'opensAt' | 'closesAt'>) => t('hours.daily', { opens: restaurant.opensAt, closes: restaurant.closesAt });
 
 const timeOf = (date: Date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 

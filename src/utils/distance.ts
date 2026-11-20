@@ -1,3 +1,5 @@
+import { t } from '@/i18n';
+
 export type Coords = { latitude: number; longitude: number };
 
 const EARTH_RADIUS_KM = 6371;
@@ -14,9 +16,9 @@ export function distanceKm(from: Coords, to: Coords) {
 /** "300 m away", "1.4 km away", "12 km away". */
 export function formatDistance(km: number) {
   const metres = Math.max(50, Math.round((km * 1000) / 50) * 50);
-  if (metres < 1000) return `${metres} m away`;
+  if (metres < 1000) return t('distance.metres', { metres });
   const tenths = Math.round(km * 10) / 10;
-  return tenths < 10 ? `${tenths.toFixed(1)} km away` : `${Math.round(km)} km away`;
+  return t('distance.km', { km: tenths < 10 ? tenths.toFixed(1) : Math.round(km) });
 }
 
 /** Distance from the person to a restaurant, or null when either position is unknown. */

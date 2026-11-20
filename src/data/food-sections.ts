@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import type { MenuItem, Restaurant } from './restaurants';
 
 /** A dish together with the restaurant that serves it. */
@@ -55,9 +56,9 @@ export function foodSections(restaurants: Restaurant[], { isAvailable, now = Dat
   const saved = all.filter((item) => savedDishIds.has(item.dish.id));
 
   return [
-    { key: 'top', title: 'Top rated foods', caption: 'From the best-rated restaurants', empty: 'Foods appear here once restaurants are rated.', items: topRated },
-    { key: 'popular', title: 'Popular foods', caption: 'Ordered most in the last 30 days', empty: 'Popular foods appear here as people order.', items: mostOrdered },
-    { key: 'new', title: 'New foods', caption: `Added to menus in the last ${NEW_FOOD_DAYS} days`, empty: 'New dishes appear here when restaurants add them.', items: newest },
-    { key: 'saved', title: 'Saved foods', caption: 'Foods you saved with ♡', empty: 'Tap ♡ on any food to save it here.', items: saved },
+    { key: 'top', title: t('foods.top.title'), caption: t('foods.top.caption'), empty: t('foods.top.empty'), items: topRated },
+    { key: 'popular', title: t('foods.popular.title'), caption: t('foods.popular.caption'), empty: t('foods.popular.empty'), items: mostOrdered },
+    { key: 'new', title: t('foods.new.title'), caption: t('foods.new.caption', { days: NEW_FOOD_DAYS }), empty: t('foods.new.empty'), items: newest },
+    { key: 'saved', title: t('foods.saved.title'), caption: t('foods.saved.caption'), empty: t('foods.saved.empty'), items: saved },
   ];
 }

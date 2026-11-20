@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } fro
 
 import { PhotoBackground } from '@/components/photo-background';
 import { formatTsh, isOpenNow, type RestaurantSummary } from '@/data/restaurants';
+import { t, tn } from '@/i18n';
 import { formatDistance } from '@/utils/distance';
 import { themedStyles } from '@/theme/theme';
 
@@ -10,7 +11,7 @@ const ORANGE = '#ED6417';
 
 function reviewsLabel(restaurant: RestaurantSummary) {
   const count = restaurant.reviewCount;
-  const reviews = count > 0 ? `${count} ${count === 1 ? 'review' : 'reviews'}` : 'No reviews yet';
+  const reviews = count > 0 ? tn('count.reviews', count) : t('card.noReviews');
   return restaurant.rating > 0 ? `★ ${restaurant.rating.toFixed(1)} · ${reviews}` : reviews;
 }
 
@@ -30,19 +31,19 @@ export function RestaurantCard({ distanceKm, onToggleSaved, restaurant, saved, s
     <PhotoBackground source={restaurant.coverUrl ? { uri: restaurant.coverUrl } : undefined} style={styles.photo}>
       <View style={styles.photoShade} />
       {restaurant.tag ? <Text style={styles.tag}>{restaurant.tag.toUpperCase()}</Text> : null}
-      <Pressable accessibilityLabel={saved ? `Remove ${restaurant.name} from saved` : `Save ${restaurant.name}`} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
+      <Pressable accessibilityLabel={t(saved ? 'card.unsave' : 'card.save', { name: restaurant.name })} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
         <Text style={[styles.saveIcon, saved && styles.savedIcon]}>{saved ? '♥' : '♡'}</Text>
       </Pressable>
       <View style={styles.photoFooter}>
         {distanceKm != null ? <Text style={styles.distance}>{formatDistance(distanceKm)}</Text> : <View />}
-        <Text style={[styles.status, !open && styles.statusClosed]}>{open ? 'OPEN NOW' : 'CLOSED'}</Text>
+        <Text style={[styles.status, !open && styles.statusClosed]}>{t(open ? 'card.open' : 'card.closed')}</Text>
       </View>
     </PhotoBackground>
     <View style={styles.body}>
       <Text numberOfLines={1} style={styles.name}>{restaurant.name}</Text>
       <Text numberOfLines={1} style={styles.reviews}>{reviewsLabel(restaurant)}</Text>
       <Text numberOfLines={1} style={styles.location}>📍 {restaurant.area}</Text>
-      {restaurant.pricePerPerson > 0 && <Text style={styles.price}>{formatTsh(restaurant.pricePerPerson)} per person</Text>}
+      {restaurant.pricePerPerson > 0 && <Text style={styles.price}>{t('card.perPerson', { price: formatTsh(restaurant.pricePerPerson) })}</Text>}
     </View>
   </Pressable>;
 }

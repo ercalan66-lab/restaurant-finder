@@ -2,14 +2,15 @@ import * as Linking from 'expo-linking';
 import { Pressable, Text, View } from 'react-native';
 
 import type { LocationStatus } from '@/data/user-location';
+import { t, type MessageKey } from '@/i18n';
 import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 
-const COPY: Partial<Record<LocationStatus, { title: string; action: string }>> = {
-  undetermined: { title: 'See how far each restaurant is from you', action: 'Turn on location' },
-  denied: { title: 'Location is off for Kwetu, so distances are hidden', action: 'Open settings' },
-  unavailable: { title: 'Your location could not be found right now', action: 'Try again' },
+const COPY: Partial<Record<LocationStatus, { title: MessageKey; action: MessageKey }>> = {
+  undetermined: { title: 'location.askTitle', action: 'location.askAction' },
+  denied: { title: 'location.deniedTitle', action: 'location.deniedAction' },
+  unavailable: { title: 'location.unavailableTitle', action: 'location.unavailableAction' },
 };
 
 /** Asks for location only when the person taps, and explains that it stays on the phone. */
@@ -20,10 +21,10 @@ export function LocationPrompt({ onRequest, status }: { onRequest: () => void; s
   return <View style={styles.card}>
     <Text style={styles.icon}>📍</Text>
     <View style={styles.copy}>
-      <Text style={styles.title}>{copy.title}</Text>
-      <Text style={styles.note}>Your location stays on this phone.</Text>
+      <Text style={styles.title}>{t(copy.title)}</Text>
+      <Text style={styles.note}>{t('location.note')}</Text>
     </View>
-    <Pressable accessibilityRole="button" onPress={act} style={styles.button}><Text style={styles.buttonText}>{copy.action}</Text></Pressable>
+    <Pressable accessibilityRole="button" onPress={act} style={styles.button}><Text style={styles.buttonText}>{t(copy.action)}</Text></Pressable>
   </View>;
 }
 

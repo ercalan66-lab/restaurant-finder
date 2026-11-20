@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { formatTsh, isMenuItemAvailable, isOpenNow, type MenuItem, type Restaurant } from '@/data/restaurants';
 import type { SearchHit } from '@/data/search';
+import { t, tn } from '@/i18n';
 import { formatDistance } from '@/utils/distance';
 import { themedStyles } from '@/theme/theme';
 
@@ -21,10 +22,10 @@ export function SearchResultCard({ distanceKm, hit, onToggleSaved, saved }: Prop
   const available = restaurant.menu.filter((dish) => isMenuItemAvailable(dish, restaurant));
   const listed = dishes.length ? dishes : available;
   const heading = dishes.length
-    ? `${dishes.length} matching ${dishes.length === 1 ? 'food' : 'foods'}`
+    ? tn('count.matchingFoods', dishes.length)
     : restaurant.menu.length
-      ? available.length ? `Available now · ${available.length} of ${restaurant.menu.length}` : 'No foods available right now'
-      : 'Menu coming soon';
+      ? available.length ? t('search.availableNow', { available: available.length, total: restaurant.menu.length }) : t('search.noneNow')
+      : t('search.menuSoon');
   const open = isOpenNow(restaurant);
   const details = [restaurant.rating > 0 ? `★ ${restaurant.rating.toFixed(1)}` : null, `📍 ${restaurant.area}`, distanceKm != null ? formatDistance(distanceKm) : null].filter(Boolean).join(' · ');
   const openMenu = () => router.push(`/restaurant/${restaurant.id}` as Href);
@@ -37,18 +38,18 @@ export function SearchResultCard({ distanceKm, hit, onToggleSaved, saved }: Prop
       <View style={styles.topCopy}>
         <Text numberOfLines={1} style={styles.name}>{restaurant.name}</Text>
         <Text numberOfLines={1} style={styles.details}>{details}</Text>
-        <Text style={[styles.status, !open && styles.statusClosed]}>{open ? 'OPEN NOW' : 'CLOSED'}</Text>
+        <Text style={[styles.status, !open && styles.statusClosed]}>{t(open ? 'card.open' : 'card.closed')}</Text>
       </View>
-      <Pressable accessibilityLabel={saved ? `Remove ${restaurant.name} from saved` : `Save ${restaurant.name}`} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
+      <Pressable accessibilityLabel={t(saved ? 'card.unsave' : 'card.save', { name: restaurant.name })} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
         <Text style={[styles.saveIcon, saved && styles.savedIcon]}>{saved ? '♥' : '♡'}</Text>
       </Pressable>
     </View>
 
     <Text style={styles.heading}>{heading.toUpperCase()}</Text>
     {listed.slice(0, DISHES_SHOWN).map((dish) => <DishRow dish={dish} key={dish.id} restaurant={restaurant} />)}
-    {listed.length > DISHES_SHOWN && <Text style={styles.more}>+{listed.length - DISHES_SHOWN} more</Text>}
+    {listed.length > DISHES_SHOWN && <Text style={styles.more}>{t('search.more', { count: listed.length - DISHES_SHOWN })}</Text>}
 
-    <Pressable accessibilityRole="link" onPress={openMenu}><Text style={styles.fullMenu}>See full menu ›</Text></Pressable>
+    <Pressable accessibilityRole="link" onPress={openMenu}><Text style={styles.fullMenu}>{t('search.fullMenu')}</Text></Pressable>
   </Pressable>;
 }
 
@@ -61,7 +62,7 @@ function DishRow({ dish, restaurant }: { dish: MenuItem; restaurant: Restaurant 
         <Text numberOfLines={1} style={styles.dishName}>{dish.name}</Text>
         <Text style={styles.dishPrice}>{formatTsh(dish.price)}</Text>
       </View>
-      <Text style={[styles.dishStatus, !available && styles.dishStatusOff]}>{available ? 'Available now' : `Not available now · served ${dish.availableFrom}–${dish.availableUntil}`}</Text>
+      <Text style={[styles.dishStatus, !available && styles.dishStatusOff]}>{available ? t('food.availableNow') : t('search.notAvailableServed', { from: dish.availableFrom, until: dish.availableUntil })}</Text>
     </View>
   </View>;
 }

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { APP_NAME, SUPPORT_EMAIL } from '@/constants/app-info';
 import { useSettings, type LanguagePreference, type ThemePreference } from '@/data/settings';
+import { t, type MessageKey } from '@/i18n';
 import { showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { themedStyles } from '@/theme/theme';
@@ -14,24 +15,18 @@ import { themedStyles } from '@/theme/theme';
 const ORANGE = '#ED6417';
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
-const THEME_OPTIONS: { value: ThemePreference; label: string; hint: string }[] = [
-  { value: 'system', label: 'Same as my phone', hint: 'Light or dark, following your phone setting' },
-  { value: 'light', label: 'Light', hint: 'Always light' },
-  { value: 'dark', label: 'Dark', hint: 'Easier on the eyes at night' },
+const THEME_OPTIONS: { value: ThemePreference; label: MessageKey; hint: MessageKey }[] = [
+  { value: 'system', label: 'settings.theme.system', hint: 'settings.theme.systemHint' },
+  { value: 'light', label: 'settings.theme.light', hint: 'settings.theme.lightHint' },
+  { value: 'dark', label: 'settings.theme.dark', hint: 'settings.theme.darkHint' },
 ];
-const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string; hint: string }[] = [
-  { value: 'en', label: 'English', hint: 'English' },
-  { value: 'sw', label: 'Kiswahili', hint: 'Swahili' },
+// Each language is named in its own words, so it can be found whichever language is showing.
+const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string; hint: MessageKey }[] = [
+  { value: 'en', label: 'English', hint: 'settings.lang.enHint' },
+  { value: 'sw', label: 'Kiswahili', hint: 'settings.lang.swHint' },
 ];
 
-const FAQS: { question: string; answer: string }[] = [
-  { question: 'How do I order food?', answer: 'Open a restaurant, tap “Order food”, choose your dishes, then pick Pickup or Delivery and send. You can follow the order under Profile → Your activity.' },
-  { question: 'How do I book a table?', answer: 'Open a restaurant, tap “Reserve a table”, and choose the date, time and number of guests. The restaurant confirms the booking, and you see the status under Profile.' },
-  { question: 'How do I pay?', answer: 'Pickup orders are paid at the restaurant counter. Delivery orders are paid when the food arrives: in the app by mobile money, or in cash to the rider. In-app mobile money is still in test mode, so no real money moves yet.' },
-  { question: 'Can I cancel an order or booking?', answer: 'Yes. Orders can be cancelled until the restaurant accepts them, and bookings until they are completed. Open Profile → Your activity and tap Cancel.' },
-  { question: 'How do I add my restaurant?', answer: 'Create an account and choose “Restaurant owner”. Then open Profile → Open restaurant dashboard and fill in your details, photos and menu. Kwetu checks every new restaurant before customers can see it.' },
-  { question: 'Does Kwetu share my location?', answer: 'No. If you turn on location, it is only used on your phone to show how far restaurants are. It is never sent to Kwetu or stored.' },
-];
+const FAQS = ['order', 'book', 'pay', 'cancel', 'owner', 'location'] as const;
 
 export default function SettingsScreen() {
   const { settings, update } = useSettings();
@@ -40,49 +35,45 @@ export default function SettingsScreen() {
     if (!SUPPORT_EMAIL) return;
     const body = `\n\n—\n${APP_NAME} ${APP_VERSION} · ${Platform.OS}`;
     Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`)
-      .catch(() => showMessage('No email app found', `Write to ${SUPPORT_EMAIL} from any email app.`));
+      .catch(() => showMessage(t('settings.noEmailApp'), t('settings.noEmailAppBody', { email: SUPPORT_EMAIL })));
   };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content}>
-    <Pressable accessibilityRole="button" onPress={() => goBackOrReplace('/')}><Text style={styles.back}>‹ Back</Text></Pressable>
+    <Pressable accessibilityRole="button" onPress={() => goBackOrReplace('/')}><Text style={styles.back}>{t('common.back')}</Text></Pressable>
     <Text style={styles.eyebrow}>{APP_NAME.toUpperCase()}</Text>
-    <Text accessibilityRole="header" style={styles.title}>Settings</Text>
+    <Text accessibilityRole="header" style={styles.title}>{t('settings.title')}</Text>
 
-    <Section title="Appearance">
-      {THEME_OPTIONS.map((option) => <Choice hint={option.hint} key={option.value} label={option.label} onPress={() => update({ theme: option.value })} selected={settings.theme === option.value} />)}
+    <Section title={t('settings.appearance')}>
+      {THEME_OPTIONS.map((option) => <Choice hint={t(option.hint)} key={option.value} label={t(option.label)} onPress={() => update({ theme: option.value })} selected={settings.theme === option.value} />)}
     </Section>
 
-    <Section comingNext="The Kiswahili translation is being added. Your choice is saved and will apply as soon as it is ready." title="Language · Lugha">
-      {LANGUAGE_OPTIONS.map((option) => <Choice hint={option.hint} key={option.value} label={option.label} onPress={() => update({ language: option.value })} selected={settings.language === option.value} />)}
+    <Section title={t('settings.language')}>
+      {LANGUAGE_OPTIONS.map((option) => <Choice hint={t(option.hint)} key={option.value} label={option.label} onPress={() => update({ language: option.value })} selected={settings.language === option.value} />)}
     </Section>
 
-    <Section title="Help & support">
-      <Text style={styles.groupLabel}>COMMON QUESTIONS</Text>
-      {FAQS.map((faq) => <Faq answer={faq.answer} key={faq.question} question={faq.question} />)}
+    <Section title={t('settings.help')}>
+      <Text style={styles.groupLabel}>{t('settings.commonQuestions')}</Text>
+      {FAQS.map((faq) => <Faq answer={t(`settings.faq.${faq}.a`)} key={faq} question={t(`settings.faq.${faq}.q`)} />)}
 
-      <Text style={styles.groupLabel}>CONTACT US</Text>
+      <Text style={styles.groupLabel}>{t('settings.contact')}</Text>
       {SUPPORT_EMAIL
         ? <>
-          <LinkRow icon="✉️" label="Email Kwetu support" note={SUPPORT_EMAIL} onPress={() => contact('Help with Kwetu')} />
-          <LinkRow icon="⚠️" label="Report a problem" note="Tell us what went wrong" onPress={() => contact('Problem report')} />
+          <LinkRow icon="✉️" label={t('settings.emailSupport')} note={SUPPORT_EMAIL} onPress={() => contact(t('settings.emailSubjectHelp'))} />
+          <LinkRow icon="⚠️" label={t('settings.reportProblem')} note={t('settings.reportProblemNote')} onPress={() => contact(t('settings.emailSubjectProblem'))} />
         </>
-        : <Text style={[styles.muted, styles.cardText]}>Our support contact will be added here soon. Meanwhile, the restaurant’s phone number is on its page for questions about an order or booking.</Text>}
+        : <Text style={[styles.muted, styles.cardText]}>{t('settings.noContact')}</Text>}
 
-      <Text style={styles.groupLabel}>MORE</Text>
-      <LinkRow icon="🔒" label="Privacy policy" note="What we collect and how to delete it" onPress={() => router.push('/privacy' as Href)} />
+      <Text style={styles.groupLabel}>{t('settings.more')}</Text>
+      <LinkRow icon="🔒" label={t('settings.privacy')} note={t('settings.privacyNote')} onPress={() => router.push('/privacy' as Href)} />
     </Section>
 
-    <Text style={styles.version}>{APP_NAME} · version {APP_VERSION}</Text>
+    <Text style={styles.version}>{t('settings.version', { app: APP_NAME, version: APP_VERSION })}</Text>
   </ScrollView></SafeAreaView>;
 }
 
-function Section({ children, comingNext, title }: { children: ReactNode; comingNext?: string; title: string }) {
+function Section({ children, title }: { children: ReactNode; title: string }) {
   return <View style={styles.section}>
-    <View style={styles.sectionHeading}>
-      <Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text>
-      {comingNext && <Text style={styles.soon}>COMING NEXT</Text>}
-    </View>
-    {comingNext && <Text style={styles.muted}>{comingNext}</Text>}
+    <Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text>
     <View style={styles.card}>{children}</View>
   </View>;
 }
@@ -117,9 +108,7 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   eyebrow: { color: fg(ORANGE), fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   title: { color: fg('#171612'), fontSize: 34, fontWeight: '900', marginTop: 6 },
   section: { marginTop: 28 },
-  sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { color: fg('#171612'), fontSize: 19, fontWeight: '900' },
-  soon: { color: fg('#6B5A30'), backgroundColor: bg('#FFF1C7'), borderRadius: 8, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 3, fontSize: 8, fontWeight: '900' },
   muted: { color: fg('#777268'), fontSize: 12, lineHeight: 18, marginTop: 6 },
   cardText: { paddingHorizontal: 16, paddingBottom: 14 },
   card: { marginTop: 12, borderRadius: 18, borderWidth: 1, borderColor: line('#E9DFD2'), backgroundColor: bg('#FFF'), overflow: 'hidden' },

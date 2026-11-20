@@ -7,6 +7,7 @@ import { AppState, useColorScheme } from 'react-native';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { syncPendingRequests } from '@/data/guest-storage';
 import { useSettings } from '@/data/settings';
+import { setLanguage } from '@/i18n';
 import { paint, setScheme, type Scheme } from '@/theme/theme';
 import { handleNotificationTaps, registerDeviceForAccount } from '@/utils/push-notifications';
 import { supabase } from '../../lib/supabase';
@@ -21,8 +22,9 @@ export default function TabLayout() {
   const { settings } = useSettings();
   const phoneScheme = useColorScheme();
   const scheme: Scheme = settings.theme === 'system' ? (phoneScheme === 'dark' ? 'dark' : 'light') : settings.theme;
-  // Themed styles read the scheme while rendering, so it is set before any screen renders.
+  // Themed styles and t() read these while rendering, so they are set before any screen renders.
   setScheme(scheme);
+  setLanguage(settings.language);
 
   // Orders and bookings that could not be sent are retried on launch, on return to the app, and every 30 s while open.
   useEffect(() => {
@@ -47,9 +49,9 @@ export default function TabLayout() {
     <>
       <AnimatedSplashOverlay />
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      {/* Changing the scheme remounts the screens (the key), so every themed style is read again.
-          The open screens stay open: the navigator keeps its state. */}
-      <Stack key={scheme} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: paint().bg(PAGE_BACKGROUND) } }} />
+      {/* Changing the scheme or language remounts the screens (the key), so every style and text is
+          read again. The open screens stay open: navigation state is kept globally. */}
+      <Stack key={`${scheme}-${settings.language}`} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: paint().bg(PAGE_BACKGROUND) } }} />
     </>
   );
 }
