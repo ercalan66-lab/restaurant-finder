@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PASSWORD_RULE, passwordProblem } from '@/data/auth';
+import { passwordProblem, passwordRule } from '@/data/auth';
+import { t } from '@/i18n';
 import { parseAuthLink } from '@/utils/auth-link';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goHome } from '@/utils/navigation';
@@ -27,7 +28,7 @@ async function completeEmailLink(url: string): Promise<Result> {
       const { error } = await supabase.auth.exchangeCodeForSession(link.code);
       if (error) throw error;
     } else {
-      return { kind: 'error', message: 'This link has no sign-in details.' };
+      return { kind: 'error', message: t('callback.noDetails') };
     }
   } catch (error) {
     return { kind: 'error', message: errorMessage(error) };
@@ -47,23 +48,23 @@ export default function AuthCallbackScreen() {
     void completeEmailLink(url).then((outcome) => {
       if (outcome.kind !== 'signed-in') return setResult(outcome);
       goHome();
-      showMessage('Welcome to Kwetu', 'Your email is confirmed and you are signed in.');
+      showMessage(t('callback.welcome'), t('callback.welcomeBody'));
     });
   }, [url]);
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Text style={styles.eyebrow}>KWETU ACCOUNT</Text>
+    <Text style={styles.eyebrow}>{t('auth.eyebrow')}</Text>
     {result?.kind === 'new-password'
       ? <NewPasswordForm />
       : result?.kind === 'error' || !url
         ? <>
-          <Text style={styles.title}>This link did not work</Text>
-          <Text style={styles.helper}>{result?.kind === 'error' ? result.message : 'Open the link from your Kwetu email on this phone.'}</Text>
-          <Text style={styles.helper}>Email links work once and expire after a while. If you already confirmed your email, just sign in with your password; otherwise ask for a new email from the sign-in screen.</Text>
-          <Pressable accessibilityRole="button" onPress={() => router.replace('/sign-in' as Href)} style={styles.button}><Text style={styles.buttonText}>Go to sign in</Text></Pressable>
+          <Text style={styles.title}>{t('callback.failedTitle')}</Text>
+          <Text style={styles.helper}>{result?.kind === 'error' ? result.message : t('callback.openOnPhone')}</Text>
+          <Text style={styles.helper}>{t('callback.help')}</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.replace('/sign-in' as Href)} style={styles.button}><Text style={styles.buttonText}>{t('callback.goToSignIn')}</Text></Pressable>
         </>
         : <>
-          <Text style={styles.title}>Signing you in…</Text>
+          <Text style={styles.title}>{t('callback.signingIn')}</Text>
           <ActivityIndicator color={ACCENT} style={styles.spinner} />
         </>}
   </ScrollView></SafeAreaView>;
@@ -75,23 +76,23 @@ function NewPasswordForm() {
 
   const save = async () => {
     const problem = passwordProblem(password);
-    if (problem) return showMessage('Choose a stronger password', `${problem} ${PASSWORD_RULE}`);
+    if (problem) return showMessage(t('callback.weakPassword'), `${problem} ${passwordRule()}`);
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
       setSaving(false);
-      return showMessage('Could not change password', error.message);
+      return showMessage(t('callback.changeFailed'), error.message);
     }
     goHome();
-    showMessage('Password changed', 'You are signed in with your new password.');
+    showMessage(t('callback.changed'), t('callback.changedBody'));
   };
 
   return <View>
-    <Text style={styles.title}>Choose a new password</Text>
-    <Text style={styles.helper}>You opened a password reset link. Enter the password you want to use from now on.</Text>
-    <Text style={styles.label}>NEW PASSWORD</Text>
-    <TextInput autoCapitalize="none" autoComplete="new-password" autoFocus editable={!saving} onChangeText={setPassword} onSubmitEditing={() => void save()} placeholder={PASSWORD_RULE} secureTextEntry style={styles.input} value={password} />
-    <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.button, saving && styles.disabled]}><Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save password'}</Text></Pressable>
+    <Text style={styles.title}>{t('callback.newTitle')}</Text>
+    <Text style={styles.helper}>{t('callback.newHelp')}</Text>
+    <Text style={styles.label}>{t('callback.newLabel')}</Text>
+    <TextInput autoCapitalize="none" autoComplete="new-password" autoFocus editable={!saving} onChangeText={setPassword} onSubmitEditing={() => void save()} placeholder={passwordRule()} secureTextEntry style={styles.input} value={password} />
+    <Pressable accessibilityRole="button" disabled={saving} onPress={() => void save()} style={[styles.button, saving && styles.disabled]}><Text style={styles.buttonText}>{t(saving ? 'common.saving' : 'callback.save')}</Text></Pressable>
   </View>;
 }
 

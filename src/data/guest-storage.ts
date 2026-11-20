@@ -1,3 +1,4 @@
+import { t, type MessageKey } from '@/i18n';
 import Storage from '@/utils/kv-store';
 
 import { supabase } from '../../lib/supabase';
@@ -66,12 +67,14 @@ export const MOBILE_MONEY: { method: MobileMoneyMethod; label: string }[] = [
   { method: 'tigo_pesa', label: 'Tigo Pesa' },
   { method: 'airtel_money', label: 'Airtel Money' },
 ];
-export const paymentMethodLabel = (method: PaymentMethod | undefined) => MOBILE_MONEY.find((option) => option.method === method)?.label ?? 'Cash';
+export const paymentMethodLabel = (method: PaymentMethod | undefined) => MOBILE_MONEY.find((option) => option.method === method)?.label ?? t('payment.cash');
+/** "Pickup" / "Delivery" in the current language (the stored value stays in English). */
+export const fulfillmentLabel = (fulfillment: OrderRecord['fulfillment']) => t(fulfillment === 'Delivery' ? 'fulfillment.Delivery' : 'fulfillment.Pickup');
 
 /** Pickup orders are paid at the counter; delivery orders after the food arrives (mobile money in the app, or cash to the rider). */
 export function paymentSummary(order: Pick<OrderRecord, 'fulfillment' | 'paymentStatus' | 'paymentMethod'>) {
-  if (order.paymentStatus === 'paid') return `Paid · ${paymentMethodLabel(order.paymentMethod)}`;
-  return order.fulfillment === 'Delivery' ? 'Pay on delivery' : 'Pay at the restaurant';
+  if (order.paymentStatus === 'paid') return t('payment.paid', { method: paymentMethodLabel(order.paymentMethod) });
+  return t(order.fulfillment === 'Delivery' ? 'payment.onDelivery' : 'payment.atRestaurant');
 }
 
 export const canPayInApp = (order: OrderRecord) => order.fulfillment === 'Delivery' && order.status === 'delivered' && order.paymentStatus !== 'paid';
@@ -126,7 +129,7 @@ export async function saveGuestProfile(profile: GuestProfile): Promise<GuestProf
   await Storage.setItemAsync(PROFILE_KEY, JSON.stringify(profile));
   const saved = await getGuestProfile();
   if (saved.name !== profile.name || saved.phone !== profile.phone || saved.email !== profile.email) {
-    throw new Error('The saved profile could not be verified.');
+    throw new Error(t('profile.notVerified'));
   }
   return saved;
 }
@@ -183,11 +186,11 @@ async function currentUserId() {
 type SendResult = 'sent' | 'retry' | { rejected: string };
 
 /** Database errors that will never succeed on a retry, with the message to show (null = use the database's own). */
-const PERMANENT_ERRORS: Record<string, string | null> = {
+const PERMANENT_ERRORS: Record<string, MessageKey | null> = {
   FB001: null, // time slot full
   FB002: null, // date already passed
-  '42501': 'This restaurant is not taking requests right now.',
-  '23503': 'This restaurant no longer exists.',
+  '42501': 'request.notTaking',
+  '23503': 'request.noRestaurant',
   '23514': null,
   '22P02': null,
 };
@@ -197,7 +200,10 @@ async function sendToSupabase(table: 'orders' | 'reservations', row: Record<stri
   try {
     const { error } = await supabase.from(table).insert(row);
     if (!error || error.code === '23505') return 'sent';
-    if (error.code && error.code in PERMANENT_ERRORS) return { rejected: PERMANENT_ERRORS[error.code] ?? error.message };
+    if (error.code && error.code in PERMANENT_ERRORS) {
+      const known = PERMANENT_ERRORS[error.code];
+      return { rejected: known ? t(known) : error.message };
+    }
     console.warn(`Could not send ${table} ${String(row.reference)}:`, error.message);
   } catch (error) {
     console.warn(`Could not send ${table} ${String(row.reference)}:`, error instanceof Error ? error.message : error);

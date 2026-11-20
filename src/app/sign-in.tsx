@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { AuthShell, Field, Notice, PasswordField, PrimaryButton, SwitchPrompt, TextLink } from '@/components/auth/auth-ui';
 import { authErrorMessage, isEmail, normalizeEmail, resendConfirmationEmail, sendPasswordReset, signInWithEmail } from '@/data/auth';
+import { t } from '@/i18n';
 import { goHome } from '@/utils/navigation';
 
 type FieldErrors = { email?: string; password?: string };
@@ -11,8 +12,8 @@ type Message = { tone: 'success' | 'error'; title: string; body: string };
 
 /** The note shown when registration sends the person here (?registered=confirm|ready). */
 function registeredMessage(registered: string | undefined, email: string): Message | null {
-  if (registered === 'confirm') return { tone: 'success', title: 'Account created', body: `We sent a confirmation link to ${email}. Open it to confirm your email, then sign in here with your new password.` };
-  if (registered === 'ready') return { tone: 'success', title: 'Account created', body: 'Sign in with your email and new password.' };
+  if (registered === 'confirm') return { tone: 'success', title: t('signIn.created'), body: t('signIn.createdConfirm', { email }) };
+  if (registered === 'ready') return { tone: 'success', title: t('signIn.created'), body: t('signIn.createdReady') };
   return null;
 }
 
@@ -42,29 +43,29 @@ export default function SignInScreen() {
 
   const signIn = () => {
     const problems: FieldErrors = {};
-    if (!isEmail(email)) problems.email = 'Enter the email address you registered with.';
-    if (!password) problems.password = 'Enter your password.';
+    if (!isEmail(email)) problems.email = t('signIn.enterEmail');
+    if (!password) problems.password = t('signIn.enterPassword');
     setErrors(problems);
     if (problems.email || problems.password) return;
-    return run('Could not sign in', async () => {
+    return run(t('signIn.failed'), async () => {
       await signInWithEmail(email, password);
       goHome();
     });
   };
 
   const forgotPassword = () => {
-    if (!isEmail(email)) return setErrors({ email: 'Type your account email here first, then tap “Forgot password?” again.' });
+    if (!isEmail(email)) return setErrors({ email: t('signIn.forgotNeedsEmail') });
     setErrors({});
-    return run('Could not send the email', async () => {
+    return run(t('signIn.emailFailed'), async () => {
       await sendPasswordReset(email);
-      setMessage({ tone: 'success', title: 'Check your email', body: `If ${normalizeEmail(email)} has a Kwetu account, we sent it a link. Open it on this phone to choose a new password.` });
+      setMessage({ tone: 'success', title: t('signIn.checkEmail'), body: t('signIn.resetSent', { email: normalizeEmail(email) }) });
     });
   };
 
-  const resendConfirmation = () => run('Could not send the email', async () => {
+  const resendConfirmation = () => run(t('signIn.emailFailed'), async () => {
     await resendConfirmationEmail(email);
     setUnconfirmed(false);
-    setMessage({ tone: 'success', title: 'Confirmation email sent', body: `Open the link we sent to ${normalizeEmail(email)} on this phone. It signs you in.` });
+    setMessage({ tone: 'success', title: t('signIn.confirmSent'), body: t('signIn.confirmSentBody', { email: normalizeEmail(email) }) });
   });
 
   const typed = (setter: (value: string) => void, field: keyof FieldErrors) => (value: string) => {
@@ -73,13 +74,13 @@ export default function SignInScreen() {
   };
   const goToRegister = () => router.replace((forOwner ? '/register?role=owner' : '/register') as Href);
 
-  return <AuthShell subtitle={forOwner ? 'Sign in to manage your restaurant.' : 'Sign in to see your orders, bookings and saved details.'} title="Welcome back">
-    <Field autoCapitalize="none" autoComplete="email" autoCorrect={false} editable={!loading} error={errors.email} keyboardType="email-address" label="EMAIL" onChangeText={typed(setEmail, 'email')} placeholder="you@example.com" textContentType="emailAddress" value={email} />
-    <PasswordField autoComplete="current-password" editable={!loading} error={errors.password} label="PASSWORD" onChangeText={typed(setPassword, 'password')} onSubmitEditing={() => void signIn()} placeholder="Your password" textContentType="password" value={password} />
-    <TextLink align="right" disabled={loading} label="Forgot password?" onPress={() => void forgotPassword()} />
+  return <AuthShell subtitle={t(forOwner ? 'signIn.subtitleOwner' : 'signIn.subtitle')} title={t('signIn.title')}>
+    <Field autoCapitalize="none" autoComplete="email" autoCorrect={false} editable={!loading} error={errors.email} keyboardType="email-address" label={t('auth.email')} onChangeText={typed(setEmail, 'email')} placeholder="you@example.com" textContentType="emailAddress" value={email} />
+    <PasswordField autoComplete="current-password" editable={!loading} error={errors.password} label={t('auth.password')} onChangeText={typed(setPassword, 'password')} onSubmitEditing={() => void signIn()} placeholder={t('signIn.passwordPlaceholder')} textContentType="password" value={password} />
+    <TextLink align="right" disabled={loading} label={t('signIn.forgot')} onPress={() => void forgotPassword()} />
     {message && <Notice title={message.title} tone={message.tone}>{message.body}</Notice>}
-    {unconfirmed && <TextLink align="center" disabled={loading} label="Resend confirmation email" onPress={() => void resendConfirmation()} />}
-    <PrimaryButton label="Sign in" loading={loading} onPress={() => void signIn()} />
-    <SwitchPrompt action="Create account" disabled={loading} onPress={goToRegister} question="New to Kwetu?" />
+    {unconfirmed && <TextLink align="center" disabled={loading} label={t('signIn.resend')} onPress={() => void resendConfirmation()} />}
+    <PrimaryButton label={t('signIn.button')} loading={loading} onPress={() => void signIn()} />
+    <SwitchPrompt action={t('register.title')} disabled={loading} onPress={goToRegister} question={t('signIn.newHere')} />
   </AuthShell>;
 }

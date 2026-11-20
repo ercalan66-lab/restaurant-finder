@@ -1,6 +1,7 @@
 import { isAuthError, type User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 
+import { t, type MessageKey } from '@/i18n';
 import { toE164 } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
 
@@ -13,37 +14,37 @@ export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 export const isEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email.trim());
 
 export const MIN_PASSWORD_LENGTH = 8;
-export const PASSWORD_RULE = `At least ${MIN_PASSWORD_LENGTH} characters, with letters and numbers.`;
+/** "At least 8 characters, with letters and numbers." */
+export const passwordRule = () => t('password.rule', { min: MIN_PASSWORD_LENGTH });
 
 /** What is wrong with a new password, or null when it is strong enough. */
 export function passwordProblem(password: string) {
-  if (password.length < MIN_PASSWORD_LENGTH) return `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
-  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return 'Use both letters and numbers.';
+  if (password.length < MIN_PASSWORD_LENGTH) return t('password.tooShort', { min: MIN_PASSWORD_LENGTH });
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) return t('password.lettersNumbers');
   return null;
 }
 
-const MESSAGES: Record<string, string> = {
-  invalid_credentials: 'That email and password do not match a Kwetu account. Check them, or create an account.',
-  email_not_confirmed: 'Confirm your email first by opening the link we sent you. You can ask for a new link below.',
-  user_already_exists: 'An account with this email already exists. Sign in instead.',
-  email_exists: 'An account with this email already exists. Sign in instead.',
-  weak_password: `Choose a stronger password. ${PASSWORD_RULE}`,
-  email_address_invalid: 'Enter a valid email address.',
-  over_email_send_rate_limit: 'Too many emails were sent from Kwetu in the last hour. Please wait a little and try again.',
-  over_request_rate_limit: 'Too many attempts. Wait a minute, then try again.',
-  otp_expired: 'That link is wrong or has expired. Request a new one and try again.',
+/** Supabase error codes with a message of our own. */
+const MESSAGES: Record<string, MessageKey> = {
+  invalid_credentials: 'authError.invalidCredentials',
+  email_not_confirmed: 'authError.emailNotConfirmed',
+  user_already_exists: 'authError.exists',
+  email_exists: 'authError.exists',
+  weak_password: 'authError.weakPassword',
+  email_address_invalid: 'authError.invalidEmail',
+  over_email_send_rate_limit: 'authError.emailRateLimit',
+  over_request_rate_limit: 'authError.requestRateLimit',
+  otp_expired: 'authError.linkExpired',
 };
 
 /** A message a customer can act on, instead of Supabase's raw error text. */
 export function authErrorMessage(error: unknown) {
   if (isAuthError(error)) {
     const known = error.code ? MESSAGES[error.code] : undefined;
-    if (known) return known;
-    if (/sending (confirmation|recovery|magic link)? ?email/i.test(error.message)) {
-      return 'Kwetu could not send the email right now. Please try again in a few minutes.';
-    }
+    if (known) return t(known, { rule: passwordRule() });
+    if (/sending (confirmation|recovery|magic link)? ?email/i.test(error.message)) return t('authError.emailSendFailed');
   }
-  return error instanceof Error ? error.message : 'Please try again.';
+  return error instanceof Error ? error.message : t('common.tryAgain');
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<User> {
@@ -58,16 +59,16 @@ export type NewAccountField = 'name' | 'phone' | 'email' | 'password' | 'confirm
 /** Every problem with the registration form, by field. Empty when the form can be sent. */
 export function newAccountProblems(account: NewAccount & { confirmPassword: string; agreed: boolean }) {
   const problems: Partial<Record<NewAccountField, string>> = {};
-  if (account.name.trim().length < 2) problems.name = 'Enter your full name.';
-  if (!account.phone.trim()) problems.phone = 'Enter your phone number.';
-  else if (!toE164(account.phone)) problems.phone = 'Enter a mobile number such as 0712 345 678 or +255 712 345 678.';
-  if (!account.email.trim()) problems.email = 'Enter your email address.';
-  else if (!isEmail(account.email)) problems.email = 'Enter a valid email address, for example you@example.com.';
-  const passwordIssue = account.password ? passwordProblem(account.password) : 'Choose a password.';
+  if (account.name.trim().length < 2) problems.name = t('form.enterName');
+  if (!account.phone.trim()) problems.phone = t('form.enterPhone');
+  else if (!toE164(account.phone)) problems.phone = t('form.invalidPhone');
+  if (!account.email.trim()) problems.email = t('form.enterEmail');
+  else if (!isEmail(account.email)) problems.email = t('form.invalidEmail');
+  const passwordIssue = account.password ? passwordProblem(account.password) : t('form.choosePassword');
   if (passwordIssue) problems.password = passwordIssue;
-  if (!account.confirmPassword) problems.confirmPassword = 'Type the password again.';
-  else if (account.confirmPassword !== account.password) problems.confirmPassword = 'The passwords do not match.';
-  if (!account.agreed) problems.agreed = 'Tick the box to agree to the privacy policy.';
+  if (!account.confirmPassword) problems.confirmPassword = t('form.repeatPassword');
+  else if (account.confirmPassword !== account.password) problems.confirmPassword = t('form.passwordsDiffer');
+  if (!account.agreed) problems.agreed = t('form.agree');
   return problems;
 }
 

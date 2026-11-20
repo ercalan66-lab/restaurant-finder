@@ -1,3 +1,4 @@
+import { dateLocale, t } from '@/i18n';
 import { supabase } from '../../lib/supabase';
 import type { RestaurantSummary } from './restaurants';
 
@@ -16,8 +17,8 @@ export const isoDate = (date: Date) => `${date.getFullYear()}-${pad(date.getMont
 export function bookingDates(now = new Date()) {
   return Array.from({ length: BOOKING_DAYS }, (_, offset) => {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
-    const label = offset === 0 ? 'Today' : offset === 1 ? 'Tomorrow' : date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
-    return { iso: isoDate(date), label, month: date.toLocaleDateString('en-GB', { month: 'short' }) };
+    const label = offset === 0 ? t('booking.today') : offset === 1 ? t('booking.tomorrow') : date.toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric' });
+    return { iso: isoDate(date), label, month: date.toLocaleDateString(dateLocale(), { month: 'short' }) };
   });
 }
 
@@ -46,6 +47,6 @@ export async function fetchBookedSeats(restaurantId: number, dateIso: string): P
 export function formatBooking(dateIso: string, time: string) {
   const [year, month, day] = dateIso.split('-').map(Number);
   const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) return `${dateIso} at ${time}`;
-  return `${date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} at ${time}`;
+  if (Number.isNaN(date.getTime())) return t('booking.at', { date: dateIso, time });
+  return t('booking.at', { date: date.toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short' }), time });
 }

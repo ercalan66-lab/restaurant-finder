@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { t } from '@/i18n';
 import { goBackOrReplace } from '@/utils/navigation';
 import { themedStyles } from '@/theme/theme';
 
@@ -12,13 +13,13 @@ const ERROR = '#B3261E';
 /** Page frame for sign-in and registration. `privacyNote` adds the "By continuing you agree…" line. */
 export function AuthShell({ children, privacyNote = true, subtitle, title }: { children: ReactNode; privacyNote?: boolean; subtitle: string; title: string }) {
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Pressable accessibilityRole="button" onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>‹ Back</Text></Pressable>
-    <Text style={styles.eyebrow}>KWETU ACCOUNT</Text>
+    <Pressable accessibilityRole="button" onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>{t('common.back')}</Text></Pressable>
+    <Text style={styles.eyebrow}>{t('auth.eyebrow')}</Text>
     <Text accessibilityRole="header" style={styles.title}>{title}</Text>
     <Text style={styles.subtitle}>{subtitle}</Text>
     {children}
     {privacyNote && <Pressable accessibilityRole="link" onPress={() => router.push('/privacy' as Href)}>
-      <Text style={styles.privacy}>By continuing you agree to Kwetu&apos;s <Text style={styles.privacyLink}>privacy policy</Text>.</Text>
+      <Text style={styles.privacy}>{t('auth.privacyBefore')}<Text style={styles.privacyLink}>{t('auth.privacyLink')}</Text>{t('auth.privacyAfter')}</Text>
     </Pressable>}
   </ScrollView></SafeAreaView>;
 }
@@ -59,8 +60,8 @@ export function PasswordField({ error, hint, label, ...input }: Omit<TextInputPr
     <Text style={styles.label}>{label}</Text>
     <View style={[styles.passwordRow, error && styles.inputError]}>
       <TextInput accessibilityLabel={label} autoCapitalize="none" autoCorrect={false} placeholderTextColor="#B5A99F" secureTextEntry={!visible} style={styles.passwordInput} {...input} />
-      <Pressable accessibilityLabel={visible ? 'Hide password' : 'Show password'} accessibilityRole="button" onPress={() => setVisible((current) => !current)} style={styles.showButton}>
-        <Text style={styles.showText}>{visible ? 'Hide' : 'Show'}</Text>
+      <Pressable accessibilityLabel={t(visible ? 'auth.hidePassword' : 'auth.showPassword')} accessibilityRole="button" onPress={() => setVisible((current) => !current)} style={styles.showButton}>
+        <Text style={styles.showText}>{t(visible ? 'auth.hide' : 'auth.show')}</Text>
       </Pressable>
     </View>
     <FieldNote error={error} hint={hint} />

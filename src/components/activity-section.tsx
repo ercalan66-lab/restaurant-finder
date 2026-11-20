@@ -8,10 +8,13 @@ import {
   canPayInApp,
   cancelOrder,
   cancelReservation,
+  fulfillmentLabel,
   paymentSummary,
   type OrderRecord,
   type ReservationRecord,
 } from '@/data/guest-storage';
+import { formatTsh } from '@/data/restaurants';
+import { t, tn, type MessageKey } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { themedStyles } from '@/theme/theme';
 
@@ -19,29 +22,30 @@ const ORANGE = '#ED6417';
 const SHOWN = 8;
 
 type Tone = 'ok' | 'waiting' | 'action' | 'bad';
+type Status = { label: MessageKey; tone: Tone };
 
-function orderStatus(order: OrderRecord): { label: string; tone: Tone } {
-  if (order.rejectedReason) return { label: 'NOT ACCEPTED', tone: 'bad' };
+function orderStatus(order: OrderRecord): Status {
+  if (order.rejectedReason) return { label: 'status.notAccepted', tone: 'bad' };
   switch (order.status ?? 'pending') {
-    case 'pending': return { label: 'SENT', tone: 'waiting' };
-    case 'accepted': return { label: 'ACCEPTED', tone: 'ok' };
-    case 'preparing': return { label: 'PREPARING', tone: 'ok' };
-    case 'ready': return { label: order.fulfillment === 'Delivery' ? 'ON THE WAY' : 'READY FOR PICKUP', tone: 'ok' };
-    case 'delivered': return order.paymentStatus === 'paid' ? { label: 'DELIVERED', tone: 'ok' } : { label: 'ARRIVED · PAY NOW', tone: 'action' };
-    case 'completed': return { label: 'COMPLETED', tone: 'ok' };
-    case 'declined': return { label: 'DECLINED', tone: 'bad' };
-    case 'cancelled': return { label: 'CANCELLED', tone: 'bad' };
+    case 'pending': return { label: 'status.sent', tone: 'waiting' };
+    case 'accepted': return { label: 'status.accepted', tone: 'ok' };
+    case 'preparing': return { label: 'status.preparing', tone: 'ok' };
+    case 'ready': return { label: order.fulfillment === 'Delivery' ? 'status.onTheWay' : 'status.readyForPickup', tone: 'ok' };
+    case 'delivered': return order.paymentStatus === 'paid' ? { label: 'status.delivered', tone: 'ok' } : { label: 'status.arrivedPay', tone: 'action' };
+    case 'completed': return { label: 'status.completed', tone: 'ok' };
+    case 'declined': return { label: 'status.declined', tone: 'bad' };
+    case 'cancelled': return { label: 'status.cancelled', tone: 'bad' };
   }
 }
 
-function reservationStatus(reservation: ReservationRecord): { label: string; tone: Tone } {
-  if (reservation.rejectedReason) return { label: 'NOT ACCEPTED', tone: 'bad' };
+function reservationStatus(reservation: ReservationRecord): Status {
+  if (reservation.rejectedReason) return { label: 'status.notAccepted', tone: 'bad' };
   switch (reservation.status ?? 'pending') {
-    case 'pending': return { label: 'REQUESTED', tone: 'waiting' };
-    case 'confirmed': return { label: 'CONFIRMED', tone: 'ok' };
-    case 'completed': return { label: 'COMPLETED', tone: 'ok' };
-    case 'declined': return { label: 'DECLINED', tone: 'bad' };
-    case 'cancelled': return { label: 'CANCELLED', tone: 'bad' };
+    case 'pending': return { label: 'status.requested', tone: 'waiting' };
+    case 'confirmed': return { label: 'status.confirmed', tone: 'ok' };
+    case 'completed': return { label: 'status.completed', tone: 'ok' };
+    case 'declined': return { label: 'status.declined', tone: 'bad' };
+    case 'cancelled': return { label: 'status.cancelled', tone: 'bad' };
   }
 }
 
@@ -57,52 +61,53 @@ export function ActivitySection({ loading, onChanged, orders, reservations, revi
 }) {
   const rateButton = (reference: string, completed: boolean) => {
     if (!completed) return null;
-    if (reviewed.has(reference)) return <Text style={styles.reviewed}>★ Reviewed</Text>;
-    return <Action label="Rate your visit" onPress={() => router.push(`/review/${reference}` as Href)} />;
+    if (reviewed.has(reference)) return <Text style={styles.reviewed}>{t('activity.reviewed')}</Text>;
+    return <Action label={t('activity.rate')} onPress={() => router.push(`/review/${reference}` as Href)} />;
   };
   const run = async (action: () => Promise<void>) => {
     try {
       await action();
     } catch (error) {
-      showMessage('Could not cancel', errorMessage(error));
+      showMessage(t('activity.cancelFailed'), errorMessage(error));
     }
     onChanged();
   };
 
-  const confirmCancelOrder = (order: OrderRecord) => confirmAction('Cancel this order?', `${order.restaurantName} will be told you cancelled order ${order.id}.`, 'Cancel order', () => void run(() => cancelOrder(order)));
-  const confirmCancelReservation = (reservation: ReservationRecord) => confirmAction('Cancel this booking?', `${reservation.restaurantName} will be told you no longer need the table for ${formatBooking(reservation.date, reservation.time)}.`, 'Cancel booking', () => void run(() => cancelReservation(reservation)));
+  const confirmCancelOrder = (order: OrderRecord) => confirmAction(t('activity.cancelOrderTitle'), t('activity.cancelOrderBody', { restaurant: order.restaurantName, reference: order.id }), t('activity.cancelOrder'), () => void run(() => cancelOrder(order)));
+  const confirmCancelReservation = (reservation: ReservationRecord) => confirmAction(t('activity.cancelBookingTitle'), t('activity.cancelBookingBody', { restaurant: reservation.restaurantName, when: formatBooking(reservation.date, reservation.time) }), t('activity.cancelBooking'), () => void run(() => cancelReservation(reservation)));
+  const notSent = (synced: boolean | undefined) => (synced === false ? t('activity.notSent') : undefined);
 
   return <View style={styles.section}>
-    <Text style={styles.title}>Your activity</Text>
-    <Text style={styles.copy}>{signedIn ? 'Requests from this account and phone. Updates every few seconds.' : 'Requests made on this phone. Updates every few seconds.'}</Text>
-    {loading ? <Text style={styles.empty}>Loading activity…</Text> : <>
-      <Text style={styles.label}>ORDERS</Text>
+    <Text style={styles.title}>{t('activity.title')}</Text>
+    <Text style={styles.copy}>{t(signedIn ? 'activity.copySignedIn' : 'activity.copy')}</Text>
+    {loading ? <Text style={styles.empty}>{t('activity.loading')}</Text> : <>
+      <Text style={styles.label}>{t('activity.orders')}</Text>
       {orders.length ? orders.slice(0, SHOWN).map((order) => {
         const status = orderStatus(order);
-        return <Card key={order.id} name={order.restaurantName} note={order.rejectedReason ?? (order.synced === false ? 'Not sent to the restaurant yet. It will be sent when you are online.' : undefined)} reference={order.id} status={status}
-          meta={`TSh ${order.total.toLocaleString()} · ${order.fulfillment} · ${paymentSummary(order)}`}>
-          {canPayInApp(order) && <Action label={`Pay TSh ${order.total.toLocaleString()}`} onPress={() => router.push(`/pay/${order.id}` as Href)} />}
-          {canCancelOrder(order) && <Action label="Cancel order" onPress={() => confirmCancelOrder(order)} secondary />}
+        return <Card key={order.id} name={order.restaurantName} note={order.rejectedReason ?? notSent(order.synced)} reference={order.id} status={status}
+          meta={`${formatTsh(order.total)} · ${fulfillmentLabel(order.fulfillment)} · ${paymentSummary(order)}`}>
+          {canPayInApp(order) && <Action label={t('activity.pay', { amount: formatTsh(order.total) })} onPress={() => router.push(`/pay/${order.id}` as Href)} />}
+          {canCancelOrder(order) && <Action label={t('activity.cancelOrder')} onPress={() => confirmCancelOrder(order)} secondary />}
           {rateButton(order.id, order.status === 'completed' && !order.rejectedReason)}
         </Card>;
-      }) : <Text style={styles.empty}>No food orders yet.</Text>}
-      <Text style={styles.label}>RESERVATIONS</Text>
+      }) : <Text style={styles.empty}>{t('activity.noOrders')}</Text>}
+      <Text style={styles.label}>{t('activity.reservations')}</Text>
       {reservations.length ? reservations.slice(0, SHOWN).map((reservation) => <Card key={reservation.id} name={reservation.restaurantName}
-        note={reservation.rejectedReason ?? (reservation.synced === false ? 'Not sent to the restaurant yet. It will be sent when you are online.' : undefined)}
+        note={reservation.rejectedReason ?? notSent(reservation.synced)}
         reference={reservation.id} status={reservationStatus(reservation)}
-        meta={`${formatBooking(reservation.date, reservation.time)} · ${reservation.guests} ${reservation.guests === 1 ? 'guest' : 'guests'}`}>
-        {canCancelReservation(reservation) && <Action label="Cancel booking" onPress={() => confirmCancelReservation(reservation)} secondary />}
+        meta={`${formatBooking(reservation.date, reservation.time)} · ${tn('count.guests', reservation.guests)}`}>
+        {canCancelReservation(reservation) && <Action label={t('activity.cancelBooking')} onPress={() => confirmCancelReservation(reservation)} secondary />}
         {rateButton(reservation.id, reservation.status === 'completed' && !reservation.rejectedReason)}
-      </Card>) : <Text style={styles.empty}>No table reservations yet.</Text>}
+      </Card>) : <Text style={styles.empty}>{t('activity.noReservations')}</Text>}
     </>}
   </View>;
 }
 
-function Card({ children, meta, name, note, reference, status }: { children?: React.ReactNode; meta: string; name: string; note?: string; reference: string; status: { label: string; tone: Tone } }) {
+function Card({ children, meta, name, note, reference, status }: { children?: React.ReactNode; meta: string; name: string; note?: string; reference: string; status: Status }) {
   return <View style={styles.card}>
     <View style={styles.heading}>
       <View style={styles.headingCopy}><Text style={styles.name}>{name}</Text><Text style={styles.reference}>{reference}</Text></View>
-      <Text style={[styles.status, tones[status.tone]]}>{status.label}</Text>
+      <Text style={[styles.status, tones[status.tone]]}>{t(status.label)}</Text>
     </View>
     <Text style={styles.meta}>{meta}</Text>
     {note ? <Text style={styles.note}>{note}</Text> : null}

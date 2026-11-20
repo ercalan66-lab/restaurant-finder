@@ -10,6 +10,7 @@ import { deleteMyAccount } from '@/data/account';
 import { checkIsAdmin } from '@/data/admin';
 import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type GuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
 import { fetchReviewedReferences } from '@/data/reviews';
+import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace, goHome } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
@@ -18,7 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { themedStyles } from '@/theme/theme';
 
 // Phone sign-in accounts have no email, so fall back to the phone number.
-const accountLabel = (user: User | null) => user ? user.email || formatAccountPhone(user.phone) || 'Signed in' : null;
+const accountLabel = (user: User | null) => user ? user.email || formatAccountPhone(user.phone) || t('profile.signedIn') : null;
 
 const ORANGE = '#ED6417';
 const ACTIVITY_REFRESH_MS = 15_000;
@@ -97,15 +98,15 @@ export default function ProfileScreen() {
   const signOut = async () => {
     await unregisterDevice();
     const { error } = await supabase.auth.signOut();
-    if (error) return showMessage('Could not sign out', error.message);
+    if (error) return showMessage(t('profile.signOutFailed'), error.message);
     setAccount(null);
-    setAccountNotice('Signed out. Your saved details stay on this phone.');
+    setAccountNotice(t('profile.signedOut'));
   };
 
   const deleteAccount = () => confirmAction(
-    'Delete your account?',
-    'This permanently deletes your Kwetu account, removes your name, phone number and address from past orders and bookings, hides any restaurant you own, and clears the data on this phone. It cannot be undone.',
-    'Delete account',
+    t('profile.deleteTitle'),
+    t('profile.deleteBody'),
+    t('profile.deleteAccount'),
     () => void (async () => {
       setDeleting(true);
       try {
@@ -115,9 +116,9 @@ export default function ProfileScreen() {
         setName(''); setPhone(''); setEmail('');
         setSavedProfile(null); setEditing(false);
         setOrders([]); setReservations([]);
-        setAccountNotice('Your account and its personal details have been deleted.');
+        setAccountNotice(t('profile.deleted'));
       } catch (error) {
-        showMessage('Could not delete account', errorMessage(error));
+        showMessage(t('profile.deleteFailed'), errorMessage(error));
       } finally {
         setDeleting(false);
       }
@@ -126,8 +127,8 @@ export default function ProfileScreen() {
 
   // Feedback stays on the screen (not in a pop-up), because pop-ups do not show in the web version.
   const save = async () => {
-    if (!name.trim()) return setSaveStatus({ kind: 'error', message: 'Enter your name before saving.' });
-    if (!phone.trim()) return setSaveStatus({ kind: 'error', message: 'Enter your phone number before saving.' });
+    if (!name.trim()) return setSaveStatus({ kind: 'error', message: t('profile.nameRequired') });
+    if (!phone.trim()) return setSaveStatus({ kind: 'error', message: t('profile.phoneRequired') });
     setSaveStatus({ kind: 'saving' });
     try {
       const saved = await saveGuestProfile({ name: name.trim(), phone: phone.trim(), email: email.trim() });
@@ -138,8 +139,8 @@ export default function ProfileScreen() {
       setEditing(false);
       setSaveStatus({ kind: 'saved' });
     } catch (error) {
-      const reason = error instanceof Error ? error.message : 'unknown storage error';
-      setSaveStatus({ kind: 'error', message: `Your profile could not be saved (${reason}). Please try again.` });
+      const reason = error instanceof Error ? error.message : t('profile.unknownError');
+      setSaveStatus({ kind: 'error', message: t('profile.saveFailed', { reason }) });
     }
   };
   // After a successful save, "✓ Saved" shows for a moment, then the app returns to the home page.
@@ -163,47 +164,47 @@ export default function ProfileScreen() {
   };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Pressable onPress={() => goBackOrReplace('/')}><Text style={styles.back}>‹ Back</Text></Pressable>
-    <Text style={styles.eyebrow}>YOUR PROFILE</Text><Text style={styles.title}>Your details</Text><Text style={styles.subtitle}>Save these once to prefill reservations and food orders.</Text>
+    <Pressable onPress={() => goBackOrReplace('/')}><Text style={styles.back}>{t('common.back')}</Text></Pressable>
+    <Text style={styles.eyebrow}>{t('profile.eyebrow')}</Text><Text style={styles.title}>{t('profile.title')}</Text><Text style={styles.subtitle}>{t('profile.subtitle')}</Text>
 
     <View style={styles.accountCard}>
-      <Text style={styles.accountLabel}>ACCOUNT</Text>
-      <Text style={styles.accountValue}>{account ?? 'Not signed in'}</Text>
+      <Text style={styles.accountLabel}>{t('profile.account')}</Text>
+      <Text style={styles.accountValue}>{account ?? t('profile.notSignedIn')}</Text>
       <View style={styles.accountActions}>
-        <Pressable disabled={deleting} onPress={account ? () => void signOut() : () => router.push('/sign-in' as Href)}><Text style={styles.accountAction}>{account ? 'Sign out' : 'Sign in or create account'}</Text></Pressable>
-        {account && <Pressable disabled={deleting} onPress={deleteAccount}><Text style={[styles.accountAction, styles.deleteAction]}>{deleting ? 'Deleting…' : 'Delete account'}</Text></Pressable>}
+        <Pressable disabled={deleting} onPress={account ? () => void signOut() : () => router.push('/sign-in' as Href)}><Text style={styles.accountAction}>{t(account ? 'profile.signOut' : 'profile.signInOrCreate')}</Text></Pressable>
+        {account && <Pressable disabled={deleting} onPress={deleteAccount}><Text style={[styles.accountAction, styles.deleteAction]}>{t(deleting ? 'profile.deleting' : 'profile.deleteAccount')}</Text></Pressable>}
       </View>
       {accountNotice ? <Text accessibilityRole="alert" style={styles.accountNotice}>{accountNotice}</Text> : null}
     </View>
 
-    <Text style={styles.label}>YOUR NAME</Text><TextInput autoComplete="name" editable={!locked && !saving} onChangeText={edit(setName)} placeholder="Full name" style={[styles.input, locked && styles.inputLocked]} value={name} />
-    <Text style={styles.label}>PHONE</Text><TextInput autoComplete="tel" editable={!locked && !saving} keyboardType="phone-pad" onChangeText={edit(setPhone)} placeholder="+255..." style={[styles.input, locked && styles.inputLocked]} value={phone} />
-    <Text style={styles.label}>EMAIL (OPTIONAL)</Text><TextInput autoCapitalize="none" autoComplete="email" editable={!locked && !saving} keyboardType="email-address" onChangeText={edit(setEmail)} placeholder="you@example.com" style={[styles.input, locked && styles.inputLocked]} value={email} />
+    <Text style={styles.label}>{t('profile.name')}</Text><TextInput autoComplete="name" editable={!locked && !saving} onChangeText={edit(setName)} placeholder={t('profile.namePlaceholder')} style={[styles.input, locked && styles.inputLocked]} value={name} />
+    <Text style={styles.label}>{t('profile.phone')}</Text><TextInput autoComplete="tel" editable={!locked && !saving} keyboardType="phone-pad" onChangeText={edit(setPhone)} placeholder="+255..." style={[styles.input, locked && styles.inputLocked]} value={phone} />
+    <Text style={styles.label}>{t('profile.emailOptional')}</Text><TextInput autoCapitalize="none" autoComplete="email" editable={!locked && !saving} keyboardType="email-address" onChangeText={edit(setEmail)} placeholder="you@example.com" style={[styles.input, locked && styles.inputLocked]} value={email} />
     {locked
       ? <View style={styles.buttonRow}>
-        <View accessibilityLabel="Profile saved" accessibilityRole="text" style={[styles.button, styles.buttonSaved, styles.rowButton]}><Text style={styles.buttonText}>✓ Saved</Text></View>
-        <Pressable accessibilityRole="button" onPress={startEditing} style={[styles.secondaryButton, styles.rowButton]}><Text style={styles.secondaryButtonText}>✎ Edit profile</Text></Pressable>
+        <View accessibilityLabel={t('profile.savedLabel')} accessibilityRole="text" style={[styles.button, styles.buttonSaved, styles.rowButton]}><Text style={styles.buttonText}>{t('profile.saved')}</Text></View>
+        <Pressable accessibilityRole="button" onPress={startEditing} style={[styles.secondaryButton, styles.rowButton]}><Text style={styles.secondaryButtonText}>{t('profile.edit')}</Text></Pressable>
       </View>
       : <View style={styles.buttonRow}>
         <Pressable accessibilityRole="button" accessibilityState={{ busy: saving, disabled: saving }} disabled={saving} onPress={() => void save()} style={[styles.button, styles.rowButton, saving && styles.buttonDisabled]}>
-          <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save profile'}</Text>
+          <Text style={styles.buttonText}>{t(saving ? 'common.saving' : 'profile.save')}</Text>
         </Pressable>
-        {savedProfile && <Pressable accessibilityRole="button" disabled={saving} onPress={cancelEditing} style={[styles.secondaryButton, styles.rowButton]}><Text style={styles.secondaryButtonText}>Cancel</Text></Pressable>}
+        {savedProfile && <Pressable accessibilityRole="button" disabled={saving} onPress={cancelEditing} style={[styles.secondaryButton, styles.rowButton]}><Text style={styles.secondaryButtonText}>{t('common.cancel')}</Text></Pressable>}
       </View>}
-    {saveStatus.kind === 'saved' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.savedMessage}>✓ Profile saved. Taking you to the home page…</Text>}
+    {saveStatus.kind === 'saved' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.savedMessage}>{t('profile.savedMessage')}</Text>}
     {saveStatus.kind === 'error' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorMessage}>{saveStatus.message}</Text>}
 
     <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} reviewed={reviewed} signedIn={Boolean(account)} />
 
     {isAdmin && <Pressable accessibilityRole="button" onPress={() => router.push('/admin' as Href)} style={styles.adminCard}>
-      <Text style={styles.adminEyebrow}>KWETU ADMIN</Text>
-      <Text style={styles.adminTitle}>Open admin console ›</Text>
-      <Text style={styles.adminCopy}>Review restaurants, look up orders and bookings, see today’s numbers, and manage admins.</Text>
+      <Text style={styles.adminEyebrow}>{t('profile.adminEyebrow')}</Text>
+      <Text style={styles.adminTitle}>{t('profile.adminTitle')}</Text>
+      <Text style={styles.adminCopy}>{t('profile.adminCopy')}</Text>
     </Pressable>}
 
-    <View style={styles.ownerCard}><Text style={styles.ownerEyebrow}>FOR RESTAURANT OWNERS</Text><Text style={styles.ownerTitle}>Manage your restaurant</Text><Text style={styles.ownerCopy}>Update facilities, location, working hours, foods, prices, ingredients, and availability.</Text><Pressable onPress={() => router.push((account ? '/owner' : '/sign-in?role=owner') as Href)} style={styles.ownerButton}><Text style={styles.ownerButtonText}>Open restaurant dashboard</Text></Pressable></View>
+    <View style={styles.ownerCard}><Text style={styles.ownerEyebrow}>{t('profile.ownerEyebrow')}</Text><Text style={styles.ownerTitle}>{t('profile.ownerTitle')}</Text><Text style={styles.ownerCopy}>{t('profile.ownerCopy')}</Text><Pressable onPress={() => router.push((account ? '/owner' : '/sign-in?role=owner') as Href)} style={styles.ownerButton}><Text style={styles.ownerButtonText}>{t('profile.ownerButton')}</Text></Pressable></View>
 
-    <Pressable onPress={() => router.push('/privacy' as Href)} style={styles.privacyLink}><Text style={styles.privacyText}>Privacy policy</Text></Pressable>
+    <Pressable onPress={() => router.push('/privacy' as Href)} style={styles.privacyLink}><Text style={styles.privacyText}>{t('settings.privacy')}</Text></Pressable>
   </ScrollView></SafeAreaView>;
 }
 

@@ -1,7 +1,9 @@
 import { Alert, Platform } from 'react-native';
 
+import { t } from '@/i18n';
+
 /** Supabase returns plain objects with a `message` for database errors, so `instanceof Error` is not enough. */
-export function errorMessage(error: unknown, fallback = 'Please try again.') {
+export function errorMessage(error: unknown, fallback = t('common.tryAgain')) {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message) return error.message;
   return fallback;
 }
@@ -25,7 +27,7 @@ export function confirmAction(title: string, message: string, confirmLabel: stri
     return;
   }
   Alert.alert(title, message, [
-    { text: 'Cancel', style: 'cancel' },
+    { text: t('common.cancel'), style: 'cancel' },
     { text: confirmLabel, style: 'destructive', onPress: onConfirm },
   ]);
 }
