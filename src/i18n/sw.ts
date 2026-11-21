@@ -243,6 +243,7 @@ export const sw: Dictionary = {
 
   // Viungo kutoka barua pepe za Kwetu
   'callback.noDetails': 'Kiungo hiki hakina taarifa za kuingia.',
+  'callback.oldLink': 'Kiungo hiki ni cha toleo la zamani la Kwetu. Omba barua pepe mpya kutoka ukurasa wa kuingia na uifungue kwenye simu hii.',
   'callback.welcome': 'Karibu Kwetu',
   'callback.welcomeBody': 'Barua pepe yako imethibitishwa na umeingia.',
   'callback.failedTitle': 'Kiungo hiki hakikufanya kazi',
@@ -338,6 +339,9 @@ export const sw: Dictionary = {
   'payment.cash': 'Taslimu',
   'request.notTaking': 'Mgahawa huu haupokei maombi kwa sasa.',
   'request.noRestaurant': 'Mgahawa huu haupo tena.',
+  'request.checkDetails': 'Angalia jina lako, namba ya simu na anwani, kisha jaribu tena.',
+  'request.menuChanged': 'Kuna kilichobadilika kwenye menyu (chakula kimeondolewa au kimeisha). Rudi kwenye mgahawa uagize tena.',
+  'request.tooMany': 'Tayari una maombi yanayosubiri kwenye mgahawa huu. Subiri yajibiwe kwanza.',
   'booking.today': 'Leo',
   'booking.tomorrow': 'Kesho',
   'booking.at': '{date} saa {time}',
@@ -563,7 +567,7 @@ export const sw: Dictionary = {
   'ownerError.name': 'Andika jina la mgahawa.',
   'ownerError.address': 'Andika eneo na anwani ya mtaa.',
   'ownerError.hours': 'Tumia saa za mfumo wa saa 24 (HH:MM), mfano 08:00 na 22:00.',
-  'ownerError.mapUrl': 'Andika kiungo kamili cha Google Maps kinachoanza na http:// au https://.',
+  'ownerError.mapUrl': 'Bandika kiungo cha Google Maps (kinaanza na https://maps.app.goo.gl au https://www.google.com/maps), au kiache wazi.',
   'ownerError.price': 'Andika bei ya wastani kwa mtu kama namba kamili.',
   'ownerError.seats': 'Andika idadi ya wageni unaoweza kuwakalisha kwa kila saa ya kuhifadhi (1–500).',
   'ownerError.food': 'Andika jina la chakula na viungo vyake.',

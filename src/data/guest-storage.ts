@@ -50,7 +50,8 @@ export type OrderRecord = SyncState & {
   guest: GuestProfile;
   fulfillment: 'Pickup' | 'Delivery';
   address: string;
-  items: { name: string; price: string; quantity: number }[];
+  /** `id` is the menu item; the database looks up the real name and price from it (orders saved before it have none). */
+  items: { id?: string; name: string; price: string; quantity: number }[];
   total: number;
   createdAt: string;
   status?: OrderStatus;
@@ -189,6 +190,9 @@ type SendResult = 'sent' | 'retry' | { rejected: string };
 const PERMANENT_ERRORS: Record<string, MessageKey | null> = {
   FB001: null, // time slot full
   FB002: null, // date already passed
+  FB010: 'request.checkDetails', // details too long or missing (202611210002_request_safety.sql)
+  FB011: 'request.menuChanged', // a dish was removed or sold out
+  FB012: 'request.tooMany', // too many requests waiting from this phone number
   '42501': 'request.notTaking',
   '23503': 'request.noRestaurant',
   '23514': null,

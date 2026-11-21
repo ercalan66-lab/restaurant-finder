@@ -238,6 +238,7 @@ export const en = {
 
   // Links from Kwetu emails
   'callback.noDetails': 'This link has no sign-in details.',
+  'callback.oldLink': 'This link is from an older version of Kwetu. Ask for a new email from the sign-in screen and open it on this phone.',
   'callback.welcome': 'Welcome to Kwetu',
   'callback.welcomeBody': 'Your email is confirmed and you are signed in.',
   'callback.failedTitle': 'This link did not work',
@@ -333,6 +334,9 @@ export const en = {
   'payment.cash': 'Cash',
   'request.notTaking': 'This restaurant is not taking requests right now.',
   'request.noRestaurant': 'This restaurant no longer exists.',
+  'request.checkDetails': 'Check your name, phone number and address, then try again.',
+  'request.menuChanged': 'Something in your order changed on the menu (a dish was removed or sold out). Go back to the restaurant and order again.',
+  'request.tooMany': 'You already have requests waiting at this restaurant. Wait for them to be answered first.',
   'booking.today': 'Today',
   'booking.tomorrow': 'Tomorrow',
   'booking.at': '{date} at {time}',
@@ -558,7 +562,7 @@ export const en = {
   'ownerError.name': 'Enter the restaurant name.',
   'ownerError.address': 'Enter the area and street address.',
   'ownerError.hours': 'Use 24-hour HH:MM opening hours, for example 08:00 and 22:00.',
-  'ownerError.mapUrl': 'Enter a full Google Maps link beginning with http:// or https://.',
+  'ownerError.mapUrl': 'Paste a Google Maps link (it starts with https://maps.app.goo.gl or https://www.google.com/maps), or leave it blank.',
   'ownerError.price': 'Enter the average price per person as a whole number.',
   'ownerError.seats': 'Enter how many guests you can seat per booking time (1–500).',
   'ownerError.food': 'Enter the food name and ingredients.',

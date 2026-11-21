@@ -1,5 +1,6 @@
 import { t } from '@/i18n';
 import { supabase } from '../../lib/supabase';
+import { isGoogleMapsLink } from '@/utils/safe-links';
 import { isMenuCategory } from './menu-categories';
 import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuItem, type MenuRow, type Restaurant } from './restaurants';
 
@@ -17,7 +18,7 @@ export function restaurantDetailsError(details: RestaurantDetails): string | nul
   if (!details.name.trim()) return t('ownerError.name');
   if (!details.area.trim() || !details.address.trim()) return t('ownerError.address');
   if (!TIME_PATTERN.test(details.opensAt) || !TIME_PATTERN.test(details.closesAt)) return t('ownerError.hours');
-  if (details.mapUrl.trim() && !/^https?:\/\//i.test(details.mapUrl.trim())) return t('ownerError.mapUrl');
+  if (details.mapUrl.trim() && !isGoogleMapsLink(details.mapUrl)) return t('ownerError.mapUrl');
   if (details.email.trim() && !/^\S+@\S+\.\S+$/.test(details.email.trim())) return t('request.emailBody');
   if (!Number.isInteger(details.pricePerPerson) || details.pricePerPerson < 0) return t('ownerError.price');
   if (!Number.isInteger(details.seatsPerSlot) || details.seatsPerSlot < 1 || details.seatsPerSlot > 500) return t('ownerError.seats');

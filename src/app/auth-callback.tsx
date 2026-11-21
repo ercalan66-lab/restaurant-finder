@@ -16,24 +16,25 @@ const ACCENT = '#B93F1D';
 
 type Result = { kind: 'signed-in' } | { kind: 'new-password' } | { kind: 'error'; message: string };
 
-/** Turns the link from a Kwetu email into a signed-in session. */
+/**
+ * Turns the link from a Kwetu email into a signed-in session. Only one-time codes (PKCE) are accepted:
+ * they work only with the secret this phone kept when it asked for the email. Links that carry sign-in
+ * tokens themselves are refused, because anyone could craft one to sign a phone into their own account.
+ */
 async function completeEmailLink(url: string): Promise<Result> {
   const link = parseAuthLink(url);
   if (link.error) return { kind: 'error', message: link.error };
+  if (!link.code) return { kind: 'error', message: t(link.accessToken ? 'callback.oldLink' : 'callback.noDetails') };
   try {
-    if (link.accessToken && link.refreshToken) {
-      const { error } = await supabase.auth.setSession({ access_token: link.accessToken, refresh_token: link.refreshToken });
-      if (error) throw error;
-    } else if (link.code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(link.code);
-      if (error) throw error;
-    } else {
-      return { kind: 'error', message: t('callback.noDetails') };
-    }
+    const { data, error } = await supabase.auth.exchangeCodeForSession(link.code);
+    if (error) throw error;
+    // Supabase remembers on this phone whether the email was a password reset, and returns it as
+    // redirectType (supabase-js sets it at runtime but leaves it out of the declared return type).
+    const { redirectType } = data as typeof data & { redirectType?: string | null };
+    return redirectType === 'recovery' || link.type === 'recovery' ? { kind: 'new-password' } : { kind: 'signed-in' };
   } catch (error) {
     return { kind: 'error', message: errorMessage(error) };
   }
-  return link.type === 'recovery' ? { kind: 'new-password' } : { kind: 'signed-in' };
 }
 
 /** Where links in Kwetu's emails open the app: confirms a new account, or starts a password reset. */

@@ -57,7 +57,7 @@ export default function OrderScreen() {
     setQuantities((current) => ({ ...current, [itemId]: Math.max(0, (current[itemId] ?? 0) + change) }));
   };
   const submit = async () => {
-    const items = menu.filter((item) => item.available && (quantities[item.id] ?? 0) > 0).map((item) => ({ name: item.name, price: formatTsh(item.price), quantity: quantities[item.id] }));
+    const items = menu.filter((item) => item.available && (quantities[item.id] ?? 0) > 0).map((item) => ({ id: item.id, name: item.name, price: formatTsh(item.price), quantity: quantities[item.id] }));
     if (!items.length) return showMessage(t('order.emptyTitle'), t('order.emptyBody'));
     if (!name.trim() || !phone.trim()) return showMessage(t('request.missingTitle'), t('request.missingBody'));
     if (phone.replace(/\D/g, '').length < 7) return showMessage(t('request.phoneTitle'), t('request.phoneBody'));

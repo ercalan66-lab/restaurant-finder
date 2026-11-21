@@ -13,6 +13,7 @@ import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/da
 import { useUserLocation } from '@/data/user-location';
 import { t, tn } from '@/i18n';
 import { distanceTo, formatDistance } from '@/utils/distance';
+import { isGoogleMapsLink, isKwetuMenuPdf } from '@/utils/safe-links';
 import { goBackOrReplace } from '@/utils/navigation';
 import { showMessage } from '@/utils/feedback';
 import { themedStyles } from '@/theme/theme';
@@ -52,8 +53,11 @@ export default function RestaurantDetailScreen() {
   };
 
   const position = restaurant.latitude != null && restaurant.longitude != null ? `${restaurant.latitude},${restaurant.longitude}` : null;
-  const directionsUrl = restaurant.mapUrl
-    || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(position ?? `${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
+  // The owner's own link is used only when it really is a Google Maps link.
+  const directionsUrl = isGoogleMapsLink(restaurant.mapUrl)
+    ? restaurant.mapUrl.trim()
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(position ?? `${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
+  const menuPdfUrl = isKwetuMenuPdf(restaurant.menuPdfUrl, restaurant.id) ? restaurant.menuPdfUrl : null;
   const distance = distanceTo(coords, restaurant);
   // Grouped by category (Pizza, Baga, …); inside each group, foods that can be ordered right now come first.
   const menu = restaurant.menu
@@ -74,7 +78,7 @@ export default function RestaurantDetailScreen() {
   const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, t('restaurant.noCalling'));
   const menuCaption = restaurant.menu.length
     ? t('restaurant.menuCaption', { available: availableNow, total: restaurant.menu.length })
-    : t(restaurant.menuPdfUrl ? 'restaurant.menuPdfOnly' : 'restaurant.menuSoon');
+    : t(menuPdfUrl ? 'restaurant.menuPdfOnly' : 'restaurant.menuSoon');
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -125,16 +129,16 @@ export default function RestaurantDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('restaurant.menuTitle')}</Text>
           <Text style={styles.sectionCaption}>{menuCaption}</Text>
-          {restaurant.menuPdfUrl ? <View style={styles.pdfCard}>
+          {menuPdfUrl ? <View style={styles.pdfCard}>
             <Text style={styles.pdfIcon}>📄</Text>
             <View style={styles.pdfCopy}>
               <Text style={styles.pdfTitle}>{t('restaurant.pdfTitle')}</Text>
               <Text style={styles.pdfCaption}>{t('restaurant.pdfCaption')}</Text>
               <View style={styles.pdfActions}>
-                <Pressable accessibilityRole="button" onPress={() => void WebBrowser.openBrowserAsync(restaurant.menuPdfUrl ?? '')} style={styles.pdfButton}>
+                <Pressable accessibilityRole="button" onPress={() => void WebBrowser.openBrowserAsync(menuPdfUrl)} style={styles.pdfButton}>
                   <Text style={styles.pdfButtonText}>{t('restaurant.pdfView')}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" onPress={() => void openLink(menuPdfDownloadUrl(restaurant.menuPdfUrl ?? '', restaurant.name), t('restaurant.noDownload'))} style={[styles.pdfButton, styles.pdfButtonSecondary]}>
+                <Pressable accessibilityRole="button" onPress={() => void openLink(menuPdfDownloadUrl(menuPdfUrl, restaurant.name), t('restaurant.noDownload'))} style={[styles.pdfButton, styles.pdfButtonSecondary]}>
                   <Text style={[styles.pdfButtonText, styles.pdfButtonSecondaryText]}>{t('restaurant.pdfDownload')}</Text>
                 </Pressable>
               </View>

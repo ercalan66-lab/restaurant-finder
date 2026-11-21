@@ -14,6 +14,9 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase configuration');
 }
 
+/** The project address, e.g. for checking that a file link really points at Kwetu's own storage. */
+export const SUPABASE_URL: string = supabaseUrl.replace(/\/+$/, '');
+
 export const supabase = createClient(
   supabaseUrl,
   supabaseKey,
@@ -23,6 +26,10 @@ export const supabase = createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+      // Email links (account confirmation, password reset) carry a one-time code that only works
+      // together with a secret kept on the phone that asked for the email, instead of the sign-in
+      // tokens themselves. Another app that catches the link cannot use it.
+      flowType: 'pkce',
     },
   }
 );

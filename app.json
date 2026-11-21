@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.kwetutz.app",
+      "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#FDC52B",
         "foregroundImage": "./assets/images/kwetu-app-icon.png"
