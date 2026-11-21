@@ -39,7 +39,8 @@ export default function TabLayout() {
   useEffect(() => {
     void registerDeviceForAccount({ ask: false });
     const { data: auth } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') void registerDeviceForAccount({ ask: false });
+      // With two-step sign-in the database accepts the phone only after the code (MFA_CHALLENGE_VERIFIED).
+      if (event === 'SIGNED_IN' || event === 'MFA_CHALLENGE_VERIFIED') void registerDeviceForAccount({ ask: false });
     });
     const stopTaps = handleNotificationTaps((url) => router.push(url as Href));
     return () => { auth.subscription.unsubscribe(); stopTaps(); };

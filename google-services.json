@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "984044244149",
+    "project_id": "kwetu-51b0d",
+    "storage_bucket": "kwetu-51b0d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:984044244149:android:c21a64588cab2dc26142fc",
+        "android_client_info": {
+          "package_name": "com.kwetutz.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6uLDg0slD146YvsYVO01Hn7MqZhUpfZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -50,10 +50,11 @@ One-time setup:
 
 1. **Create an EAS project.** Run `npx eas-cli@latest init` (needs a free Expo account). It adds `extra.eas.projectId` to `app.json`; commit that. Without it the app skips push and the dashboard card says alerts are unavailable.
 2. **Use a development build, not Expo Go.** Expo Go on Android has no remote push since SDK 53. Run `npx eas-cli@latest build:configure` once, then `npx eas-cli@latest build --profile development --platform android` (or `ios`). Set `android.package` and `ios.bundleIdentifier` in `app.json` when EAS asks.
-3. **Set up Android (Firebase Cloud Messaging):**
+3. **Set up Android (Firebase Cloud Messaging).** Done for Kwetu: Firebase project `kwetu-51b0d`, with Android app `com.kwetutz.app`.
    1. Create a Firebase project and add an Android app with the same package name.
-   2. Put its `google-services.json` in the project root and set `"android": { "googleServicesFile": "./google-services.json" }`.
-   3. In Firebase, generate a service-account private key and upload it with `npx eas-cli@latest credentials` (Android → Google Service Account → FCM V1). Keep that key out of git.
+   2. Put its `google-services.json` in the project root and set `"android": { "googleServicesFile": "./google-services.json" }`. The file only holds public identifiers, and Expo says it may be committed.
+   3. In Firebase, go to **Project settings → Service accounts → Generate new private key**. Upload that key on expo.dev under **Credentials → Android → com.kwetutz.app → FCM V1 service account key**, or with `npx eas-cli@latest credentials`. That key is secret: keep it out of git.
+   4. Rebuild the app. Android phones get no push token until a build includes `google-services.json`.
 4. **Set up iOS:** a paid Apple Developer account is required. EAS creates the push key during the build.
 5. **Run the migration** above.
 
