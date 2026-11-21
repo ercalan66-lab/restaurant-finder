@@ -1,21 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { formatBooking } from '@/data/booking';
-import {
-  fulfillmentLabel,
-  getOrders,
-  getReservations,
-  recordCashPayment,
-  type OrderRecord,
-  type OrderStatus,
-  type ReservationRecord,
-  type ReservationStatus,
-  updateOrderStatus,
-  updateReservationStatus,
-} from '@/data/guest-storage';
+import { fulfillmentLabel, getOrders, recordCashPayment, type OrderRecord, type OrderStatus, updateOrderStatus } from '@/data/guest-storage';
 import { formatTsh } from '@/data/restaurants';
-import { t, tn, type MessageKey } from '@/i18n';
+import { t, type MessageKey } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { onNotificationReceived } from '@/utils/push-notifications';
 import { themedStyles } from '@/theme/theme';
@@ -41,23 +29,16 @@ const ORDER_STATUS: Record<OrderStatus, MessageKey> = {
   pending: 'status.pending', accepted: 'status.accepted', preparing: 'status.preparing', ready: 'status.readyForPickup',
   delivered: 'status.delivered', completed: 'status.completed', declined: 'status.declined', cancelled: 'status.cancelled',
 };
-const BOOKING_STATUS: Record<ReservationStatus, MessageKey> = {
-  pending: 'status.pending', confirmed: 'status.confirmed', completed: 'status.completed', declined: 'status.declined', cancelled: 'status.cancelled',
-};
 const DECLINABLE: OrderStatus[] = ['pending', 'accepted', 'preparing', 'ready'];
 
 export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
-  const [reservations, setReservations] = useState<ReservationRecord[]>([]);
-  const [active, setActive] = useState<'orders' | 'reservations'>('orders');
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     try {
-      const [savedOrders, savedReservations] = await Promise.all([getOrders(), getReservations()]);
-      setOrders(savedOrders.filter((order) => order.restaurantId === restaurantId));
-      setReservations(savedReservations.filter((reservation) => reservation.restaurantId === restaurantId));
+      setOrders((await getOrders()).filter((order) => order.restaurantId === restaurantId));
     } catch {
       if (!silent) showMessage(t('ownerReq.loadFailed'), t('common.tryAgain'));
     } finally {
@@ -67,12 +48,8 @@ export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
 
   useEffect(() => {
     let active = true;
-    Promise.all([getOrders(), getReservations()])
-      .then(([savedOrders, savedReservations]) => {
-        if (!active) return;
-        setOrders(savedOrders.filter((order) => order.restaurantId === restaurantId));
-        setReservations(savedReservations.filter((reservation) => reservation.restaurantId === restaurantId));
-      })
+    getOrders()
+      .then((savedOrders) => { if (active) setOrders(savedOrders.filter((order) => order.restaurantId === restaurantId)); })
       .catch(() => { if (active) showMessage(t('ownerReq.loadFailed'), t('common.tryAgain')); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -95,18 +72,11 @@ export function OwnerRequests({ restaurantId }: { restaurantId: number }) {
   };
 
   const pendingOrders = orders.filter((order) => (order.status ?? 'pending') === 'pending').length;
-  const pendingReservations = reservations.filter((reservation) => (reservation.status ?? 'pending') === 'pending').length;
 
   return <View style={styles.section}>
     <View style={styles.headingRow}><View style={styles.headingCopy}><Text style={styles.title}>{t('ownerReq.title')}</Text><Text style={styles.helper}>{t('ownerReq.helper')}</Text></View><Pressable onPress={() => void load()}><Text style={styles.refresh}>{t(loading ? 'common.loading' : 'ownerReq.refresh')}</Text></Pressable></View>
-    <View style={styles.stats}><Stat label={t('ownerReq.newOrders')} value={pendingOrders} /><Stat label={t('ownerReq.newBookings')} value={pendingReservations} /><Stat label={t('ownerReq.total')} value={orders.length + reservations.length} /></View>
-    <View style={styles.tabs}>
-      <Tab active={active === 'orders'} label={t('ownerReq.ordersTab', { count: orders.length })} onPress={() => setActive('orders')} />
-      <Tab active={active === 'reservations'} label={t('ownerReq.bookingsTab', { count: reservations.length })} onPress={() => setActive('reservations')} />
-    </View>
-    {active === 'orders'
-      ? orders.length ? orders.map((order) => <OrderCard key={order.id} order={order} run={run} />) : <Empty copy={t('ownerReq.noOrders')} />
-      : reservations.length ? reservations.map((reservation) => <ReservationCard key={reservation.id} reservation={reservation} run={run} />) : <Empty copy={t('ownerReq.noBookings')} />}
+    <View style={styles.stats}><Stat label={t('ownerReq.newOrders')} value={pendingOrders} /><Stat label={t('ownerReq.total')} value={orders.length} /></View>
+    {orders.length ? orders.map((order) => <OrderCard key={order.id} order={order} run={run} />) : <Empty copy={t('ownerReq.noOrders')} />}
   </View>;
 }
 
@@ -155,28 +125,11 @@ function OrderCard({ order, run }: { order: OrderRecord; run: Run }) {
   </View>;
 }
 
-function ReservationCard({ reservation, run }: { reservation: ReservationRecord; run: Run }) {
-  const status = reservation.status ?? 'pending';
-  const setStatus = (next: ReservationStatus) => void run(() => updateReservationStatus(reservation.id, next));
-  const decline = () => confirmAction(t('ownerReq.declineBookingTitle'), t('ownerReq.declineBookingBody', { name: reservation.name }), t('ownerReq.decline'), () => setStatus('declined'));
-  return <View style={styles.card}>
-    <View style={styles.cardTop}><View style={styles.headingCopy}><Text style={styles.reference}>{t('ownerReq.booking', { reference: reservation.id })}</Text><Text style={styles.customer}>{reservation.name}</Text></View><Status value={t(BOOKING_STATUS[status])} attention={status === 'pending' || status === 'declined' || status === 'cancelled'} /></View>
-    <Text style={styles.meta}>{formatBooking(reservation.date, reservation.time)} · {tn('count.guests', reservation.guests)}</Text>
-    <Text style={styles.meta}>{reservation.phone}{reservation.email ? ` · ${reservation.email}` : ''}</Text>
-    <View style={styles.actions}>
-      {status === 'pending' && <Action label={t('ownerReq.confirmBooking')} onPress={() => setStatus('confirmed')} />}
-      {status === 'confirmed' && <Action label={t('ownerReq.markCompleted')} onPress={() => setStatus('completed')} />}
-      {(status === 'pending' || status === 'confirmed') && <Action destructive label={t('ownerReq.decline')} onPress={decline} />}
-    </View>
-  </View>;
-}
-
 function Stat({ label, value }: { label: string; value: number }) { return <View style={styles.stat}><Text style={styles.statValue}>{value}</Text><Text style={styles.statLabel}>{label}</Text></View>; }
-function Tab({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) { return <Pressable onPress={onPress} style={[styles.tab, active && styles.tabActive]}><Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text></Pressable>; }
 function Status({ attention, value }: { attention: boolean; value: string }) { return <Text style={[styles.status, attention && styles.statusAttention]}>{value}</Text>; }
 function Action({ destructive, label, onPress }: { destructive?: boolean; label: string; onPress: () => void }) { return <Pressable accessibilityRole="button" onPress={onPress} style={[styles.action, destructive && styles.actionSecondary]}><Text style={[styles.actionText, destructive && styles.actionSecondaryText]}>{label}</Text></Pressable>; }
 function Empty({ copy }: { copy: string }) { return <View style={styles.empty}><Text style={styles.emptyTitle}>{t('ownerReq.empty')}</Text><Text style={styles.helper}>{copy}</Text></View>; }
 
 const styles = themedStyles(({ bg, fg, line }) => ({
-  section: { marginTop: 22, padding: 17, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 22, backgroundColor: bg('#FFFDF9') }, headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }, headingCopy: { flex: 1 }, title: { color: fg('#271812'), fontSize: 20, fontWeight: '900' }, helper: { color: fg('#71675F'), fontSize: 12, lineHeight: 18, marginTop: 5 }, refresh: { color: fg(ORANGE), fontSize: 11, fontWeight: '900', paddingVertical: 5 }, stats: { flexDirection: 'row', gap: 8, marginTop: 15 }, stat: { flex: 1, padding: 11, borderRadius: 13, backgroundColor: bg('#FFF3E9') }, statValue: { color: fg('#271812'), fontSize: 21, fontWeight: '900' }, statLabel: { color: fg('#8A7164'), fontSize: 7, fontWeight: '900', marginTop: 3 }, tabs: { flexDirection: 'row', padding: 4, borderRadius: 16, backgroundColor: bg('#F4EAE1'), marginTop: 16 }, tab: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12 }, tabActive: { backgroundColor: bg('#FFF') }, tabText: { color: fg('#7B7068'), fontSize: 11, fontWeight: '800' }, tabTextActive: { color: fg(ORANGE) }, card: { padding: 14, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 16, backgroundColor: bg('#FFF'), marginTop: 12 }, cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }, reference: { color: fg(ORANGE), fontSize: 8, fontWeight: '900', letterSpacing: 0.7 }, customer: { color: fg('#271812'), fontSize: 16, fontWeight: '900', marginTop: 3 }, status: { color: fg('#28734D'), backgroundColor: bg('#E8F5ED'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 7, fontWeight: '900' }, statusAttention: { color: fg('#8E2F1A'), backgroundColor: bg('#F5D8D1') }, meta: { color: fg('#71675F'), fontSize: 11, lineHeight: 17, marginTop: 6 }, items: { paddingVertical: 8, marginTop: 7, borderTopWidth: 1, borderTopColor: line('#F0E7DE') }, item: { color: fg('#4E453F'), fontSize: 11, lineHeight: 18 }, payment: { color: fg(ORANGE), fontSize: 12, fontWeight: '800', lineHeight: 17 }, paymentDone: { color: fg('#28734D') }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }, action: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 20, backgroundColor: bg(ORANGE) }, actionSecondary: { borderWidth: 1, borderColor: line('#D9C8BC'), backgroundColor: bg('#FFF') }, actionText: { color: fg('#FFF'), fontSize: 10, fontWeight: '900' }, actionSecondaryText: { color: fg('#8E2F1A') }, empty: { alignItems: 'center', padding: 22, marginTop: 12, borderRadius: 15, backgroundColor: bg('#FFF8EE') }, emptyTitle: { color: fg('#271812'), fontSize: 15, fontWeight: '900' },
+  section: { marginTop: 22, padding: 17, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 22, backgroundColor: bg('#FFFDF9') }, headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }, headingCopy: { flex: 1 }, title: { color: fg('#271812'), fontSize: 20, fontWeight: '900' }, helper: { color: fg('#71675F'), fontSize: 12, lineHeight: 18, marginTop: 5 }, refresh: { color: fg(ORANGE), fontSize: 11, fontWeight: '900', paddingVertical: 5 }, stats: { flexDirection: 'row', gap: 8, marginTop: 15 }, stat: { flex: 1, padding: 11, borderRadius: 13, backgroundColor: bg('#FFF3E9') }, statValue: { color: fg('#271812'), fontSize: 21, fontWeight: '900' }, statLabel: { color: fg('#8A7164'), fontSize: 7, fontWeight: '900', marginTop: 3 }, card: { padding: 14, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 16, backgroundColor: bg('#FFF'), marginTop: 12 }, cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }, reference: { color: fg(ORANGE), fontSize: 8, fontWeight: '900', letterSpacing: 0.7 }, customer: { color: fg('#271812'), fontSize: 16, fontWeight: '900', marginTop: 3 }, status: { color: fg('#28734D'), backgroundColor: bg('#E8F5ED'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 7, fontWeight: '900' }, statusAttention: { color: fg('#8E2F1A'), backgroundColor: bg('#F5D8D1') }, meta: { color: fg('#71675F'), fontSize: 11, lineHeight: 17, marginTop: 6 }, items: { paddingVertical: 8, marginTop: 7, borderTopWidth: 1, borderTopColor: line('#F0E7DE') }, item: { color: fg('#4E453F'), fontSize: 11, lineHeight: 18 }, payment: { color: fg(ORANGE), fontSize: 12, fontWeight: '800', lineHeight: 17 }, paymentDone: { color: fg('#28734D') }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 }, action: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 20, backgroundColor: bg(ORANGE) }, actionSecondary: { borderWidth: 1, borderColor: line('#D9C8BC'), backgroundColor: bg('#FFF') }, actionText: { color: fg('#FFF'), fontSize: 10, fontWeight: '900' }, actionSecondaryText: { color: fg('#8E2F1A') }, empty: { alignItems: 'center', padding: 22, marginTop: 12, borderRadius: 15, backgroundColor: bg('#FFF8EE') }, emptyTitle: { color: fg('#271812'), fontSize: 15, fontWeight: '900' },
 }));

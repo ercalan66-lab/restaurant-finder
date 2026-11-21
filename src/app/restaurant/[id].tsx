@@ -98,10 +98,7 @@ export default function RestaurantDetailScreen() {
 
         <View style={styles.section}>
           {restaurant.description ? <Text style={styles.description}>{restaurant.description}</Text> : null}
-          <View style={styles.bookingActions}>
-            <Pressable onPress={() => router.push(`/reservation/${restaurant.id}` as Href)} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>{t('restaurant.reserve')}</Text>
-            </Pressable>
+          <View style={styles.orderActions}>
             <Pressable onPress={() => router.push(`/order/${restaurant.id}` as Href)} style={styles.orderButton}>
               <Text style={styles.orderButtonText}>{t('restaurant.order')}</Text>
             </Pressable>
@@ -222,7 +219,7 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   sectionTitle: { color: fg('#171612'), fontSize: 24, fontWeight: '900' },
   sectionCaption: { color: fg('#777268'), fontSize: 12, marginTop: 4, marginBottom: 14 },
   quickActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  bookingActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  orderActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   primaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: bg(ORANGE) },
   primaryButtonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   secondaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderWidth: 1, borderColor: line('#E6DCCE'), backgroundColor: bg('#FFF') },

@@ -41,7 +41,7 @@ export function TeamSection({ onLeftTeam }: { onLeftTeam: () => void }) {
 
   const remove = (member: AdminMember) => confirmAction(
     member.isMe ? 'Remove yourself as admin?' : `Remove ${member.account}?`,
-    member.isMe ? 'You will lose access to the admin console straight away. Another admin can add you back.' : 'They will no longer be able to review restaurants or look up orders and bookings.',
+    member.isMe ? 'You will lose access to the admin console straight away. Another admin can add you back.' : 'They will no longer be able to review restaurants or look up orders.',
     'Remove',
     () => void (async () => {
       setBusy(true);
@@ -58,7 +58,7 @@ export function TeamSection({ onLeftTeam }: { onLeftTeam: () => void }) {
   );
 
   return <View>
-    <SectionHeading helper="Admins can review restaurants, change ratings and tags, look up orders and bookings, and manage this list." loading={state.kind === 'loading'} onRefresh={reload} title="Admins" />
+    <SectionHeading helper="Admins can review restaurants, change ratings and tags, look up orders, and manage this list." loading={state.kind === 'loading'} onRefresh={reload} title="Admins" />
     {state.kind === 'error' && <LoadError message={state.message} onRetry={reload} />}
     {state.kind === 'ready' && state.value.map((member) => <View key={member.userId} style={adminStyles.card}>
       <View style={adminStyles.cardTop}>

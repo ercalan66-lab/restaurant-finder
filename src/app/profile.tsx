@@ -7,7 +7,7 @@ import type { User } from '@supabase/supabase-js';
 
 import { ActivitySection } from '@/components/activity-section';
 import { deleteMyAccount } from '@/data/account';
-import { getGuestProfile, getMyOrders, getMyReservations, refreshRequestStatuses, saveGuestProfile, type GuestProfile, type OrderRecord, type ReservationRecord } from '@/data/guest-storage';
+import { getGuestProfile, getMyOrders, refreshRequestStatuses, saveGuestProfile, type GuestProfile, type OrderRecord } from '@/data/guest-storage';
 import { fetchReviewedReferences } from '@/data/reviews';
 import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
@@ -26,13 +26,13 @@ const SAVED_PAUSE_MS = 900;
 
 type SaveStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'saved' } | { kind: 'error'; message: string };
 
-/** Latest statuses first (works for guests too), then this person's orders and bookings, and which completed ones are reviewed. */
+/** Latest statuses first (works for guests too), then this person's orders, and which completed ones are reviewed. */
 async function loadActivity() {
   await refreshRequestStatuses().catch(() => false);
-  const [orders, reservations] = await Promise.all([getMyOrders(), getMyReservations()]);
-  const completed = [...orders, ...reservations].filter((record) => record.status === 'completed').map((record) => record.id);
+  const orders = await getMyOrders();
+  const completed = orders.filter((order) => order.status === 'completed').map((order) => order.id);
   const reviewed = await fetchReviewedReferences(completed);
-  return { orders, reservations, reviewed };
+  return { orders, reviewed };
 }
 
 export default function ProfileScreen() {
@@ -50,7 +50,6 @@ export default function ProfileScreen() {
   const [accountNotice, setAccountNotice] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
-  const [reservations, setReservations] = useState<ReservationRecord[]>([]);
   const [reviewed, setReviewed] = useState<Set<string>>(new Set());
   const [historyLoading, setHistoryLoading] = useState(true);
 
@@ -76,9 +75,8 @@ export default function ProfileScreen() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const applyActivity = useCallback(({ orders: nextOrders, reservations: nextReservations, reviewed: nextReviewed }: Awaited<ReturnType<typeof loadActivity>>) => {
+  const applyActivity = useCallback(({ orders: nextOrders, reviewed: nextReviewed }: Awaited<ReturnType<typeof loadActivity>>) => {
     setOrders(nextOrders);
-    setReservations(nextReservations);
     setReviewed(nextReviewed);
     setHistoryLoading(false);
   }, []);
@@ -111,7 +109,7 @@ export default function ProfileScreen() {
         setAccount(null);
         setName(''); setPhone(''); setEmail('');
         setSavedProfile(null); setEditing(false);
-        setOrders([]); setReservations([]);
+        setOrders([]);
         setAccountNotice(t('profile.deleted'));
       } catch (error) {
         showMessage(t('profile.deleteFailed'), errorMessage(error));
@@ -190,7 +188,7 @@ export default function ProfileScreen() {
     {saveStatus.kind === 'saved' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.savedMessage}>{t('profile.savedMessage')}</Text>}
     {saveStatus.kind === 'error' && <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorMessage}>{saveStatus.message}</Text>}
 
-    <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reservations={reservations} reviewed={reviewed} signedIn={Boolean(account)} />
+    <ActivitySection loading={historyLoading} onChanged={reloadActivity} orders={orders} reviewed={reviewed} signedIn={Boolean(account)} />
 
     <View style={styles.ownerCard}><Text style={styles.ownerEyebrow}>{t('profile.ownerEyebrow')}</Text><Text style={styles.ownerTitle}>{t('profile.ownerTitle')}</Text><Text style={styles.ownerCopy}>{t('profile.ownerCopy')}</Text><Pressable onPress={() => router.push((account ? '/owner' : '/sign-in?role=owner') as Href)} style={styles.ownerButton}><Text style={styles.ownerButtonText}>{t('profile.ownerButton')}</Text></Pressable></View>
 

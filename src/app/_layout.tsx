@@ -26,7 +26,7 @@ export default function TabLayout() {
   setScheme(scheme);
   setLanguage(settings.language);
 
-  // Orders and bookings that could not be sent are retried on launch, on return to the app, and every 30 s while open.
+  // Orders that could not be sent are retried on launch, on return to the app, and every 30 s while open.
   useEffect(() => {
     void syncPendingRequests();
     const timer = setInterval(() => { if (AppState.currentState === 'active') void syncPendingRequests(); }, RETRY_INTERVAL_MS);

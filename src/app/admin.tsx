@@ -21,7 +21,7 @@ type Access = 'checking' | 'denied' | 'granted';
 const SECTIONS: { value: AdminSection; label: string }[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'restaurants', label: 'Restaurants' },
-  { value: 'requests', label: 'Orders & bookings' },
+  { value: 'requests', label: 'Orders' },
   { value: 'reviews', label: 'Reviews' },
   { value: 'team', label: 'Admins' },
 ];

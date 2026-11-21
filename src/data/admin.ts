@@ -50,15 +50,13 @@ export type AdminOverview = {
   restaurantsChangesRequested: number;
   ordersToday: number;
   ordersInProgress: number;
-  /** Pending and confirmed tables booked for today. */
-  tablesToday: number;
   /** Value of orders completed in the last 7 days, in shillings. */
   salesLast7Days: number;
 };
 
 type OverviewRow = {
   restaurants_waiting: number; restaurants_live: number; restaurants_changes_requested: number;
-  orders_today: number; orders_in_progress: number; tables_today: number; sales_last_7_days: number | string;
+  orders_today: number; orders_in_progress: number; sales_last_7_days: number | string;
 };
 
 export async function fetchOverview(): Promise<AdminOverview> {
@@ -70,24 +68,24 @@ export async function fetchOverview(): Promise<AdminOverview> {
     restaurantsChangesRequested: data.restaurants_changes_requested,
     ordersToday: data.orders_today,
     ordersInProgress: data.orders_in_progress,
-    tablesToday: data.tables_today,
     salesLast7Days: Number(data.sales_last_7_days),
   };
 }
 
-type RequestBase = { reference: string; restaurantId: number; restaurantName: string; customerName: string; customerPhone: string; status: string; createdAt: string };
-export type AdminOrder = RequestBase & { kind: 'order'; fulfillment: 'Pickup' | 'Delivery'; total: number; paymentStatus: PaymentStatus; paymentMethod: PaymentMethod };
-export type AdminBooking = RequestBase & { kind: 'booking'; date: string; time: string; guests: number };
-export type AdminRequest = AdminOrder | AdminBooking;
+export type AdminOrder = {
+  reference: string; restaurantId: number; restaurantName: string; customerName: string; customerPhone: string; status: string; createdAt: string;
+  fulfillment: 'Pickup' | 'Delivery'; total: number; paymentStatus: PaymentStatus; paymentMethod: PaymentMethod;
+};
 
+/** admin_find_requests also returns old table bookings (kind 'booking'); booking was removed, so they are skipped. */
 type RequestRow = {
   kind: 'order' | 'booking'; reference: string; restaurant_id: number; restaurant_name: string; customer_name: string;
   customer_phone: string; status: string; created_at: string; fulfillment: string | null; total: number | null;
-  payment_status: string | null; payment_method: string | null; booking_date: string | null; booking_time: string | null; guest_count: number | null;
+  payment_status: string | null; payment_method: string | null;
 };
 
-function toRequest(row: RequestRow): AdminRequest {
-  const base: RequestBase = {
+function toOrder(row: RequestRow): AdminOrder {
+  return {
     reference: row.reference,
     restaurantId: row.restaurant_id,
     restaurantName: row.restaurant_name,
@@ -95,13 +93,6 @@ function toRequest(row: RequestRow): AdminRequest {
     customerPhone: row.customer_phone,
     status: row.status,
     createdAt: row.created_at,
-  };
-  if (row.kind === 'booking') {
-    return { ...base, kind: 'booking', date: row.booking_date ?? '', time: (row.booking_time ?? '').slice(0, 5), guests: row.guest_count ?? 0 };
-  }
-  return {
-    ...base,
-    kind: 'order',
     fulfillment: row.fulfillment as AdminOrder['fulfillment'],
     total: row.total ?? 0,
     paymentStatus: row.payment_status as PaymentStatus,
@@ -109,11 +100,11 @@ function toRequest(row: RequestRow): AdminRequest {
   };
 }
 
-/** Newest orders and bookings across all restaurants, optionally matching a reference, name, restaurant, or phone number. */
-export async function findRequests(search = ''): Promise<AdminRequest[]> {
+/** Newest orders across all restaurants, optionally matching a reference, name, restaurant, or phone number. */
+export async function findOrders(search = ''): Promise<AdminOrder[]> {
   const { data, error } = await supabase.rpc('admin_find_requests', { p_search: search.trim(), p_limit: 40 });
   if (error) throw error;
-  return ((data ?? []) as RequestRow[]).map(toRequest);
+  return ((data ?? []) as RequestRow[]).filter((row) => row.kind === 'order').map(toOrder);
 }
 
 export type AdminMember = { userId: string; account: string; addedAt: string; isMe: boolean };

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getMyOrders, getMyReservations } from '@/data/guest-storage';
+import { getMyOrders } from '@/data/guest-storage';
 import { MAX_REVIEW_COMMENT, submitReview } from '@/data/reviews';
 import { t, tn, type MessageKey } from '@/i18n';
 import { errorMessage, showMessage } from '@/utils/feedback';
@@ -13,16 +13,12 @@ import { themedStyles } from '@/theme/theme';
 const ORANGE = '#ED6417';
 const RATING_WORDS: MessageKey[] = ['review.rating1', 'review.rating2', 'review.rating3', 'review.rating4', 'review.rating5'];
 
-type Visit = { reference: string; restaurantName: string; phone: string; kind: 'order' | 'booking'; completed: boolean };
+type Visit = { reference: string; restaurantName: string; phone: string; completed: boolean };
 
-/** Finds the order or booking among the ones this phone or account knows about. */
+/** Finds the order among the ones this phone or account knows about. */
 async function findVisit(reference: string): Promise<Visit | null> {
-  const [orders, reservations] = await Promise.all([getMyOrders(), getMyReservations()]);
-  const order = orders.find((record) => record.id === reference);
-  if (order) return { reference, restaurantName: order.restaurantName, phone: order.guest.phone, kind: 'order', completed: order.status === 'completed' };
-  const booking = reservations.find((record) => record.id === reference);
-  if (booking) return { reference, restaurantName: booking.restaurantName, phone: booking.phone, kind: 'booking', completed: booking.status === 'completed' };
-  return null;
+  const order = (await getMyOrders()).find((record) => record.id === reference);
+  return order ? { reference, restaurantName: order.restaurantName, phone: order.guest.phone, completed: order.status === 'completed' } : null;
 }
 
 export default function ReviewScreen() {
@@ -64,11 +60,11 @@ export default function ReviewScreen() {
     </>}
     {visit && !visit.completed && <>
       <Text style={styles.title}>{visit.restaurantName}</Text>
-      <Text style={styles.helper}>{t(visit.kind === 'order' ? 'review.notCompletedOrder' : 'review.notCompletedBooking')}</Text>
+      <Text style={styles.helper}>{t('review.notCompletedOrder')}</Text>
     </>}
     {visit && visit.completed && <>
       <Text style={styles.title}>{visit.restaurantName}</Text>
-      <Text style={styles.helper}>{t(visit.kind === 'order' ? 'review.howFood' : 'review.howVisit')}</Text>
+      <Text style={styles.helper}>{t('review.howFood')}</Text>
 
       <View accessibilityLabel={t('review.rating')} accessibilityRole="adjustable" style={styles.stars}>
         {[1, 2, 3, 4, 5].map((value) => <Pressable

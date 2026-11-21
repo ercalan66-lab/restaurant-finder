@@ -42,7 +42,7 @@ export async function fetchRestaurantReviews(restaurantId: number, limit = 20): 
 }
 
 /**
- * Rates a completed order or booking. `phone` is the number it was placed with, which lets guests
+ * Rates a completed order. `phone` is the number it was placed with, which lets guests
  * without an account prove it is theirs (signed-in customers are recognised by their account).
  */
 export async function submitReview(reference: string, phone: string, rating: number, comment: string) {

@@ -1,6 +1,6 @@
 # Kwetu restaurant finder
 
-An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed by Supabase.
+An Expo SDK 58 restaurant discovery and food-ordering app backed by Supabase.
 
 ## Local setup
 
@@ -13,7 +13,7 @@ An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed b
    4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
    5. `202611180004_status_values.sql` (new order, booking, and payment values). Run it on its own and let it finish before the next one: Postgres cannot use new enum values in the transaction that adds them.
    6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
-   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash).
+   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused).
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
 4. Make yourself a Kwetu admin (see [Kwetu admins](#kwetu-admins)) so you can approve new restaurants.
@@ -34,17 +34,16 @@ Until a provider is configured, the app shows "Phone sign-in is not enabled" whe
 
 | When | Who is notified | Opens |
 | --- | --- | --- |
-| A new order or booking arrives, or a customer cancels | The restaurant owner's phones | Owner dashboard |
+| A new order arrives, or a customer cancels | The restaurant owner's phones | Owner dashboard |
 | An order is accepted, ready / on its way, completed, or declined | The customer (guest or signed in) | Profile |
-| A booking is confirmed or declined | The customer (guest or signed in) | Profile |
 | A new restaurant needs review | Kwetu admins | Admin screen |
 | A restaurant is approved or needs changes | Its owner | Owner dashboard |
 
 How it works:
 
-- **Customers** are asked for permission when they place an order or booking. The phone's push token is stored with the request, so guests are notified too.
+- **Customers** are asked for permission when they place an order. The phone's push token is stored with the order, so guests are notified too.
 - **Owners** turn alerts on from the card on their dashboard. Each phone is linked to the signed-in account and unlinked on sign-out.
-- **Sending:** a database trigger sends the notification to Expo's push service with `pg_net`, so there is no server to deploy. A failed send never blocks the order or booking.
+- **Sending:** a database trigger sends the notification to Expo's push service with `pg_net`, so there is no server to deploy. A failed send never blocks the order.
 - **Privacy:** push tokens cannot be read back through the API.
 
 One-time setup:
@@ -69,17 +68,15 @@ Kwetu takes no payments in the app. Customers pay the restaurant in cash, and th
 
 That last step marks the order paid in cash and completes it, and the customer is notified and can rate it. Only the restaurant's owner can do it; customers can never mark an order paid. The old simulated mobile money function `pay_order` is switched off by `202611210003_cash_only.sql`.
 
-The app keeps a local copy of orders and reservations, so requests still receive a reference when cloud sync is temporarily unavailable. Customers (including guests) see live status through the `request_statuses` function. The profile refreshes every 15 seconds, and whenever a notification arrives.
+The app keeps a local copy of orders, so orders still receive a reference when cloud sync is temporarily unavailable. Customers (including guests) see live status through the `request_statuses` function. The profile refreshes every 15 seconds, and whenever a notification arrives.
 
-## Bookings
+## Table booking (removed)
 
-- **Dates:** customers pick a date from the next 14 days.
-- **Times:** slots are every 30 minutes within opening hours. The last slot is an hour before closing, and same-day slots need 30 minutes' notice.
-- **Capacity:** owners set **Seats per booking time** (default 40). Full slots are disabled in the app, and the database refuses overbooking (error `FB001`). If someone takes the last seats first, the customer is asked to pick another time.
+Kwetu used to let customers book a table. That was removed on 2026-11-21: the app has no booking screens, and `202611210004_no_table_booking.sql` makes the database refuse new bookings, including from older app versions. Past bookings stay in the `reservations` table as a record. To bring booking back, restore the screens from git history (before commit "Remove table booking") and grant insert on `public.reservations` again.
 
 ## Cancelling
 
-Customers can cancel an order while it is still pending, and a booking while it is pending or confirmed. Cancelling works from the profile, for guests too (they prove it is theirs with the phone number on the request), and the owner is notified. A request that was never sent is simply not sent.
+Customers can cancel an order while it is still pending. Cancelling works from the profile, for guests too (they prove it is theirs with the phone number on the order), and the owner is notified. An order that was never sent is simply not sent.
 
 ## Kwetu admins
 
@@ -101,7 +98,7 @@ When an owner saves changes to a rejected restaurant, it goes back into review a
 
 ## Account deletion and privacy
 
-- **Profile → Delete account** calls `delete_my_account`. It deletes the account and hides any restaurant the person owns. It also removes their name, phone number, and address from past orders and bookings, which the restaurant keeps as a record, and clears the app's data on the phone. The App Store and Google Play require in-app deletion.
+- **Profile → Delete account** calls `delete_my_account`. It deletes the account and hides any restaurant the person owns. It also removes their name, phone number, and address from past orders (and old bookings), which the restaurant keeps as a record, and clears the app's data on the phone. The App Store and Google Play require in-app deletion.
 - The privacy policy lives at `/privacy` and is linked from the sign-in screen and the profile.
 - The store listings need a public URL for it. Host the web build (for example with EAS Hosting), or publish the same text elsewhere.
 
@@ -114,7 +111,7 @@ When an owner saves changes to a rejected restaurant, it goes back into review a
    - upload a cover photo, up to eight gallery photos, and food photos;
    - add, remove, and mark foods in or out of stock;
    - hide or show the restaurant;
-   - handle orders and bookings.
+   - handle orders.
 
 Changes are saved to Supabase and appear for every customer. The restaurant list and pages reload whenever a screen is opened.
 
@@ -130,13 +127,13 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 
 ## Data security
 
-- Restaurant and menu information is public once a restaurant is approved and visible. Hidden or unapproved restaurants are visible only to their owner and Kwetu admins, and cannot receive orders or bookings.
+- Restaurant and menu information is public once a restaurant is approved and visible. Hidden or unapproved restaurants are visible only to their owner and Kwetu admins, and cannot receive orders.
 - Owners can edit only their own restaurant, menu, and photos.
 - Customers can read only requests associated with their account.
 - Restaurant owners can read and update only requests sent to their restaurant.
 - Anonymous customers may submit a request. Afterwards they can read only its status (via `request_statuses`, by reference), and cancel it only with the phone number on the request.
 - The mobile app uses only the publishable key. Never place a Supabase secret or service-role key in `.env`.
-- New orders and bookings always start as waiting requests. The database sets their status and time, and takes every dish's name and price from the menu, so a modified app cannot send a "completed" order (which would allow fake reviews) or change prices. One phone number can have at most 5 orders and 3 bookings waiting at a restaurant.
+- New orders always start as waiting requests. The database sets their status and time, and takes every dish's name and price from the menu, so a modified app cannot send a "completed" order (which would allow fake reviews) or change prices. One phone number can have at most 5 orders waiting at a restaurant.
 - The app opens an owner's map link only if it is a Google Maps link, and their menu PDF only if it is stored in Kwetu's own `restaurant-menus` bucket; the database checks new values the same way.
 - Email links use PKCE: they carry a one-time code that works only on the phone that asked for the email. Links that carry sign-in tokens directly are refused.
 - The admin console has its own sign-in, stored separately from the customer account (see [Kwetu admins](#kwetu-admins)).
@@ -151,9 +148,8 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - [x] Local-first request submission with cloud synchronization
 - [x] Owner restaurant onboarding and database-backed editing
 - [x] Restaurant and menu image uploads
-- [x] Customer order and reservation tracking screen
+- [x] Customer order tracking screen
 - [x] Rating, price, and distance filters
-- [x] Booking date and time slots, and capacity validation
 - [x] Push notifications (needs EAS project + development build, see above)
 - [x] Phone (SMS code) sign-in
 - [x] Cash only: paid at the counter or to the rider, confirmed by the restaurant

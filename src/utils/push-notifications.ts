@@ -26,7 +26,7 @@ let cachedToken: string | null = null;
 async function ensureAndroidChannel() {
   // Android needs a channel before it will show the permission prompt or issue a token.
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', { name: 'Orders and bookings', importance: AndroidImportance.HIGH });
+    await Notifications.setNotificationChannelAsync('default', { name: 'Orders', importance: AndroidImportance.HIGH });
   }
 }
 

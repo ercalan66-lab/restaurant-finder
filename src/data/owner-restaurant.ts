@@ -7,7 +7,7 @@ import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuIt
 /** The restaurant fields an owner can edit. Rating, distance, and tag are managed by Kwetu. */
 export type RestaurantDetails = Pick<Restaurant,
   'name' | 'cuisine' | 'area' | 'address' | 'description' | 'phone' | 'email' | 'opensAt' | 'closesAt'
-  | 'mapUrl' | 'facilities' | 'pricePerPerson' | 'seatsPerSlot'>;
+  | 'mapUrl' | 'facilities' | 'pricePerPerson'>;
 export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'coverUrl' | 'galleryUrls' | 'isActive' | 'menuPdfUrl' | 'latitude' | 'longitude'>>;
 export type MenuItemInput = Omit<MenuItem, 'id' | 'createdAt'>;
 
@@ -21,7 +21,6 @@ export function restaurantDetailsError(details: RestaurantDetails): string | nul
   if (details.mapUrl.trim() && !isGoogleMapsLink(details.mapUrl)) return t('ownerError.mapUrl');
   if (details.email.trim() && !/^\S+@\S+\.\S+$/.test(details.email.trim())) return t('request.emailBody');
   if (!Number.isInteger(details.pricePerPerson) || details.pricePerPerson < 0) return t('ownerError.price');
-  if (!Number.isInteger(details.seatsPerSlot) || details.seatsPerSlot < 1 || details.seatsPerSlot > 500) return t('ownerError.seats');
   return null;
 }
 
@@ -47,7 +46,6 @@ function restaurantColumns(changes: RestaurantChanges) {
   if (changes.mapUrl !== undefined) columns.map_url = changes.mapUrl.trim();
   if (changes.facilities !== undefined) columns.facilities = changes.facilities;
   if (changes.pricePerPerson !== undefined) columns.price_per_person = changes.pricePerPerson;
-  if (changes.seatsPerSlot !== undefined) columns.seats_per_slot = changes.seatsPerSlot;
   if (changes.coverUrl !== undefined) columns.cover_url = changes.coverUrl;
   if (changes.galleryUrls !== undefined) columns.gallery_urls = changes.galleryUrls;
   if (changes.isActive !== undefined) columns.is_active = changes.isActive;

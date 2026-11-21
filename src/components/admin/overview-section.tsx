@@ -43,7 +43,6 @@ export function OverviewSection({ onOpenRequests, onOpenRestaurants }: Props) {
       <View style={styles.grid}>
         <Tile caption="Orders placed" onPress={onOpenRequests} value={String(state.value.ordersToday)} />
         <Tile caption="Orders in progress" onPress={onOpenRequests} value={String(state.value.ordersInProgress)} />
-        <Tile caption="Tables booked" onPress={onOpenRequests} value={String(state.value.tablesToday)} />
       </View>
       <View style={styles.sales}>
         <Text style={styles.salesLabel}>SALES, LAST 7 DAYS</Text>

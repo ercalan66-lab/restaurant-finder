@@ -51,7 +51,7 @@ export default function RegisterScreen() {
         showMessage(t('register.alreadyTitle'), t('register.alreadyBody', { email: normalizeEmail(email) }));
         return goToSignIn(normalizeEmail(email));
       }
-      // Prefill orders and bookings on this device with the same details.
+      // Prefill orders on this device with the same details.
       await saveGuestProfile({ name: name.trim(), phone: toE164(phone) ?? phone.trim(), email: normalizeEmail(email) }).catch(() => undefined);
       // Everyone signs in after registering, even when Supabase already started a session.
       if (!result.needsConfirmation) await endSignUpSession();

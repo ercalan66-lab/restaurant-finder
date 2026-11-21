@@ -20,12 +20,12 @@ import { formatAccountPhone } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
 import { themedStyles } from '@/theme/theme';
 
-const emptyDetails: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0, seatsPerSlot: 40 };
+const emptyDetails: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0 };
 
 const detailsOf = (restaurant: Restaurant): RestaurantDetails => ({
   name: restaurant.name, cuisine: restaurant.cuisine, area: restaurant.area, address: restaurant.address, description: restaurant.description,
   phone: restaurant.phone, email: restaurant.email, opensAt: restaurant.opensAt, closesAt: restaurant.closesAt, mapUrl: restaurant.mapUrl,
-  facilities: restaurant.facilities, pricePerPerson: restaurant.pricePerPerson, seatsPerSlot: restaurant.seatsPerSlot,
+  facilities: restaurant.facilities, pricePerPerson: restaurant.pricePerPerson,
 });
 
 type Owner = { id: string; email: string; phone: string };

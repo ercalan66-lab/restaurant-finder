@@ -19,29 +19,14 @@ type SyncState = {
   pushToken?: string | null;
   /** True for requests placed on this phone, as opposed to ones an owner loaded from the server. */
   placedHere?: boolean;
-  /** Set when the database refused the request for good, for example because the time slot filled up. */
+  /** Set when the database refused the order for good, for example because a dish sold out. */
   rejectedReason?: string;
 };
 
-export type ReservationStatus = 'pending' | 'confirmed' | 'declined' | 'completed' | 'cancelled';
 export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'declined' | 'cancelled';
 /** Kwetu is cash only. The other values exist in the database from the old simulated mobile money. */
 export type PaymentMethod = 'cash' | 'mpesa' | 'tigo_pesa' | 'airtel_money';
 export type PaymentStatus = 'unpaid' | 'paid';
-
-export type ReservationRecord = GuestProfile & SyncState & {
-  id: string;
-  restaurantId: number;
-  restaurantName: string;
-  /** YYYY-MM-DD */
-  date: string;
-  /** HH:MM (older records may hold "7:00 PM") */
-  time: string;
-  guests: number;
-  createdAt: string;
-  status?: ReservationStatus;
-  updatedAt?: string;
-};
 
 export type OrderRecord = SyncState & {
   id: string;
@@ -73,10 +58,10 @@ export function paymentSummary(order: Pick<OrderRecord, 'fulfillment' | 'payment
 }
 
 export const canCancelOrder = (order: OrderRecord) => (order.status ?? 'pending') === 'pending' && !order.rejectedReason;
-export const canCancelReservation = (reservation: ReservationRecord) => ['pending', 'confirmed'].includes(reservation.status ?? 'pending') && !reservation.rejectedReason;
 
 const PROFILE_KEY = 'fork-guest-profile';
-const RESERVATIONS_KEY = 'fork-reservations';
+/** Table bookings saved by older versions (booking was removed). Only ever cleared. */
+const OLD_BOOKINGS_KEY = 'fork-reservations';
 const ORDERS_KEY = 'fork-orders';
 export const SAVED_RESTAURANTS_KEY = 'fork-saved-restaurants';
 export const SAVED_DISHES_KEY = 'kwetu-saved-dishes';
@@ -130,21 +115,8 @@ export async function saveGuestProfile(profile: GuestProfile): Promise<GuestProf
 
 /** Removes everything this app stored on the phone (used after deleting an account). */
 export async function clearLocalData() {
-  await Promise.all([PROFILE_KEY, ORDERS_KEY, RESERVATIONS_KEY, SAVED_RESTAURANTS_KEY, SAVED_DISHES_KEY].map((key) => Storage.removeItemAsync(key)));
+  await Promise.all([PROFILE_KEY, ORDERS_KEY, OLD_BOOKINGS_KEY, SAVED_RESTAURANTS_KEY, SAVED_DISHES_KEY].map((key) => Storage.removeItemAsync(key)));
 }
-
-const reservationRow = (reservation: ReservationRecord) => ({
-  reference: reservation.id,
-  restaurant_id: reservation.restaurantId,
-  customer_id: reservation.customerId ?? null,
-  guest_name: reservation.name,
-  guest_phone: reservation.phone,
-  guest_email: reservation.email,
-  reservation_date: reservation.date,
-  reservation_time: reservation.time,
-  guest_count: reservation.guests,
-  ...(reservation.pushToken ? { push_token: reservation.pushToken } : {}),
-});
 
 const orderRow = (order: OrderRecord) => ({
   reference: order.id,
@@ -163,11 +135,11 @@ const orderRow = (order: OrderRecord) => ({
 });
 
 /**
- * Customer-facing reference such as "KO-7K2M9QX4" (KO = Kwetu order, KB = Kwetu booking; requests made
- * before the rename keep their FO-/FR- codes). Eight random base-36 characters keep collisions between
- * customers negligible, which matters because a duplicate reference is treated as "already sent".
+ * Customer-facing reference such as "KO-7K2M9QX4" (KO = Kwetu order; orders made before the rename keep
+ * their FO- codes). Eight random base-36 characters keep collisions between customers negligible, which
+ * matters because a duplicate reference is treated as "already sent".
  */
-export function newReference(prefix: 'KO' | 'KB') {
+export function newReference(prefix: 'KO') {
   const random = `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
   return `${prefix}-${random.slice(0, 8).toUpperCase()}`;
 }
@@ -181,29 +153,27 @@ type SendResult = 'sent' | 'retry' | { rejected: string };
 
 /** Database errors that will never succeed on a retry, with the message to show (null = use the database's own). */
 const PERMANENT_ERRORS: Record<string, MessageKey | null> = {
-  FB001: null, // time slot full
-  FB002: null, // date already passed
   FB010: 'request.checkDetails', // details too long or missing (202611210002_request_safety.sql)
   FB011: 'request.menuChanged', // a dish was removed or sold out
-  FB012: 'request.tooMany', // too many requests waiting from this phone number
+  FB012: 'request.tooMany', // too many orders waiting from this phone number
   '42501': 'request.notTaking',
   '23503': 'request.noRestaurant',
   '23514': null,
   '22P02': null,
 };
 
-/** Sends one request. A duplicate-reference error means an earlier attempt already arrived, which counts as sent. */
-async function sendToSupabase(table: 'orders' | 'reservations', row: Record<string, unknown>): Promise<SendResult> {
+/** Sends one order. A duplicate-reference error means an earlier attempt already arrived, which counts as sent. */
+async function sendOrder(row: Record<string, unknown>): Promise<SendResult> {
   try {
-    const { error } = await supabase.from(table).insert(row);
+    const { error } = await supabase.from('orders').insert(row);
     if (!error || error.code === '23505') return 'sent';
     if (error.code && error.code in PERMANENT_ERRORS) {
       const known = PERMANENT_ERRORS[error.code];
       return { rejected: known ? t(known) : error.message };
     }
-    console.warn(`Could not send ${table} ${String(row.reference)}:`, error.message);
+    console.warn(`Could not send order ${String(row.reference)}:`, error.message);
   } catch (error) {
-    console.warn(`Could not send ${table} ${String(row.reference)}:`, error instanceof Error ? error.message : error);
+    console.warn(`Could not send order ${String(row.reference)}:`, error instanceof Error ? error.message : error);
   }
   return 'retry';
 }
@@ -211,44 +181,36 @@ async function sendToSupabase(table: 'orders' | 'reservations', row: Record<stri
 /** sent: the restaurant has it. queued: saved here, sent automatically later. rejected: refused for good (not saved). */
 export type SaveResult = { outcome: 'sent' } | { outcome: 'queued' } | { outcome: 'rejected'; reason: string };
 
-async function saveAndSend<T extends SyncState & { id: string }>(key: string, table: 'orders' | 'reservations', request: T, toRow: (record: T) => Record<string, unknown>): Promise<SaveResult> {
-  const record: T = { ...request, customerId: await currentUserId(), synced: false, placedHere: true };
-  await writeList(key, [record, ...await readList<T>(key)]);
-  const result = await sendToSupabase(table, toRow(record));
+export async function saveOrder(order: OrderRecord): Promise<SaveResult> {
+  const record: OrderRecord = { ...order, customerId: await currentUserId(), synced: false, placedHere: true };
+  await writeList(ORDERS_KEY, [record, ...await readList<OrderRecord>(ORDERS_KEY)]);
+  const result = await sendOrder(orderRow(record));
   if (result === 'sent') {
-    await patchLocal<T>(key, record.id, { synced: true } as Partial<T>);
+    await patchLocal<OrderRecord>(ORDERS_KEY, record.id, { synced: true });
     return { outcome: 'sent' };
   }
   if (result === 'retry') return { outcome: 'queued' };
   // Refused while the customer is still on the screen: drop it so they can fix it and try again.
-  await removeLocal(key, record.id);
+  await removeLocal(ORDERS_KEY, record.id);
   return { outcome: 'rejected', reason: result.rejected };
 }
-
-export const saveReservation = (reservation: ReservationRecord) => saveAndSend(RESERVATIONS_KEY, 'reservations', reservation, reservationRow);
-export const saveOrder = (order: OrderRecord) => saveAndSend(ORDERS_KEY, 'orders', order, orderRow);
 
 let syncInFlight: Promise<void> | null = null;
 
 /**
- * Resends orders and bookings that have not reached Supabase yet. Requests placed by another
- * account wait until that account signs in again. Safe to call often; concurrent calls share one run.
+ * Resends orders that have not reached Supabase yet. Orders placed by another account wait until
+ * that account signs in again. Safe to call often; concurrent calls share one run.
  */
 export function syncPendingRequests() {
   syncInFlight ??= (async () => {
     try {
       const userId = await currentUserId();
       const canSend = (record: SyncState) => record.synced !== true && (!record.customerId || record.customerId === userId);
-      const resend = async <T extends SyncState & { id: string }>(key: string, table: 'orders' | 'reservations', toRow: (record: T) => Record<string, unknown>) => {
-        for (const record of (await readList<T>(key)).filter(canSend)) {
-          const result = await sendToSupabase(table, toRow(record));
-          if (result === 'sent') await patchLocal<T>(key, record.id, { synced: true } as Partial<T>);
-          // 'declined' is a valid status for both orders and bookings, so this patch fits either record type.
-          else if (result !== 'retry') await patchLocal<T>(key, record.id, { synced: true, status: 'declined', rejectedReason: result.rejected } as unknown as Partial<T>);
-        }
-      };
-      await resend<OrderRecord>(ORDERS_KEY, 'orders', orderRow);
-      await resend<ReservationRecord>(RESERVATIONS_KEY, 'reservations', reservationRow);
+      for (const order of (await readList<OrderRecord>(ORDERS_KEY)).filter(canSend)) {
+        const result = await sendOrder(orderRow(order));
+        if (result === 'sent') await patchLocal<OrderRecord>(ORDERS_KEY, order.id, { synced: true });
+        else if (result !== 'retry') await patchLocal<OrderRecord>(ORDERS_KEY, order.id, { synced: true, status: 'declined', rejectedReason: result.rejected });
+      }
     } finally {
       syncInFlight = null;
     }
@@ -259,12 +221,12 @@ export function syncPendingRequests() {
 type StatusRow = { reference: string; status: string; payment_status: string | null; payment_method: string | null; payment_reference: string | null };
 
 /**
- * Fetches the latest status of this phone's open requests. Works for guests too, who cannot read
+ * Fetches the latest status of this phone's open orders. Works for guests too, who cannot read
  * orders directly. Resolves to true when anything changed.
  */
 export async function refreshRequestStatuses() {
-  const open = (record: SyncState & { id: string; status?: string }) => isPlacedHere(record) && record.synced !== false && !FINAL_STATUSES.has(record.status ?? 'pending');
-  const references = [...await readList<OrderRecord>(ORDERS_KEY), ...await readList<ReservationRecord>(RESERVATIONS_KEY)].filter(open).map((record) => record.id);
+  const open = (record: OrderRecord) => isPlacedHere(record) && record.synced !== false && !FINAL_STATUSES.has(record.status ?? 'pending');
+  const references = (await readList<OrderRecord>(ORDERS_KEY)).filter(open).map((record) => record.id);
   if (!references.length) return false;
   const { data, error } = await supabase.rpc('request_statuses', { p_references: references });
   if (error || !Array.isArray(data)) return false;
@@ -285,41 +247,7 @@ export async function refreshRequestStatuses() {
     return next;
   });
   await writeList(ORDERS_KEY, orders);
-
-  const reservations = (await readList<ReservationRecord>(RESERVATIONS_KEY)).map((reservation) => {
-    const row = rows.get(reservation.id);
-    if (!row || row.status === reservation.status) return reservation;
-    changed = true;
-    return { ...reservation, status: row.status as ReservationStatus };
-  });
-  await writeList(RESERVATIONS_KEY, reservations);
   return changed;
-}
-
-export async function getReservations(): Promise<ReservationRecord[]> {
-  const local = await readList<ReservationRecord>(RESERVATIONS_KEY);
-  const { data, error } = await supabase
-    .from('reservations')
-    .select('reference, restaurant_id, customer_id, guest_name, guest_phone, guest_email, reservation_date, reservation_time, guest_count, status, created_at, updated_at, restaurants(name)')
-    .order('created_at', { ascending: false });
-  if (error || !data) return local;
-  const remote = data.map((row) => ({
-    id: row.reference,
-    restaurantId: row.restaurant_id,
-    restaurantName: relationName(row.restaurants),
-    customerId: row.customer_id,
-    name: row.guest_name,
-    phone: row.guest_phone,
-    email: row.guest_email,
-    date: row.reservation_date,
-    time: String(row.reservation_time).slice(0, 5),
-    guests: row.guest_count,
-    status: row.status as ReservationStatus,
-    synced: true,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
-  return mergeById(local, remote);
 }
 
 export async function getOrders(): Promise<OrderRecord[]> {
@@ -357,7 +285,6 @@ async function mine<T extends SyncState>(records: T[]) {
   return records.filter((record) => isPlacedHere(record) || (userId !== null && record.customerId === userId));
 }
 export const getMyOrders = async () => mine(await getOrders());
-export const getMyReservations = async () => mine(await getReservations());
 
 /** Customer cancels a pending order. Not-yet-sent orders are simply never sent. */
 export async function cancelOrder(order: OrderRecord) {
@@ -368,26 +295,11 @@ export async function cancelOrder(order: OrderRecord) {
   await patchLocal<OrderRecord>(ORDERS_KEY, order.id, { status: 'cancelled', synced: true });
 }
 
-/** Customer cancels a pending or confirmed booking. */
-export async function cancelReservation(reservation: ReservationRecord) {
-  if (reservation.synced !== false) {
-    const { error } = await supabase.rpc('cancel_request', { p_reference: reservation.id, p_phone: reservation.phone });
-    if (error) throw error;
-  }
-  await patchLocal<ReservationRecord>(RESERVATIONS_KEY, reservation.id, { status: 'cancelled', synced: true });
-}
-
 /** Owner confirms the customer has the food and paid in cash (at the counter or to the rider), which completes the order. */
 export async function recordCashPayment(id: string) {
   const { error } = await supabase.from('orders').update({ payment_method: 'cash', payment_status: 'paid', status: 'completed' }).eq('reference', id);
   if (error) throw error;
   await patchLocal<OrderRecord>(ORDERS_KEY, id, { paymentMethod: 'cash', paymentStatus: 'paid', status: 'completed', paidAt: new Date().toISOString() });
-}
-
-export async function updateReservationStatus(id: string, status: ReservationStatus) {
-  const { error } = await supabase.from('reservations').update({ status }).eq('reference', id);
-  if (error) throw error;
-  await patchLocal<ReservationRecord>(RESERVATIONS_KEY, id, { status });
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {

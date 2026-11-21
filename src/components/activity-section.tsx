@@ -1,26 +1,16 @@
 import { router, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
-import { formatBooking } from '@/data/booking';
-import {
-  canCancelOrder,
-  canCancelReservation,
-  cancelOrder,
-  cancelReservation,
-  fulfillmentLabel,
-  paymentSummary,
-  type OrderRecord,
-  type ReservationRecord,
-} from '@/data/guest-storage';
+import { canCancelOrder, cancelOrder, fulfillmentLabel, paymentSummary, type OrderRecord } from '@/data/guest-storage';
 import { formatTsh } from '@/data/restaurants';
-import { t, tn, type MessageKey } from '@/i18n';
+import { t, type MessageKey } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { themedStyles } from '@/theme/theme';
 
 const ORANGE = '#ED6417';
 const SHOWN = 8;
 
-type Tone = 'ok' | 'waiting' | 'action' | 'bad';
+type Tone = 'ok' | 'waiting' | 'bad';
 type Status = { label: MessageKey; tone: Tone };
 
 /** The order's status label (a message key) and colour. */
@@ -39,24 +29,12 @@ function orderStatus(order: OrderRecord): Status {
   }
 }
 
-function reservationStatus(reservation: ReservationRecord): Status {
-  if (reservation.rejectedReason) return { label: 'status.notAccepted', tone: 'bad' };
-  switch (reservation.status ?? 'pending') {
-    case 'pending': return { label: 'status.requested', tone: 'waiting' };
-    case 'confirmed': return { label: 'status.confirmed', tone: 'ok' };
-    case 'completed': return { label: 'status.completed', tone: 'ok' };
-    case 'declined': return { label: 'status.declined', tone: 'bad' };
-    case 'cancelled': return { label: 'status.cancelled', tone: 'bad' };
-  }
-}
-
-/** The customer's orders and bookings, with Cancel and Rate where allowed. */
-export function ActivitySection({ loading, onChanged, orders, reservations, reviewed, signedIn }: {
+/** The customer's orders, with Cancel and Rate where allowed. */
+export function ActivitySection({ loading, onChanged, orders, reviewed, signedIn }: {
   loading: boolean;
   onChanged: () => void;
   orders: OrderRecord[];
-  reservations: ReservationRecord[];
-  /** References of completed requests that already have a review. */
+  /** References of completed orders that already have a review. */
   reviewed: Set<string>;
   signedIn: boolean;
 }) {
@@ -75,7 +53,6 @@ export function ActivitySection({ loading, onChanged, orders, reservations, revi
   };
 
   const confirmCancelOrder = (order: OrderRecord) => confirmAction(t('activity.cancelOrderTitle'), t('activity.cancelOrderBody', { restaurant: order.restaurantName, reference: order.id }), t('activity.cancelOrder'), () => void run(() => cancelOrder(order)));
-  const confirmCancelReservation = (reservation: ReservationRecord) => confirmAction(t('activity.cancelBookingTitle'), t('activity.cancelBookingBody', { restaurant: reservation.restaurantName, when: formatBooking(reservation.date, reservation.time) }), t('activity.cancelBooking'), () => void run(() => cancelReservation(reservation)));
   const notSent = (synced: boolean | undefined) => (synced === false ? t('activity.notSent') : undefined);
 
   return <View style={styles.section}>
@@ -91,14 +68,6 @@ export function ActivitySection({ loading, onChanged, orders, reservations, revi
           {rateButton(order.id, order.status === 'completed' && !order.rejectedReason)}
         </Card>;
       }) : <Text style={styles.empty}>{t('activity.noOrders')}</Text>}
-      <Text style={styles.label}>{t('activity.reservations')}</Text>
-      {reservations.length ? reservations.slice(0, SHOWN).map((reservation) => <Card key={reservation.id} name={reservation.restaurantName}
-        note={reservation.rejectedReason ?? notSent(reservation.synced)}
-        reference={reservation.id} status={reservationStatus(reservation)}
-        meta={`${formatBooking(reservation.date, reservation.time)} · ${tn('count.guests', reservation.guests)}`}>
-        {canCancelReservation(reservation) && <Action label={t('activity.cancelBooking')} onPress={() => confirmCancelReservation(reservation)} secondary />}
-        {rateButton(reservation.id, reservation.status === 'completed' && !reservation.rejectedReason)}
-      </Card>) : <Text style={styles.empty}>{t('activity.noReservations')}</Text>}
     </>}
   </View>;
 }
@@ -144,6 +113,5 @@ const styles = themedStyles(({ bg, fg, line }) => ({
 const tones = themedStyles(({ bg, fg }) => ({
   ok: { color: fg('#28734D'), backgroundColor: bg('#E8F5ED') },
   waiting: { color: fg('#6B5A30'), backgroundColor: bg('#FFF7DE') },
-  action: { color: fg('#FFF'), backgroundColor: bg(ORANGE) },
   bad: { color: fg('#8E2F1A'), backgroundColor: bg('#F5D8D1') },
 }));
