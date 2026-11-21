@@ -35,6 +35,10 @@ const MESSAGES: Record<string, MessageKey> = {
   over_email_send_rate_limit: 'authError.emailRateLimit',
   over_request_rate_limit: 'authError.requestRateLimit',
   otp_expired: 'authError.linkExpired',
+  mfa_verification_failed: 'twoStep.wrongCode',
+  mfa_verification_rejected: 'twoStep.wrongCode',
+  mfa_challenge_expired: 'twoStep.expired',
+  insufficient_aal: 'twoStep.codeFirst',
 };
 
 /** A message a customer can act on, instead of Supabase's raw error text. */

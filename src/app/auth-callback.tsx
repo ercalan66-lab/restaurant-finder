@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CodeStep } from '@/components/auth/two-step';
 import { passwordProblem, passwordRule } from '@/data/auth';
+import { twoStepState } from '@/data/two-step';
 import { t } from '@/i18n';
 import { parseAuthLink } from '@/utils/auth-link';
 import { errorMessage, showMessage } from '@/utils/feedback';
@@ -14,7 +16,9 @@ import { themedStyles } from '@/theme/theme';
 
 const ACCENT = '#B93F1D';
 
-type Result = { kind: 'signed-in' } | { kind: 'new-password' } | { kind: 'error'; message: string };
+type Done = { kind: 'signed-in' } | { kind: 'new-password' };
+/** `code`: the account uses two-step sign-in, so the authenticator code comes before `then`. */
+type Result = Done | { kind: 'code'; then: Done } | { kind: 'error'; message: string };
 
 /**
  * Turns the link from a Kwetu email into a signed-in session. Only one-time codes (PKCE) are accepted:
@@ -31,10 +35,17 @@ async function completeEmailLink(url: string): Promise<Result> {
     // Supabase remembers on this phone whether the email was a password reset, and returns it as
     // redirectType (supabase-js sets it at runtime but leaves it out of the declared return type).
     const { redirectType } = data as typeof data & { redirectType?: string | null };
-    return redirectType === 'recovery' || link.type === 'recovery' ? { kind: 'new-password' } : { kind: 'signed-in' };
+    const done: Done = redirectType === 'recovery' || link.type === 'recovery' ? { kind: 'new-password' } : { kind: 'signed-in' };
+    // An email link proves the email, not the authenticator: accounts with two-step sign-in still need the code.
+    return await twoStepState(supabase) === 'needs-code' ? { kind: 'code', then: done } : done;
   } catch (error) {
     return { kind: 'error', message: errorMessage(error) };
   }
+}
+
+function welcomeHome() {
+  goHome();
+  showMessage(t('callback.welcome'), t('callback.welcomeBody'));
 }
 
 /** Where links in Kwetu's emails open the app: confirms a new account, or starts a password reset. */
@@ -46,16 +57,19 @@ export default function AuthCallbackScreen() {
   useEffect(() => {
     if (!url || handled.current === url) return;
     handled.current = url;
-    void completeEmailLink(url).then((outcome) => {
-      if (outcome.kind !== 'signed-in') return setResult(outcome);
-      goHome();
-      showMessage(t('callback.welcome'), t('callback.welcomeBody'));
-    });
+    void completeEmailLink(url).then((outcome) => (outcome.kind === 'signed-in' ? welcomeHome() : setResult(outcome)));
   }, [url]);
+
+  const cancelSignIn = async () => {
+    await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    router.replace('/sign-in' as Href);
+  };
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
     <Text style={styles.eyebrow}>{t('auth.eyebrow')}</Text>
-    {result?.kind === 'new-password'
+    {result?.kind === 'code'
+      ? <CodeStep cancelLabel={t('twoStep.cancelSignIn')} client={supabase} onCancel={() => void cancelSignIn()} onDone={() => (result.then.kind === 'signed-in' ? welcomeHome() : setResult(result.then))} />
+      : result?.kind === 'new-password'
       ? <NewPasswordForm />
       : result?.kind === 'error' || !url
         ? <>

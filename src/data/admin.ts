@@ -3,23 +3,36 @@ import { adminSupabase as supabase } from '../../lib/supabase';
 import { normalizeEmail } from './auth';
 import type { PaymentMethod, PaymentStatus } from './guest-storage';
 import { RESTAURANT_COLUMNS, toRestaurant, type RestaurantSummary } from './restaurants';
+import { twoStepState } from './two-step';
 
-/** True when the account signed in to the admin console is listed in public.admins. */
-export async function checkIsAdmin() {
+/**
+ * What the admin console may show. Admins must use two-step sign-in, and the database grants admin
+ * powers only after the code step (202611210005_two_step_sign_in.sql).
+ * denied: not signed in, or not an admin. needs-setup: an admin without an authenticator yet.
+ * needs-code: an admin who typed the password but not the code yet. granted: full access.
+ */
+export type AdminAccess = 'denied' | 'needs-setup' | 'needs-code' | 'granted';
+
+export async function adminAccess(): Promise<AdminAccess> {
   const { data: session } = await supabase.auth.getSession();
-  if (!session.session) return false;
-  const { data, error } = await supabase.rpc('is_admin');
-  return !error && data === true;
+  if (!session.session) return 'denied';
+  const { data: listed, error } = await supabase.rpc('is_admin_account');
+  if (error || listed !== true) return 'denied';
+  const state = await twoStepState(supabase);
+  if (state === 'on') return 'granted';
+  return state === 'needs-code' ? 'needs-code' : 'needs-setup';
 }
 
 /** Signs in to the admin console only. An account that is not an admin is signed straight back out. */
-export async function adminSignIn(email: string, password: string) {
+export async function adminSignIn(email: string, password: string): Promise<AdminAccess> {
   const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
   if (error) throw error;
-  if (!(await checkIsAdmin())) {
+  const access = await adminAccess();
+  if (access === 'denied') {
     await adminSignOut();
     throw new Error('This account is not a Kwetu admin. Ask another admin to add it from Admins.');
   }
+  return access;
 }
 
 /** Ends the admin session on this phone only ('local'), so the same account stays signed in elsewhere. */

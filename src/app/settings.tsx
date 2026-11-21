@@ -26,7 +26,7 @@ const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string; hint: Messag
   { value: 'sw', label: 'Kiswahili', hint: 'settings.lang.swHint' },
 ];
 
-const FAQS = ['order', 'pay', 'cancel', 'owner', 'location'] as const;
+const FAQS = ['order', 'pay', 'cancel', 'secure', 'owner', 'location'] as const;
 
 export default function SettingsScreen() {
   const { settings, update } = useSettings();

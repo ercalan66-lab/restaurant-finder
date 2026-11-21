@@ -13,6 +13,7 @@ import { RestaurantDetailsForm } from '@/components/owner/restaurant-details-for
 import { OwnerRequests } from '@/components/owner-requests';
 import { createRestaurant, fetchMyRestaurant, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
+import { useTwoStepGuard } from '@/hooks/use-two-step-guard';
 import { t } from '@/i18n';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
@@ -52,6 +53,7 @@ async function loadDashboard(): Promise<LoadResult> {
 }
 
 export default function OwnerDashboardScreen() {
+  useTwoStepGuard();
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
   const [loadError, setLoadError] = useState('');
   const [owner, setOwner] = useState<Owner | null>(null);

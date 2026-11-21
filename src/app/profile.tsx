@@ -6,9 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { User } from '@supabase/supabase-js';
 
 import { ActivitySection } from '@/components/activity-section';
+import { TwoStepCard } from '@/components/auth/two-step-card';
 import { deleteMyAccount } from '@/data/account';
 import { getGuestProfile, getMyOrders, refreshRequestStatuses, saveGuestProfile, type GuestProfile, type OrderRecord } from '@/data/guest-storage';
 import { fetchReviewedReferences } from '@/data/reviews';
+import { useTwoStepGuard } from '@/hooks/use-two-step-guard';
 import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace, goHome } from '@/utils/navigation';
@@ -36,6 +38,7 @@ async function loadActivity() {
 }
 
 export default function ProfileScreen() {
+  useTwoStepGuard();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -170,6 +173,7 @@ export default function ProfileScreen() {
       </View>
       {accountNotice ? <Text accessibilityRole="alert" style={styles.accountNotice}>{accountNotice}</Text> : null}
     </View>
+    {account && <TwoStepCard />}
 
     <Text style={styles.label}>{t('profile.name')}</Text><TextInput autoComplete="name" editable={!locked && !saving} onChangeText={edit(setName)} placeholder={t('profile.namePlaceholder')} style={[styles.input, locked && styles.inputLocked]} value={name} />
     <Text style={styles.label}>{t('profile.phone')}</Text><TextInput autoComplete="tel" editable={!locked && !saving} keyboardType="phone-pad" onChangeText={edit(setPhone)} placeholder="+255..." style={[styles.input, locked && styles.inputLocked]} value={phone} />

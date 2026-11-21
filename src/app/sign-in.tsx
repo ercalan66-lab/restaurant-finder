@@ -4,8 +4,10 @@ import { useState } from 'react';
 
 import { AuthShell, Field, Notice, PasswordField, PrimaryButton, SwitchPrompt, TextLink } from '@/components/auth/auth-ui';
 import { authErrorMessage, isEmail, normalizeEmail, resendConfirmationEmail, sendPasswordReset, signInWithEmail } from '@/data/auth';
+import { twoStepState } from '@/data/two-step';
 import { t } from '@/i18n';
 import { goHome } from '@/utils/navigation';
+import { supabase } from '../../lib/supabase';
 
 type FieldErrors = { email?: string; password?: string };
 type Message = { tone: 'success' | 'error'; title: string; body: string };
@@ -49,7 +51,9 @@ export default function SignInScreen() {
     if (problems.email || problems.password) return;
     return run(t('signIn.failed'), async () => {
       await signInWithEmail(email, password);
-      goHome();
+      // Accounts with two-step sign-in still need the code from their authenticator app.
+      if (await twoStepState(supabase) === 'needs-code') router.replace('/two-step' as Href);
+      else goHome();
     });
   };
 

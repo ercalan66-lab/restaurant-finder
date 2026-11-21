@@ -10,13 +10,15 @@ import { RestaurantsSection } from '@/components/admin/restaurants-section';
 import { ReviewsSection } from '@/components/admin/reviews-section';
 import { TeamSection } from '@/components/admin/team-section';
 import { Field, Notice, PasswordField, PrimaryButton } from '@/components/auth/auth-ui';
-import { adminSignIn, adminSignOut, checkIsAdmin } from '@/data/admin';
+import { AuthenticatorSetupForm, CodeStep } from '@/components/auth/two-step';
+import { adminAccess, adminSignIn, adminSignOut, type AdminAccess } from '@/data/admin';
 import { authErrorMessage, isEmail } from '@/data/auth';
 import type { ApprovalStatus } from '@/data/restaurants';
 import { goBackOrReplace } from '@/utils/navigation';
 import { themedStyles } from '@/theme/theme';
+import { adminSupabase } from '../../lib/supabase';
 
-type Access = 'checking' | 'denied' | 'granted';
+type Access = 'checking' | AdminAccess;
 
 const SECTIONS: { value: AdminSection; label: string }[] = [
   { value: 'overview', label: 'Overview' },
@@ -38,12 +40,12 @@ export default function AdminScreen() {
   // Checked on every visit, so being removed as admin locks the console.
   useFocusEffect(useCallback(() => {
     let active = true;
-    void checkIsAdmin().then((isAdmin) => { if (active) setAccess(isAdmin ? 'granted' : 'denied'); });
+    void adminAccess().then((next) => { if (active) setAccess(next); });
     return () => { active = false; };
   }, []));
 
   const openRestaurants = (tab: ApprovalStatus) => { setReviewTab(tab); setSection('restaurants'); };
-  const recheck = () => void checkIsAdmin().then((isAdmin) => setAccess(isAdmin ? 'granted' : 'denied'));
+  const recheck = () => void adminAccess().then(setAccess);
   const signOut = async () => {
     await adminSignOut().catch(() => undefined);
     setSection('overview');
@@ -51,7 +53,18 @@ export default function AdminScreen() {
   };
 
   if (access === 'checking') return <Shell><Text style={styles.helper}>Loading…</Text></Shell>;
-  if (access === 'denied') return <Shell><AdminSignIn onSignedIn={() => setAccess('granted')} /></Shell>;
+  if (access === 'denied') return <Shell><AdminSignIn onSignedIn={setAccess} /></Shell>;
+  if (access === 'needs-code') return <Shell>
+    <Text style={styles.eyebrow}>KWETU ADMIN</Text>
+    <Text style={styles.title}>Admin sign-in</Text>
+    <CodeStep cancelLabel="Cancel and sign out" client={adminSupabase} onCancel={() => void signOut()} onDone={recheck} />
+  </Shell>;
+  if (access === 'needs-setup') return <Shell>
+    <Text style={styles.eyebrow}>KWETU ADMIN</Text>
+    <Text style={styles.title}>Set up two-step sign-in</Text>
+    <Text style={styles.helper}>Admins must use a code from an authenticator app as well as their password. Set it up once; after that, the admin sign-in asks for the code each time.</Text>
+    <AuthenticatorSetupForm client={adminSupabase} onCancel={() => void signOut()} onDone={recheck} />
+  </Shell>;
 
   return <Shell>
     <View style={styles.headerRow}>
@@ -68,7 +81,7 @@ export default function AdminScreen() {
   </Shell>;
 }
 
-function AdminSignIn({ onSignedIn }: { onSignedIn: () => void }) {
+function AdminSignIn({ onSignedIn }: { onSignedIn: (access: AdminAccess) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -82,9 +95,9 @@ function AdminSignIn({ onSignedIn }: { onSignedIn: () => void }) {
     if (next.email || next.password) return;
     setLoading(true);
     try {
-      await adminSignIn(email, password);
+      const access = await adminSignIn(email, password);
       setPassword('');
-      onSignedIn();
+      onSignedIn(access);
     } catch (error) {
       setProblem(authErrorMessage(error));
     } finally {
