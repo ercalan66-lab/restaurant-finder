@@ -5,6 +5,7 @@ import { t } from '@/i18n';
 import { errorMessage } from '@/utils/feedback';
 import { supabase } from '../../lib/supabase';
 import { demoRestaurants } from './demo-restaurants';
+import { toMenuCategory, type MenuCategory } from './menu-categories';
 
 export const CUISINES = ['African', 'Italian', 'Asian', 'Indian', 'Cafe', 'Other'] as const;
 
@@ -12,6 +13,8 @@ export type MenuItem = {
   id: string;
   name: string;
   description: string;
+  /** Which part of the menu the dish is shown in (Pizza, Baga, Vinywaji, …). */
+  category: MenuCategory;
   price: number;
   photoUrl: string | null;
   availableFrom: string;
@@ -62,7 +65,7 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type Restaurant = RestaurantSummary & { menu: MenuItem[] };
 
 export const RESTAURANT_COLUMNS = 'id, owner_id, name, cuisine, area, address, description, phone, email, opens_at, closes_at, map_url, facilities, cover_url, gallery_urls, rating, review_count, distance_km, price_per_person, tag, is_active, approval_status, rejection_reason, seats_per_slot, created_at, menu_pdf_url, latitude, longitude';
-export const MENU_COLUMNS = 'id, name, ingredients, price, photo_url, available_from, available_until, in_stock, created_at';
+export const MENU_COLUMNS = 'id, name, ingredients, category, price, photo_url, available_from, available_until, in_stock, created_at';
 
 type RestaurantRow = {
   id: number; owner_id: string | null; name: string; cuisine: string; area: string; address: string; description: string;
@@ -73,7 +76,7 @@ type RestaurantRow = {
   latitude: number | null; longitude: number | null; menu_items?: MenuRow[];
 };
 export type MenuRow = {
-  id: string; name: string; ingredients: string; price: number; photo_url: string | null;
+  id: string; name: string; ingredients: string; category: string | null; price: number; photo_url: string | null;
   available_from: string; available_until: string; in_stock: boolean; created_at: string;
 };
 
@@ -96,6 +99,7 @@ export function toMenuItem(row: MenuRow): MenuItem {
     id: row.id,
     name: row.name,
     description: row.ingredients,
+    category: toMenuCategory(row.category),
     price: row.price,
     photoUrl: row.photo_url,
     availableFrom: hhmm(row.available_from),

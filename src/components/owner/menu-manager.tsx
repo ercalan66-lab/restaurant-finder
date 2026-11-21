@@ -3,13 +3,14 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 import { useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 
+import { categoryHint, categoryIcon, categoryLabel, MENU_CATEGORIES, type MenuCategory } from '@/data/menu-categories';
 import { addMenuItem, deleteMenuItem, menuItemError, updateMenuItem, type MenuItemInput } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
 import { formatTsh, isMenuItemAvailable, type MenuItem, type Restaurant } from '@/data/restaurants';
 import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 
-import { Field, formStyles, OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
+import { ChoiceChips, Field, formStyles, OWNER_COLORS, PrimaryButton, Section, TextButton } from './form-controls';
 import { themedStyles } from '@/theme/theme';
 
 export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu: MenuItem[]) => void; restaurant: Restaurant }) {
@@ -75,6 +76,7 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
               </Pressable>
               <View style={styles.copy}>
                 <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.categoryTag}>{categoryIcon(item.category)} {categoryLabel(item.category)}</Text>
                 <Text style={styles.ingredients}>{item.description}</Text>
                 <Text style={styles.price}>{formatTsh(item.price)}</Text>
                 <Text style={styles.serving}>{t('restaurant.served', { from: item.availableFrom, until: item.availableUntil })}</Text>
@@ -98,18 +100,28 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
   </>;
 }
 
-type EditableFields = Pick<MenuItem, 'name' | 'description' | 'price' | 'availableFrom' | 'availableUntil'>;
+type EditableFields = Pick<MenuItem, 'name' | 'description' | 'category' | 'price' | 'availableFrom' | 'availableUntil'>;
+
+/** The category buttons, with a short hint for the chosen one (e.g. "Sambusa, mandazi, bhajia"). */
+function CategoryPicker({ onChange, value }: { onChange: (category: MenuCategory) => void; value: MenuCategory | null }) {
+  const hint = value ? categoryHint(value) : '';
+  return <>
+    <ChoiceChips label={t('menu.category')} labelOf={(category) => `${categoryIcon(category)} ${categoryLabel(category)}`} onChange={onChange} options={MENU_CATEGORIES} value={value} />
+    {hint ? <Text style={formStyles.helper}>{hint}</Text> : null}
+  </>;
+}
 
 function EditFoodForm({ item, onCancel, onSaved }: { item: MenuItem; onCancel: () => void; onSaved: (changes: EditableFields) => void }) {
   const [name, setName] = useState(item.name);
   const [ingredients, setIngredients] = useState(item.description);
+  const [category, setCategory] = useState<MenuCategory>(item.category);
   const [price, setPrice] = useState(String(item.price));
   const [availableFrom, setAvailableFrom] = useState(item.availableFrom);
   const [availableUntil, setAvailableUntil] = useState(item.availableUntil);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
-    const changes: EditableFields = { name: name.trim(), description: ingredients.trim(), price: Number(price.replace(/[,\s]/g, '')), availableFrom, availableUntil };
+    const changes: EditableFields = { name: name.trim(), description: ingredients.trim(), category, price: Number(price.replace(/[,\s]/g, '')), availableFrom, availableUntil };
     const problem = menuItemError({ ...item, ...changes });
     if (problem) return showMessage(t('menu.checkTitle'), problem);
     setSaving(true);
@@ -127,6 +139,7 @@ function EditFoodForm({ item, onCancel, onSaved }: { item: MenuItem; onCancel: (
     <Text style={styles.editTitle}>{t('menu.editTitle', { name: item.name })}</Text>
     <Field label={t('menu.foodName')} onChangeText={setName} value={name} />
     <Field label={t('menu.ingredients')} multiline onChangeText={setIngredients} value={ingredients} />
+    <CategoryPicker onChange={setCategory} value={category} />
     <Field keyboardType="number-pad" label={t('menu.price')} onChangeText={setPrice} value={price} />
     <View style={formStyles.row}>
       <Field containerStyle={formStyles.half} label={t('menu.servedFrom')} onChangeText={setAvailableFrom} placeholder="08:00" value={availableFrom} />
@@ -140,6 +153,8 @@ function EditFoodForm({ item, onCancel, onSaved }: { item: MenuItem; onCancel: (
 function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => void; restaurant: Restaurant }) {
   const [name, setName] = useState('');
   const [ingredients, setIngredients] = useState('');
+  // Kept after adding a dish, since owners often add several dishes of the same category in a row.
+  const [category, setCategory] = useState<MenuCategory | null>(null);
   const [price, setPrice] = useState('');
   const [availableFrom, setAvailableFrom] = useState(restaurant.opensAt);
   const [availableUntil, setAvailableUntil] = useState(restaurant.closesAt);
@@ -152,7 +167,8 @@ function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => voi
   };
 
   const add = async () => {
-    const input: MenuItemInput = { name, description: ingredients, price: Number(price.replace(/[,\s]/g, '')), availableFrom, availableUntil, inStock: true, photoUrl: null };
+    if (!category) return showMessage(t('menu.checkTitle'), t('ownerError.category'));
+    const input: MenuItemInput = { name, description: ingredients, category, price: Number(price.replace(/[,\s]/g, '')), availableFrom, availableUntil, inStock: true, photoUrl: null };
     const problem = menuItemError(input);
     if (problem) return showMessage(t('menu.checkTitle'), problem);
     setSaving(true);
@@ -172,6 +188,7 @@ function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => voi
   return <Section title={t('menu.addTitle')}>
     <Field label={t('menu.foodName')} onChangeText={setName} placeholder={t('menu.namePlaceholder')} value={name} />
     <Field label={t('menu.ingredients')} multiline onChangeText={setIngredients} placeholder={t('menu.ingredientsPlaceholder')} value={ingredients} />
+    <CategoryPicker onChange={setCategory} value={category} />
     <Field keyboardType="number-pad" label={t('menu.price')} onChangeText={setPrice} placeholder="25000" value={price} />
     <View style={formStyles.row}>
       <Field containerStyle={formStyles.half} label={t('menu.servedFrom')} onChangeText={setAvailableFrom} placeholder="08:00" value={availableFrom} />
@@ -200,6 +217,7 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   photoAction: { color: fg(OWNER_COLORS.accent), fontSize: 10, fontWeight: '800', textAlign: 'center', marginTop: 5 },
   copy: { flex: 1 },
   name: { color: fg(OWNER_COLORS.ink), fontSize: 15, fontWeight: '900' },
+  categoryTag: { color: fg(OWNER_COLORS.accent), fontSize: 10, fontWeight: '800', marginTop: 3 },
   ingredients: { color: fg(OWNER_COLORS.muted), fontSize: 11, lineHeight: 16, marginTop: 3 },
   price: { color: fg(OWNER_COLORS.accent), fontSize: 12, fontWeight: '900', marginTop: 6 },
   serving: { color: fg(OWNER_COLORS.muted), fontSize: 10, marginTop: 4 },

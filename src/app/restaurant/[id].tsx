@@ -2,10 +2,12 @@ import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, type Href, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RestaurantReviews } from '@/components/restaurant-reviews';
+import { categoryIcon, categoryLabel, groupByCategory, type MenuCategory } from '@/data/menu-categories';
 import { menuPdfDownloadUrl } from '@/data/restaurant-menu-pdf';
 import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { useUserLocation } from '@/data/user-location';
@@ -24,6 +26,7 @@ export default function RestaurantDetailScreen() {
   const { loading, restaurant } = useRestaurant(id);
   // Never asks for permission here; it only uses location the person already allowed on the home screen.
   const { coords } = useUserLocation();
+  const [menuFilter, setMenuFilter] = useState<MenuCategory | 'all'>('all');
 
   if (loading) {
     return <SafeAreaView style={styles.centered}><Text style={styles.sectionCaption}>{t('restaurant.loading')}</Text></SafeAreaView>;
@@ -52,11 +55,19 @@ export default function RestaurantDetailScreen() {
   const directionsUrl = restaurant.mapUrl
     || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(position ?? `${restaurant.name}, ${restaurant.address}, Dar es Salaam`)}`;
   const distance = distanceTo(coords, restaurant);
-  // Foods that can be ordered right now come first.
+  // Grouped by category (Pizza, Baga, …); inside each group, foods that can be ordered right now come first.
   const menu = restaurant.menu
-    .map((item) => ({ item, available: isMenuItemAvailable(item, restaurant) }))
+    .map((item) => ({ item, category: item.category, available: isMenuItemAvailable(item, restaurant) }))
     .sort((a, b) => Number(b.available) - Number(a.available));
   const availableNow = menu.filter((entry) => entry.available).length;
+  const groups = groupByCategory(menu);
+  // A category chosen earlier may be gone after the menu reloads; then everything shows again.
+  const selected = groups.some((group) => group.category === menuFilter) ? menuFilter : 'all';
+  const shownGroups = selected === 'all' ? groups : groups.filter((group) => group.category === selected);
+  const filterChips: { value: MenuCategory | 'all'; label: string }[] = [
+    { value: 'all', label: t('category.all') },
+    ...groups.map((group) => ({ value: group.category, label: `${categoryIcon(group.category)} ${categoryLabel(group.category)}` })),
+  ];
   const heroPhoto = restaurant.coverUrl ?? restaurant.galleryUrls[0] ?? null;
   const ratingText = restaurant.reviewCount > 0 ? `★ ${restaurant.rating} (${tn('count.reviews', restaurant.reviewCount)})` : `★ ${restaurant.rating}`;
   const meta = [restaurant.rating > 0 ? ratingText : t('restaurant.newOnKwetu'), restaurant.area, distance != null ? formatDistance(distance) : null].filter(Boolean).join(' · ');
@@ -129,8 +140,18 @@ export default function RestaurantDetailScreen() {
               </View>
             </View>
           </View> : null}
-          <View style={styles.menuList}>
-            {menu.map(({ item, available }) => {
+          {groups.length > 1 && <ScrollView contentContainerStyle={styles.categoryChips} horizontal showsHorizontalScrollIndicator={false}>
+            {filterChips.map((chip) => {
+              const active = chip.value === selected;
+              return <Pressable accessibilityRole="button" accessibilityState={{ selected: active }} key={chip.value} onPress={() => setMenuFilter(chip.value)} style={[styles.categoryChip, active && styles.categoryChipActive]}>
+                <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{chip.label}</Text>
+              </Pressable>;
+            })}
+          </ScrollView>}
+          {shownGroups.map((group) => <View key={group.category}>
+            <Text accessibilityRole="header" style={styles.categoryHeading}>{categoryIcon(group.category)} {categoryLabel(group.category)}</Text>
+            <View style={styles.menuList}>
+            {group.items.map(({ item, available }) => {
               return (
                 <View key={item.id} style={[styles.menuCard, !available && styles.menuCardUnavailable]}>
                   {item.photoUrl ? <Image contentFit="cover" source={item.photoUrl} style={styles.foodPhoto} transition={200} /> : <View style={styles.foodPlaceholder}><Text style={styles.foodPlaceholderIcon}>🍽️</Text></View>}
@@ -146,7 +167,8 @@ export default function RestaurantDetailScreen() {
                 </View>
               );
             })}
-          </View>
+            </View>
+          </View>)}
         </View>
 
         <RestaurantReviews rating={restaurant.rating} restaurantId={restaurant.id} reviewCount={restaurant.reviewCount} />
@@ -217,6 +239,12 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   pdfButtonSecondary: { borderWidth: 1, borderColor: line('#E6DCCE'), backgroundColor: bg('#FFF') },
   pdfButtonSecondaryText: { color: fg('#171612') },
   menuList: { gap: 13 },
+  categoryChips: { gap: 8, paddingBottom: 4, paddingRight: 18 },
+  categoryChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: line('#E6DCCE'), backgroundColor: bg('#FFF') },
+  categoryChipActive: { borderColor: line(ORANGE), backgroundColor: bg(ORANGE) },
+  categoryChipText: { color: fg('#4F4A43'), fontSize: 12, fontWeight: '800' },
+  categoryChipTextActive: { color: fg('#FFF') },
+  categoryHeading: { color: fg('#171612'), fontSize: 17, fontWeight: '900', marginTop: 18, marginBottom: 10 },
   menuCard: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: line('#EEE6DA'), backgroundColor: bg('#FFF') },
   menuCardUnavailable: { opacity: 0.68, backgroundColor: bg('#FFF8ED') },
   foodPhoto: { width: '100%', height: 190, backgroundColor: bg('#DDD4C9') },

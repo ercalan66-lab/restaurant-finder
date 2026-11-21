@@ -34,14 +34,15 @@ export function Section({ children, helper, title }: { children: ReactNode; help
   </View>;
 }
 
-export function ChoiceChips<T extends string>({ label, onChange, options, value }: { label: string; onChange: (value: T) => void; options: readonly T[]; value: T }) {
+/** One-of-many buttons. `labelOf` turns a stored value into the text shown; `value` null means none chosen yet. */
+export function ChoiceChips<T extends string>({ label, labelOf, onChange, options, value }: { label: string; labelOf?: (value: T) => string; onChange: (value: T) => void; options: readonly T[]; value: T | null }) {
   return <View>
     <Text style={styles.label}>{label}</Text>
     <View accessibilityRole="radiogroup" style={styles.chips}>
       {options.map((option) => {
         const selected = option === value;
         return <Pressable accessibilityRole="radio" accessibilityState={{ checked: selected }} key={option} onPress={() => onChange(option)} style={[styles.chip, selected && styles.chipActive]}>
-          <Text style={[styles.chipText, selected && styles.chipTextActive]}>{option}</Text>
+          <Text style={[styles.chipText, selected && styles.chipTextActive]}>{labelOf ? labelOf(option) : option}</Text>
         </Pressable>;
       })}
     </View>

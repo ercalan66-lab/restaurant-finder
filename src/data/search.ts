@@ -1,3 +1,4 @@
+import { categorySearchText } from './menu-categories';
 import type { MenuItem, Restaurant } from './restaurants';
 
 /** One search result: the restaurant, whether its name (or cuisine or area) matched, and the dishes that matched. */
@@ -10,7 +11,8 @@ const matchesAll = (text: string, terms: string[]) => {
 };
 
 /**
- * Finds restaurants by name, cuisine or area, and dishes by name or ingredients. Every word typed must
+ * Finds restaurants by name, cuisine or area, and dishes by name, ingredients or category (in either
+ * language, so "baga" and "burger" both find burgers). Every word typed must
  * appear ("coconut curry" finds "Coconut fish curry"). Restaurants whose name matched come first, then
  * those with the most matching dishes.
  */
@@ -21,7 +23,7 @@ export function searchRestaurants(restaurants: Restaurant[], query: string): Sea
     .map((restaurant) => ({
       restaurant,
       nameMatch: matchesAll(`${restaurant.name} ${restaurant.cuisine} ${restaurant.area}`, terms),
-      dishes: restaurant.menu.filter((dish) => matchesAll(`${dish.name} ${dish.description}`, terms)),
+      dishes: restaurant.menu.filter((dish) => matchesAll(`${dish.name} ${dish.description} ${categorySearchText(dish.category)}`, terms)),
     }))
     .filter((hit) => hit.nameMatch || hit.dishes.length > 0)
     .sort((a, b) => Number(b.nameMatch) - Number(a.nameMatch) || b.dishes.length - a.dishes.length || a.restaurant.name.localeCompare(b.restaurant.name));

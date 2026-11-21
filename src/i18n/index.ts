@@ -26,6 +26,9 @@ export function t(key: MessageKey, params?: Record<string, string | number>): st
   return template.replace(/\{(\w+)\}/g, (whole, name: string) => (name in params ? String(params[name]) : whole));
 }
 
+/** The text for `key` in every language (for searches that should work whichever language is showing). */
+export const allTranslations = (key: MessageKey) => Object.values(dictionaries).map((dictionary) => dictionary[key]);
+
 /**
  * Counted text: uses `${base}.one` for 1 and `${base}.other` otherwise, with `{count}` filled in.
  * tn('count.restaurants', 3) → "3 restaurants" / "migahawa 3".

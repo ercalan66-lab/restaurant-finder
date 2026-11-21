@@ -1,5 +1,6 @@
 import { t } from '@/i18n';
 import { supabase } from '../../lib/supabase';
+import { isMenuCategory } from './menu-categories';
 import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuItem, type MenuRow, type Restaurant } from './restaurants';
 
 /** The restaurant fields an owner can edit. Rating, distance, and tag are managed by Kwetu. */
@@ -25,6 +26,7 @@ export function restaurantDetailsError(details: RestaurantDetails): string | nul
 
 export function menuItemError(item: MenuItemInput): string | null {
   if (!item.name.trim() || !item.description.trim()) return t('ownerError.food');
+  if (!isMenuCategory(item.category)) return t('ownerError.category');
   if (!Number.isInteger(item.price) || item.price <= 0) return t('ownerError.foodPrice');
   if (!TIME_PATTERN.test(item.availableFrom) || !TIME_PATTERN.test(item.availableUntil)) return t('ownerError.servingHours');
   return null;
@@ -58,6 +60,7 @@ function menuColumns(item: Partial<MenuItemInput>) {
   const columns: Record<string, unknown> = {};
   if (item.name !== undefined) columns.name = item.name.trim();
   if (item.description !== undefined) columns.ingredients = item.description.trim();
+  if (item.category !== undefined) columns.category = item.category;
   if (item.price !== undefined) columns.price = item.price;
   if (item.photoUrl !== undefined) columns.photo_url = item.photoUrl;
   if (item.availableFrom !== undefined) columns.available_from = item.availableFrom;

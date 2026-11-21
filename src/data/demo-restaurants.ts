@@ -1,3 +1,4 @@
+import { guessCategory } from './menu-categories';
 import type { MenuItem, Restaurant } from './restaurants';
 
 // Bundled copy of the demo restaurants seeded by the Supabase migrations. Used only
@@ -28,6 +29,8 @@ function demo({ kind, dishes, ...restaurant }: DemoInput): Restaurant {
     id: `demo-${restaurant.id}-${index}`,
     name,
     description: dishDescriptions[index],
+    // Same guess the menu-categories migration makes for these dishes in the database.
+    category: guessCategory(name),
     price: dishPrices[index],
     photoUrl: photo(foodPhotos[kind][index]),
     availableFrom: restaurant.opensAt,
