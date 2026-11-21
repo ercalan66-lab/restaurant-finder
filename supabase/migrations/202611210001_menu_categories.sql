@@ -8,10 +8,18 @@
 
 alter table public.menu_items add column if not exists category text not null default 'other';
 
-alter table public.menu_items drop constraint if exists menu_items_category_check;
-alter table public.menu_items add constraint menu_items_category_check check (category in (
-  'pizza', 'burgers', 'chips', 'chicken', 'grill', 'seafood', 'sandwiches', 'rice', 'snacks', 'soups', 'desserts', 'drinks', 'other'
-));
+-- Added only if missing (no "drop", so the SQL editor does not warn about a destructive query).
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'menu_items_category_check' and conrelid = 'public.menu_items'::regclass
+  ) then
+    alter table public.menu_items add constraint menu_items_category_check check (category in (
+      'pizza', 'burgers', 'chips', 'chicken', 'grill', 'seafood', 'sandwiches', 'rice', 'snacks', 'soups', 'desserts', 'drinks', 'other'
+    ));
+  end if;
+end $$;
 
 -- The order of the checks matters: "seafood grill" is seafood, "chicken burger" is a burger,
 -- "sambusa za nyama" is a snack.
