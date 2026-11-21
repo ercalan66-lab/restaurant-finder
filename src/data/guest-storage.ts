@@ -25,8 +25,8 @@ type SyncState = {
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'declined' | 'completed' | 'cancelled';
 export type OrderStatus = 'pending' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'declined' | 'cancelled';
+/** Kwetu is cash only. The other values exist in the database from the old simulated mobile money. */
 export type PaymentMethod = 'cash' | 'mpesa' | 'tigo_pesa' | 'airtel_money';
-export type MobileMoneyMethod = Exclude<PaymentMethod, 'cash'>;
 export type PaymentStatus = 'unpaid' | 'paid';
 
 export type ReservationRecord = GuestProfile & SyncState & {
@@ -63,22 +63,15 @@ export type OrderRecord = SyncState & {
   paidAt?: string | null;
 };
 
-export const MOBILE_MONEY: { method: MobileMoneyMethod; label: string }[] = [
-  { method: 'mpesa', label: 'M-Pesa' },
-  { method: 'tigo_pesa', label: 'Tigo Pesa' },
-  { method: 'airtel_money', label: 'Airtel Money' },
-];
-export const paymentMethodLabel = (method: PaymentMethod | undefined) => MOBILE_MONEY.find((option) => option.method === method)?.label ?? t('payment.cash');
 /** "Pickup" / "Delivery" in the current language (the stored value stays in English). */
 export const fulfillmentLabel = (fulfillment: OrderRecord['fulfillment']) => t(fulfillment === 'Delivery' ? 'fulfillment.Delivery' : 'fulfillment.Pickup');
 
-/** Pickup orders are paid at the counter; delivery orders after the food arrives (mobile money in the app, or cash to the rider). */
-export function paymentSummary(order: Pick<OrderRecord, 'fulfillment' | 'paymentStatus' | 'paymentMethod'>) {
-  if (order.paymentStatus === 'paid') return t('payment.paid', { method: paymentMethodLabel(order.paymentMethod) });
+/** Cash only: pickup orders are paid at the counter, delivery orders to the rider when the food arrives. */
+export function paymentSummary(order: Pick<OrderRecord, 'fulfillment' | 'paymentStatus'>) {
+  if (order.paymentStatus === 'paid') return t('payment.paidCash');
   return t(order.fulfillment === 'Delivery' ? 'payment.onDelivery' : 'payment.atRestaurant');
 }
 
-export const canPayInApp = (order: OrderRecord) => order.fulfillment === 'Delivery' && order.status === 'delivered' && order.paymentStatus !== 'paid';
 export const canCancelOrder = (order: OrderRecord) => (order.status ?? 'pending') === 'pending' && !order.rejectedReason;
 export const canCancelReservation = (reservation: ReservationRecord) => ['pending', 'confirmed'].includes(reservation.status ?? 'pending') && !reservation.rejectedReason;
 
@@ -384,16 +377,7 @@ export async function cancelReservation(reservation: ReservationRecord) {
   await patchLocal<ReservationRecord>(RESERVATIONS_KEY, reservation.id, { status: 'cancelled', synced: true });
 }
 
-/** Customer pays a delivered delivery order by mobile money (simulated in the database for now). */
-export async function payOrder(order: OrderRecord, method: MobileMoneyMethod) {
-  const { data, error } = await supabase.rpc('pay_order', { p_reference: order.id, p_phone: order.guest.phone, p_method: method });
-  if (error) throw error;
-  const paymentReference = typeof data === 'string' ? data : null;
-  await patchLocal<OrderRecord>(ORDERS_KEY, order.id, { paymentStatus: 'paid', paymentMethod: method, paymentReference, status: 'completed', paidAt: new Date().toISOString() });
-  return paymentReference;
-}
-
-/** Owner records cash handed to the rider for a delivered order, which completes it. */
+/** Owner confirms the customer has the food and paid in cash (at the counter or to the rider), which completes the order. */
 export async function recordCashPayment(id: string) {
   const { error } = await supabase.from('orders').update({ payment_method: 'cash', payment_status: 'paid', status: 'completed' }).eq('reference', id);
   if (error) throw error;

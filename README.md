@@ -13,7 +13,7 @@ An Expo SDK 58 restaurant discovery, reservation, and food-ordering app backed b
    4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
    5. `202611180004_status_values.sql` (new order, booking, and payment values). Run it on its own and let it finish before the next one: Postgres cannot use new enum values in the transaction that adds them.
    6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
-   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links).
+   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash).
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
 4. Make yourself a Kwetu admin (see [Kwetu admins](#kwetu-admins)) so you can approve new restaurants.
@@ -35,9 +35,7 @@ Until a provider is configured, the app shows "Phone sign-in is not enabled" whe
 | When | Who is notified | Opens |
 | --- | --- | --- |
 | A new order or booking arrives, or a customer cancels | The restaurant owner's phones | Owner dashboard |
-| A delivery order is paid by mobile money | The restaurant owner's phones | Owner dashboard |
-| An order is accepted, ready / on its way, or declined | The customer (guest or signed in) | Profile |
-| A delivery order arrives | The customer | Payment screen |
+| An order is accepted, ready / on its way, completed, or declined | The customer (guest or signed in) | Profile |
 | A booking is confirmed or declined | The customer (guest or signed in) | Profile |
 | A new restaurant needs review | Kwetu admins | Admin screen |
 | A restaurant is approved or needs changes | Its owner | Owner dashboard |
@@ -62,21 +60,14 @@ One-time setup:
 
 Delivery receipts from Expo are not checked yet, so tokens from uninstalled apps are not cleaned up automatically.
 
-## Payments (delivery orders only)
+## Payments (cash only)
 
-- **Pickup orders** have no payment step in the app. The customer pays at the counter.
-- **Delivery orders** are paid after the food arrives:
-  1. The owner moves the order through Accept, Start preparing, **Out for delivery**, then **Mark delivered**.
-  2. The customer is notified, and their profile shows **Pay TSh …**. That opens a payment screen with M-Pesa, Tigo Pesa, or Airtel Money. Paying completes the order and notifies the owner.
-  3. If the customer pays the rider in cash instead, the owner taps **Cash received**, which completes the order.
+Kwetu takes no payments in the app. Customers pay the restaurant in cash, and the restaurant confirms it:
 
-**Mobile money is simulated.** The `pay_order` database function marks the order paid with a `SIM-…` reference, and the app shows a "Test mode" banner, so no money moves. To take real payments:
+- **Pickup orders:** the owner taps Accept, Start preparing, and **Ready for pickup**. When the customer has collected the food and paid at the counter, the owner taps **Collected · cash received**.
+- **Delivery orders:** the owner taps Accept, Start preparing, and **Out for delivery**. When the customer has the food and the rider has the cash, the owner taps **Delivered · cash received**.
 
-1. Open a merchant account with a Tanzanian gateway (Selcom, AzamPay, or ClickPesa).
-2. Replace `pay_order` with a Supabase Edge Function that starts the push-to-phone payment.
-3. Mark the order paid only from the gateway's confirmation callback.
-
-Customers can never mark an order paid themselves outside `pay_order`. Owners can only record cash.
+That last step marks the order paid in cash and completes it, and the customer is notified and can rate it. Only the restaurant's owner can do it; customers can never mark an order paid. The old simulated mobile money function `pay_order` is switched off by `202611210003_cash_only.sql`.
 
 The app keeps a local copy of orders and reservations, so requests still receive a reference when cloud sync is temporarily unavailable. Customers (including guests) see live status through the `request_statuses` function. The profile refreshes every 15 seconds, and whenever a notification arrives.
 
@@ -143,7 +134,7 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - Owners can edit only their own restaurant, menu, and photos.
 - Customers can read only requests associated with their account.
 - Restaurant owners can read and update only requests sent to their restaurant.
-- Anonymous customers may submit a request. Afterwards they can read only its status (via `request_statuses`, by reference), and cancel or pay it only with the phone number on the request.
+- Anonymous customers may submit a request. Afterwards they can read only its status (via `request_statuses`, by reference), and cancel it only with the phone number on the request.
 - The mobile app uses only the publishable key. Never place a Supabase secret or service-role key in `.env`.
 - New orders and bookings always start as waiting requests. The database sets their status and time, and takes every dish's name and price from the menu, so a modified app cannot send a "completed" order (which would allow fake reviews) or change prices. One phone number can have at most 5 orders and 3 bookings waiting at a restaurant.
 - The app opens an owner's map link only if it is a Google Maps link, and their menu PDF only if it is stored in Kwetu's own `restaurant-menus` bucket; the database checks new values the same way.
@@ -151,7 +142,7 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - The admin console has its own sign-in, stored separately from the customer account (see [Kwetu admins](#kwetu-admins)).
 - Android backups are turned off (`allowBackup: false`), so sign-ins saved on the phone cannot be copied out through a backup.
 - Before launch, in the Supabase dashboard: remove `exp://**` from **Authentication → URL Configuration → Redirect URLs** (it is only for testing in Expo Go), and set **Authentication → Providers → Email** to a minimum password length of 8 with letters and digits, matching the app's rule.
-- In-app mobile money is simulated (references start with `SIM-`). Turn it off or connect a real provider before real customers use the app.
+- No payment details are handled: Kwetu is cash only, and only a restaurant's owner can mark its orders paid.
 
 ## Delivery roadmap
 
@@ -165,8 +156,7 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - [x] Booking date and time slots, and capacity validation
 - [x] Push notifications (needs EAS project + development build, see above)
 - [x] Phone (SMS code) sign-in
-- [x] Pay on delivery: mobile money in the app (simulated) or cash to the rider
-- [ ] Real mobile money gateway (Selcom / AzamPay / ClickPesa)
+- [x] Cash only: paid at the counter or to the rider, confirmed by the restaurant
 - [x] Restaurant approval by Kwetu admins
 - [x] Customer cancellation and live status
 - [x] In-app account deletion and privacy policy

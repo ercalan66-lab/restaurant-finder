@@ -48,7 +48,7 @@ export function OverviewSection({ onOpenRequests, onOpenRestaurants }: Props) {
       <View style={styles.sales}>
         <Text style={styles.salesLabel}>SALES, LAST 7 DAYS</Text>
         <Text style={styles.salesValue}>{formatMoney(state.value.salesLast7Days)}</Text>
-        <Text style={styles.salesCopy}>Value of completed orders across all restaurants, paid by cash or mobile money.</Text>
+        <Text style={styles.salesCopy}>Value of completed orders across all restaurants, paid in cash.</Text>
       </View>
     </>}
   </View>;

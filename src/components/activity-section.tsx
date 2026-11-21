@@ -5,7 +5,6 @@ import { formatBooking } from '@/data/booking';
 import {
   canCancelOrder,
   canCancelReservation,
-  canPayInApp,
   cancelOrder,
   cancelReservation,
   fulfillmentLabel,
@@ -24,15 +23,16 @@ const SHOWN = 8;
 type Tone = 'ok' | 'waiting' | 'action' | 'bad';
 type Status = { label: MessageKey; tone: Tone };
 
-/** The order's status label (a message key) and colour; also used by the payment screen. */
-export function orderStatus(order: OrderRecord): Status {
+/** The order's status label (a message key) and colour. */
+function orderStatus(order: OrderRecord): Status {
   if (order.rejectedReason) return { label: 'status.notAccepted', tone: 'bad' };
   switch (order.status ?? 'pending') {
     case 'pending': return { label: 'status.sent', tone: 'waiting' };
     case 'accepted': return { label: 'status.accepted', tone: 'ok' };
     case 'preparing': return { label: 'status.preparing', tone: 'ok' };
     case 'ready': return { label: order.fulfillment === 'Delivery' ? 'status.onTheWay' : 'status.readyForPickup', tone: 'ok' };
-    case 'delivered': return order.paymentStatus === 'paid' ? { label: 'status.delivered', tone: 'ok' } : { label: 'status.arrivedPay', tone: 'action' };
+    // Only older orders stop here: the restaurant now completes delivery orders once the rider has the cash.
+    case 'delivered': return { label: 'status.delivered', tone: 'ok' };
     case 'completed': return { label: 'status.completed', tone: 'ok' };
     case 'declined': return { label: 'status.declined', tone: 'bad' };
     case 'cancelled': return { label: 'status.cancelled', tone: 'bad' };
@@ -50,7 +50,7 @@ function reservationStatus(reservation: ReservationRecord): Status {
   }
 }
 
-/** The customer's orders and bookings, with Pay, Cancel and Rate where allowed. */
+/** The customer's orders and bookings, with Cancel and Rate where allowed. */
 export function ActivitySection({ loading, onChanged, orders, reservations, reviewed, signedIn }: {
   loading: boolean;
   onChanged: () => void;
@@ -87,7 +87,6 @@ export function ActivitySection({ loading, onChanged, orders, reservations, revi
         const status = orderStatus(order);
         return <Card key={order.id} name={order.restaurantName} note={order.rejectedReason ?? notSent(order.synced)} reference={order.id} status={status}
           meta={`${formatTsh(order.total)} · ${fulfillmentLabel(order.fulfillment)} · ${paymentSummary(order)}`}>
-          {canPayInApp(order) && <Action label={t('activity.pay', { amount: formatTsh(order.total) })} onPress={() => router.push(`/pay/${order.id}` as Href)} />}
           {canCancelOrder(order) && <Action label={t('activity.cancelOrder')} onPress={() => confirmCancelOrder(order)} secondary />}
           {rateButton(order.id, order.status === 'completed' && !order.rejectedReason)}
         </Card>;

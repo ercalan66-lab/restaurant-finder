@@ -41,7 +41,7 @@ const POLICY: Record<Language, Policy> = {
         body: [
           'If you turn on location, the app uses your phone’s position only on your phone, to show how far restaurants are. It is never sent to Kwetu or stored, and you can turn it off at any time in your phone settings.',
           'We do not sell your data or use it for advertising.',
-          'We do not store card numbers. The mobile money number you type when paying is not saved.',
+          'Kwetu takes no payments. You pay the restaurant in cash, so we never collect card or mobile money details.',
         ],
       },
       {
@@ -92,7 +92,7 @@ const POLICY: Record<Language, Policy> = {
         body: [
           'Ukiwasha eneo, programu inatumia mahali simu yako ilipo kwenye simu yako tu, kuonyesha umbali wa migahawa. Halitumwi kwa Kwetu wala kuhifadhiwa, na unaweza kulizima wakati wowote kwenye mipangilio ya simu yako.',
           'Hatuuzi taarifa zako wala kuzitumia kwa matangazo.',
-          'Hatuhifadhi namba za kadi. Namba ya pesa ya simu unayoandika unapolipa haihifadhiwi.',
+          'Kwetu haipokei malipo. Unalipa mgahawa kwa taslimu, kwa hiyo hatukusanyi kamwe taarifa za kadi wala za pesa ya simu.',
         ],
       },
       {

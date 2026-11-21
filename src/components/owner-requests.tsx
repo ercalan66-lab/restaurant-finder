@@ -6,7 +6,6 @@ import {
   fulfillmentLabel,
   getOrders,
   getReservations,
-  paymentMethodLabel,
   recordCashPayment,
   type OrderRecord,
   type OrderStatus,
@@ -29,15 +28,15 @@ const PICKUP_STEPS: Partial<Record<OrderStatus, Step>> = {
   pending: { next: 'accepted', label: 'ownerReq.accept' },
   accepted: { next: 'preparing', label: 'ownerReq.startPreparing' },
   preparing: { next: 'ready', label: 'ownerReq.readyPickup' },
-  ready: { next: 'completed', label: 'ownerReq.complete' },
 };
-// Delivery orders are paid after they arrive, so "delivered" comes before "completed".
 const DELIVERY_STEPS: Partial<Record<OrderStatus, Step>> = {
   pending: { next: 'accepted', label: 'ownerReq.accept' },
   accepted: { next: 'preparing', label: 'ownerReq.startPreparing' },
   preparing: { next: 'ready', label: 'ownerReq.outForDelivery' },
-  ready: { next: 'delivered', label: 'ownerReq.markDelivered' },
 };
+// Kwetu is cash only. The last step is the restaurant confirming the customer has the food and paid in
+// cash, which completes the order. "delivered" is only reached by orders from before this change.
+const CASH_STEP_FROM: OrderStatus[] = ['ready', 'delivered'];
 const ORDER_STATUS: Record<OrderStatus, MessageKey> = {
   pending: 'status.pending', accepted: 'status.accepted', preparing: 'status.preparing', ready: 'status.readyForPickup',
   delivered: 'status.delivered', completed: 'status.completed', declined: 'status.declined', cancelled: 'status.cancelled',
@@ -121,34 +120,36 @@ function orderStatusLabel(order: OrderRecord) {
 
 function paymentLine(order: OrderRecord) {
   const amount = formatTsh(order.total);
-  if (order.fulfillment !== 'Delivery') return t('ownerReq.payCounter', { amount });
-  if (order.paymentStatus === 'paid') {
-    const test = order.paymentReference?.startsWith('SIM-') ? ` ${t('ownerReq.testPayment')}` : '';
-    return `${t('ownerReq.paidBy', { amount, method: paymentMethodLabel(order.paymentMethod) })}${order.paymentReference ? ` · ${order.paymentReference}` : ''}${test}`;
-  }
-  if (order.status === 'delivered') return t('ownerReq.awaitingPayment', { amount });
-  return t('ownerReq.paysOnDelivery', { amount });
+  if (order.paymentStatus === 'paid') return t('ownerReq.paidCash', { amount });
+  return t(order.fulfillment === 'Delivery' ? 'ownerReq.paysOnDelivery' : 'ownerReq.payCounter', { amount });
 }
 
 function OrderCard({ order, run }: { order: OrderRecord; run: Run }) {
   const status = order.status ?? 'pending';
   const delivery = order.fulfillment === 'Delivery';
   const step = (delivery ? DELIVERY_STEPS : PICKUP_STEPS)[status];
-  const awaitingCash = delivery && status === 'delivered' && order.paymentStatus !== 'paid';
+  const awaitingCash = CASH_STEP_FROM.includes(status) && order.paymentStatus !== 'paid';
   const amount = formatTsh(order.total);
+  const name = order.guest.name;
 
-  const decline = () => confirmAction(t('ownerReq.declineOrderTitle'), t('ownerReq.declineOrderBody', { name: order.guest.name }), t('ownerReq.decline'), () => void run(() => updateOrderStatus(order.id, 'declined')));
-  const cashReceived = () => confirmAction(t('ownerReq.cashTitle'), t('ownerReq.cashBody', { amount }), t('ownerReq.cashReceived'), () => void run(() => recordCashPayment(order.id)));
+  const decline = () => confirmAction(t('ownerReq.declineOrderTitle'), t('ownerReq.declineOrderBody', { name }), t('ownerReq.decline'), () => void run(() => updateOrderStatus(order.id, 'declined')));
+  const cashLabel = t(delivery ? 'ownerReq.deliveredPaid' : 'ownerReq.collectedPaid');
+  const cashReceived = () => confirmAction(
+    t(delivery ? 'ownerReq.deliveredTitle' : 'ownerReq.collectedTitle'),
+    t(delivery ? 'ownerReq.deliveredBody' : 'ownerReq.collectedBody', { name, amount }),
+    cashLabel,
+    () => void run(() => recordCashPayment(order.id)),
+  );
 
   return <View style={styles.card}>
-    <View style={styles.cardTop}><View style={styles.headingCopy}><Text style={styles.reference}>{t('ownerReq.order', { reference: order.id })}</Text><Text style={styles.customer}>{order.guest.name}</Text></View><Status value={orderStatusLabel(order)} attention={status === 'pending' || status === 'declined' || status === 'cancelled' || awaitingCash} /></View>
+    <View style={styles.cardTop}><View style={styles.headingCopy}><Text style={styles.reference}>{t('ownerReq.order', { reference: order.id })}</Text><Text style={styles.customer}>{name}</Text></View><Status value={orderStatusLabel(order)} attention={status === 'pending' || status === 'declined' || status === 'cancelled' || (status === 'delivered' && awaitingCash)} /></View>
     <Text style={styles.meta}>{fulfillmentLabel(order.fulfillment)} · {order.guest.phone}</Text>
     {order.address ? <Text style={styles.meta}>{order.address}</Text> : null}
     <View style={styles.items}>{order.items.map((item) => <Text key={item.name} style={styles.item}>{item.quantity} × {item.name} · {item.price}</Text>)}</View>
     <Text style={[styles.payment, order.paymentStatus === 'paid' && styles.paymentDone]}>{paymentLine(order)}</Text>
     <View style={styles.actions}>
       {step && <Action label={t(step.label)} onPress={() => void run(() => updateOrderStatus(order.id, step.next))} />}
-      {awaitingCash && <Action label={t('ownerReq.cashReceived')} onPress={cashReceived} />}
+      {awaitingCash && <Action label={cashLabel} onPress={cashReceived} />}
       {DECLINABLE.includes(status) && <Action destructive label={t('ownerReq.decline')} onPress={decline} />}
     </View>
   </View>;

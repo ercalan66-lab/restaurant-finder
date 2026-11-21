@@ -88,7 +88,8 @@ export function handleNotificationTaps(open: (url: string) => void) {
   const openFrom = (response: Notifications.NotificationResponse | null) => {
     const url = response?.notification.request.content.data?.url;
     if (typeof url !== 'string') return;
-    open(url);
+    // Older notifications opened the in-app payment screen, which no longer exists (Kwetu is cash only).
+    open(url.startsWith('/pay/') ? '/profile' : url);
     void Notifications.clearLastNotificationResponseAsync();
   };
   // Covers the tap that launched the app from closed.
