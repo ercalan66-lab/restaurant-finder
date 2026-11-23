@@ -52,7 +52,8 @@ export default function TabLayout() {
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {/* Changing the scheme or language remounts the screens (the key), so every style and text is
           read again. The open screens stay open: navigation state is kept globally. */}
-      <Stack key={`${scheme}-${settings.language}`} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: paint().bg(PAGE_BACKGROUND) } }} />
+      {/* New screens slide in from the right on Android too (iOS already does this by default). */}
+      <Stack key={`${scheme}-${settings.language}`} screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: paint().bg(PAGE_BACKGROUND) } }} />
     </>
   );
 }

@@ -2,6 +2,7 @@ import { router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FoodRow } from '@/components/food-row';
@@ -10,6 +11,7 @@ import { PhotoBackground } from '@/components/photo-background';
 import { RestaurantCard } from '@/components/restaurant-card';
 import { RestaurantRow } from '@/components/restaurant-row';
 import { SearchResultCard } from '@/components/search-result-card';
+import { listEntering, PressableScale } from '@/components/ui/motion';
 import { foodSections } from '@/data/food-sections';
 import { SAVED_RESTAURANTS_KEY } from '@/data/guest-storage';
 import { homeSections, type HomeSection } from '@/data/home-sections';
@@ -120,11 +122,11 @@ export default function HomeScreen() {
     </View>
     <LocationPrompt onRequest={() => void location.request()} status={location.status} />
     {!searching && <PhotoBackground imageStyle={styles.heroImage} source={require('../../assets/images/restaurant-hero.jpg')} style={styles.hero}>
-      <View style={styles.heroOverlay} /><View style={styles.heroContent}>
+      <View style={styles.heroOverlay} /><Animated.View entering={FadeInDown.duration(500)} style={styles.heroContent}>
         <Text style={styles.pill}>{t('home.heroPill')}</Text><Text style={styles.heroTitle}>{t('home.heroTitle')}<Text style={styles.heroAccent}>{t('home.heroTitleAccent')}</Text></Text>
         <Text style={styles.heroDescription}>{t('home.heroDescription')}</Text>
-        <Pressable onPress={showAll} style={styles.cta}><Text style={styles.ctaText}>{t('home.heroCta')}</Text><View style={styles.ctaArrow}><Text style={styles.orangeText}>→</Text></View></Pressable>
-      </View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
+        <PressableScale onPress={showAll} style={styles.cta}><Text style={styles.ctaText}>{t('home.heroCta')}</Text><View style={styles.ctaArrow}><Text style={styles.orangeText}>→</Text></View></PressableScale>
+      </Animated.View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
     </PhotoBackground>}
     {browsing && foods.map((section) => <FoodRow distanceOf={foodDistance} isSaved={(id) => savedDishes.saved.has(id)} key={section.key} onToggleSaved={savedDishes.toggle} section={section} />)}
     {browsing && sections.map((section) => <RestaurantRow isSaved={(id) => saved.has(id)} key={section.key} onToggleSaved={toggleSaved} section={section} userDistanceOf={(restaurant) => distanceTo(userCoords, restaurant)} />)}
@@ -143,9 +145,9 @@ export default function HomeScreen() {
           ? <View style={styles.empty}><Text style={styles.emptyTitle}>{t('home.nothingFound', { query: query.trim() })}</Text><Text style={styles.emptyCopy}>{t('home.nothingFoundHint')}</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{t('home.clearSearch')}</Text></Pressable></View>
           : <View style={styles.empty}><Text style={styles.emptyTitle}>{t('home.noMatch')}</Text><Text style={styles.emptyCopy}>{t('home.noMatchHint')}</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{t('home.clearFilters')}</Text></Pressable></View>}
       ListFooterComponent={searching ? undefined : <PhotoBackground imageStyle={styles.offerImage} source={require('../../assets/images/restaurant-offer.jpg')} style={styles.offer}><View style={styles.offerOverlay} /><View style={styles.offerCopy}><Text style={styles.offerEyebrow}>{t('home.offerEyebrow')}</Text><Text style={styles.offerTitle}>{t('home.offerTitle')}</Text><Text style={styles.offerCaption}>{t('home.offerCaption')}</Text></View></PhotoBackground>}
-      renderItem={({ item }) => searching
-        ? <SearchResultCard distanceKm={distanceTo(userCoords, item.restaurant)} hit={item} onToggleSaved={() => toggleSaved(item.restaurant.id)} saved={saved.has(item.restaurant.id)} />
-        : <RestaurantCard distanceKm={distanceTo(userCoords, item.restaurant)} onToggleSaved={() => toggleSaved(item.restaurant.id)} restaurant={item.restaurant} saved={saved.has(item.restaurant.id)} style={styles.gridCard} />}
+      renderItem={({ index, item }) => searching
+        ? <SearchResultCard distanceKm={distanceTo(userCoords, item.restaurant)} entering={listEntering(index)} hit={item} onToggleSaved={() => toggleSaved(item.restaurant.id)} saved={saved.has(item.restaurant.id)} />
+        : <RestaurantCard distanceKm={distanceTo(userCoords, item.restaurant)} entering={listEntering(index)} onToggleSaved={() => toggleSaved(item.restaurant.id)} restaurant={item.restaurant} saved={saved.has(item.restaurant.id)} style={styles.gridCard} />}
     />
     <Modal animationType="slide" onRequestClose={() => setFiltersOpen(false)} transparent visible={filtersOpen}><Pressable onPress={() => setFiltersOpen(false)} style={styles.modalBackdrop}><Pressable onPress={(event) => event.stopPropagation()} style={[styles.filterSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}><View style={styles.filterHeading}><View><Text style={styles.sheetTitle}>{t('filters.title')}</Text><Text style={styles.sheetMeta}>{t('filters.subtitle')}</Text></View><Pressable accessibilityLabel={t('filters.close')} onPress={() => setFiltersOpen(false)}><Text style={styles.closeFilter}>×</Text></Pressable></View><FilterGroup label={t('filters.maxPrice')} options={[[0, t('filters.any')], [50000, 'TSh 50k'], [100000, 'TSh 100k'], [150000, 'TSh 150k']]} selected={filters.maxPrice} onSelect={(maxPrice) => setFilters((current) => ({ ...current, maxPrice }))} /><FilterGroup label={t('filters.minRating')} options={[[0, t('filters.any')], [4.5, '4.5+'], [4.7, '4.7+'], [4.8, '4.8+']]} selected={filters.minRating} onSelect={(minRating) => setFilters((current) => ({ ...current, minRating }))} /><FilterGroup label={t('filters.maxDistance')} options={[[0, t('filters.any')], [1, '1 km'], [2, '2 km'], [5, '5 km']]} selected={filters.maxDistance} onSelect={(maxDistance) => setFilters((current) => ({ ...current, maxDistance }))} /><View style={styles.filterActions}><Pressable onPress={() => setFilters(defaultFilters)} style={styles.clearButton}><Text style={styles.clearButtonText}>{t('filters.clear')}</Text></Pressable><Pressable onPress={() => setFiltersOpen(false)} style={styles.applyButton}><Text style={styles.applyButtonText}>{tn('filters.show', hits.length)}</Text></Pressable></View></Pressable></Pressable></Modal>
   </SafeAreaView>;

@@ -4,9 +4,11 @@ import { router, type Href, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RestaurantReviews } from '@/components/restaurant-reviews';
+import { listEntering, PressableScale } from '@/components/ui/motion';
 import { categoryIcon, categoryLabel, groupByCategory, type MenuCategory } from '@/data/menu-categories';
 import { menuPdfDownloadUrl } from '@/data/restaurant-menu-pdf';
 import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
@@ -99,17 +101,17 @@ export default function RestaurantDetailScreen() {
         <View style={styles.section}>
           {restaurant.description ? <Text style={styles.description}>{restaurant.description}</Text> : null}
           <View style={styles.orderActions}>
-            <Pressable onPress={() => router.push(`/order/${restaurant.id}` as Href)} style={styles.orderButton}>
+            <PressableScale onPress={() => router.push(`/order/${restaurant.id}` as Href)} style={styles.orderButton}>
               <Text style={styles.orderButtonText}>{t('restaurant.order')}</Text>
-            </Pressable>
+            </PressableScale>
           </View>
           <View style={styles.quickActions}>
-            {restaurant.phone ? <Pressable onPress={callRestaurant} style={styles.primaryButton}>
+            {restaurant.phone ? <PressableScale onPress={callRestaurant} style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>{t('restaurant.call')}</Text>
-            </Pressable> : null}
-            <Pressable onPress={() => openLink(directionsUrl, t('restaurant.noMaps'))} style={styles.secondaryButton}>
+            </PressableScale> : null}
+            <PressableScale onPress={() => openLink(directionsUrl, t('restaurant.noMaps'))} style={styles.secondaryButton}>
               <Text style={styles.secondaryButtonText}>{t('restaurant.directions')}</Text>
-            </Pressable>
+            </PressableScale>
           </View>
         </View>
 
@@ -152,9 +154,9 @@ export default function RestaurantDetailScreen() {
           {shownGroups.map((group) => <View key={group.category}>
             <Text accessibilityRole="header" style={styles.categoryHeading}>{categoryIcon(group.category)} {categoryLabel(group.category)}</Text>
             <View style={styles.menuList}>
-            {group.items.map(({ item, available }) => {
+            {group.items.map(({ item, available }, index) => {
               return (
-                <View key={item.id} style={[styles.menuCard, !available && styles.menuCardUnavailable]}>
+                <Animated.View entering={listEntering(index)} key={item.id} style={[styles.menuCard, !available && styles.menuCardUnavailable]}>
                   {item.photoUrl ? <Image contentFit="cover" source={item.photoUrl} style={styles.foodPhoto} transition={200} /> : <View style={styles.foodPlaceholder}><Text style={styles.foodPlaceholderIcon}>🍽️</Text></View>}
                   <View style={styles.menuCopy}>
                     <View style={styles.menuTitleRow}>
@@ -165,7 +167,7 @@ export default function RestaurantDetailScreen() {
                     <Text style={styles.servingTime}>{t('restaurant.served', { from: item.availableFrom, until: item.availableUntil })}</Text>
                     {!available && <Text style={styles.unavailableBadge}>{t('restaurant.unavailable')}</Text>}
                   </View>
-                </View>
+                </Animated.View>
               );
             })}
             </View>

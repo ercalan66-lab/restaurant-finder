@@ -1,7 +1,9 @@
 import { Image } from 'expo-image';
 import { router, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import type { EntryOrExitLayoutType } from 'react-native-reanimated';
 
+import { PressableScale, SaveButton } from '@/components/ui/motion';
 import { formatTsh, isMenuItemAvailable, isOpenNow, type MenuItem, type Restaurant } from '@/data/restaurants';
 import type { SearchHit } from '@/data/search';
 import { t, tn } from '@/i18n';
@@ -11,13 +13,13 @@ import { themedStyles } from '@/theme/theme';
 const ORANGE = '#ED6417';
 const DISHES_SHOWN = 4;
 
-type Props = { hit: SearchHit; distanceKm: number | null; saved: boolean; onToggleSaved: () => void };
+type Props = { hit: SearchHit; distanceKm: number | null; saved: boolean; onToggleSaved: () => void; entering?: EntryOrExitLayoutType };
 
 /**
  * A search result. A food search lists the restaurant's matching dishes; a restaurant search lists
  * the foods it serves right now. Tapping anywhere opens the restaurant and its full menu.
  */
-export function SearchResultCard({ distanceKm, hit, onToggleSaved, saved }: Props) {
+export function SearchResultCard({ distanceKm, entering, hit, onToggleSaved, saved }: Props) {
   const { dishes, restaurant } = hit;
   const available = restaurant.menu.filter((dish) => isMenuItemAvailable(dish, restaurant));
   const listed = dishes.length ? dishes : available;
@@ -30,7 +32,7 @@ export function SearchResultCard({ distanceKm, hit, onToggleSaved, saved }: Prop
   const details = [restaurant.rating > 0 ? `★ ${restaurant.rating.toFixed(1)}` : null, `📍 ${restaurant.area}`, distanceKm != null ? formatDistance(distanceKm) : null].filter(Boolean).join(' · ');
   const openMenu = () => router.push(`/restaurant/${restaurant.id}` as Href);
 
-  return <Pressable accessibilityRole="button" onPress={openMenu} style={styles.card}>
+  return <PressableScale accessibilityRole="button" entering={entering} onPress={openMenu} style={styles.card}>
     <View style={styles.top}>
       {restaurant.coverUrl
         ? <Image contentFit="cover" source={restaurant.coverUrl} style={styles.thumb} transition={150} />
@@ -40,9 +42,7 @@ export function SearchResultCard({ distanceKm, hit, onToggleSaved, saved }: Prop
         <Text numberOfLines={1} style={styles.details}>{details}</Text>
         <Text style={[styles.status, !open && styles.statusClosed]}>{t(open ? 'card.open' : 'card.closed')}</Text>
       </View>
-      <Pressable accessibilityLabel={t(saved ? 'card.unsave' : 'card.save', { name: restaurant.name })} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
-        <Text style={[styles.saveIcon, saved && styles.savedIcon]}>{saved ? '♥' : '♡'}</Text>
-      </Pressable>
+      <SaveButton accessibilityLabel={t(saved ? 'card.unsave' : 'card.save', { name: restaurant.name })} iconStyle={styles.saveIcon} onPress={onToggleSaved} saved={saved} savedIconStyle={styles.savedIcon} style={styles.saveButton} />
     </View>
 
     <Text style={styles.heading}>{heading.toUpperCase()}</Text>
@@ -50,7 +50,7 @@ export function SearchResultCard({ distanceKm, hit, onToggleSaved, saved }: Prop
     {listed.length > DISHES_SHOWN && <Text style={styles.more}>{t('search.more', { count: listed.length - DISHES_SHOWN })}</Text>}
 
     <Pressable accessibilityRole="link" onPress={openMenu}><Text style={styles.fullMenu}>{t('search.fullMenu')}</Text></Pressable>
-  </Pressable>;
+  </PressableScale>;
 }
 
 function DishRow({ dish, restaurant }: { dish: MenuItem; restaurant: Restaurant }) {

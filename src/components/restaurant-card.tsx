@@ -1,7 +1,9 @@
 import { router, type Href } from 'expo-router';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import type { EntryOrExitLayoutType } from 'react-native-reanimated';
 
 import { PhotoBackground } from '@/components/photo-background';
+import { PressableScale, SaveButton } from '@/components/ui/motion';
 import { formatTsh, isOpenNow, type RestaurantSummary } from '@/data/restaurants';
 import { t, tn } from '@/i18n';
 import { formatDistance } from '@/utils/distance';
@@ -22,18 +24,18 @@ type Props = {
   /** Kilometres from the person, when both positions are known. */
   distanceKm: number | null;
   style?: StyleProp<ViewStyle>;
+  /** Animation when the card first appears in a list. */
+  entering?: EntryOrExitLayoutType;
 };
 
 /** A restaurant on the home screen: photo, saved, distance, open or closed, name, reviews and location. */
-export function RestaurantCard({ distanceKm, onToggleSaved, restaurant, saved, style }: Props) {
+export function RestaurantCard({ distanceKm, entering, onToggleSaved, restaurant, saved, style }: Props) {
   const open = isOpenNow(restaurant);
-  return <Pressable accessibilityRole="button" onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} style={[styles.card, style]}>
+  return <PressableScale accessibilityRole="button" entering={entering} onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)} style={[styles.card, style]}>
     <PhotoBackground source={restaurant.coverUrl ? { uri: restaurant.coverUrl } : undefined} style={styles.photo}>
       <View style={styles.photoShade} />
       {restaurant.tag ? <Text style={styles.tag}>{restaurant.tag.toUpperCase()}</Text> : null}
-      <Pressable accessibilityLabel={t(saved ? 'card.unsave' : 'card.save', { name: restaurant.name })} accessibilityRole="button" hitSlop={8} onPress={onToggleSaved} style={styles.saveButton}>
-        <Text style={[styles.saveIcon, saved && styles.savedIcon]}>{saved ? '♥' : '♡'}</Text>
-      </Pressable>
+      <SaveButton accessibilityLabel={t(saved ? 'card.unsave' : 'card.save', { name: restaurant.name })} iconStyle={styles.saveIcon} onPress={onToggleSaved} saved={saved} savedIconStyle={styles.savedIcon} style={styles.saveButton} />
       <View style={styles.photoFooter}>
         {distanceKm != null ? <Text style={styles.distance}>{formatDistance(distanceKm)}</Text> : <View />}
         <Text style={[styles.status, !open && styles.statusClosed]}>{t(open ? 'card.open' : 'card.closed')}</Text>
@@ -45,7 +47,7 @@ export function RestaurantCard({ distanceKm, onToggleSaved, restaurant, saved, s
       <Text numberOfLines={1} style={styles.location}>📍 {restaurant.area}</Text>
       {restaurant.pricePerPerson > 0 && <Text style={styles.price}>{t('card.perPerson', { price: formatTsh(restaurant.pricePerPerson) })}</Text>}
     </View>
-  </Pressable>;
+  </PressableScale>;
 }
 
 const styles = themedStyles(({ bg, fg, line }) => ({

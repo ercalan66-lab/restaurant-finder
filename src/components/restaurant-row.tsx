@@ -1,6 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 
 import { RestaurantCard } from '@/components/restaurant-card';
+import { listEntering } from '@/components/ui/motion';
 import type { HomeSection } from '@/data/home-sections';
 import type { RestaurantSummary } from '@/data/restaurants';
 import { themedStyles } from '@/theme/theme';
@@ -21,8 +22,9 @@ export function RestaurantRow({ isSaved, onToggleSaved, section, userDistanceOf 
     <Text accessibilityRole="header" style={styles.title}>{section.title}</Text>
     <Text style={styles.caption}>{section.caption}</Text>
     <ScrollView contentContainerStyle={styles.row} horizontal showsHorizontalScrollIndicator={false}>
-      {section.restaurants.map((restaurant) => <RestaurantCard
+      {section.restaurants.map((restaurant, index) => <RestaurantCard
         distanceKm={userDistanceOf(restaurant)}
+        entering={listEntering(index)}
         key={restaurant.id}
         onToggleSaved={() => onToggleSaved(restaurant.id)}
         restaurant={restaurant}

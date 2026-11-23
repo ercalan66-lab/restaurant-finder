@@ -1,6 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 
 import { FOOD_CARD_WIDTH, FoodCard } from '@/components/food-card';
+import { listEntering } from '@/components/ui/motion';
 import type { FoodSection } from '@/data/food-sections';
 import type { RestaurantSummary } from '@/data/restaurants';
 import { themedStyles } from '@/theme/theme';
@@ -20,8 +21,9 @@ export function FoodRow({ distanceOf, isSaved, onToggleSaved, section }: Props) 
     {section.items.length === 0
       ? <View style={styles.empty}><Text style={styles.emptyText}>{section.empty}</Text></View>
       : <ScrollView contentContainerStyle={styles.row} horizontal showsHorizontalScrollIndicator={false}>
-        {section.items.map((item) => <FoodCard
+        {section.items.map((item, index) => <FoodCard
           distanceKm={distanceOf(item.restaurant)}
+          entering={listEntering(index)}
           item={item}
           key={`${item.restaurant.id}-${item.dish.id}`}
           onToggleSaved={() => onToggleSaved(item.dish.id)}
