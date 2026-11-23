@@ -30,7 +30,7 @@ export function TeamSection({ onLeftTeam }: { onLeftTeam: () => void }) {
     try {
       const label = await addAdmin(account);
       setAccount('');
-      showMessage('Admin added', `${label} can now open the admin console from their profile.`);
+      showMessage('Admin added', `${label} can now open the admin console by holding the KWETU logo on the home screen for 2 seconds.`);
       reload();
     } catch (error) {
       showMessage('Could not add admin', errorMessage(error));
