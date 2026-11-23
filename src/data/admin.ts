@@ -6,21 +6,19 @@ import { RESTAURANT_COLUMNS, toRestaurant, type RestaurantSummary } from './rest
 import { twoStepState } from './two-step';
 
 /**
- * What the admin console may show. Admins must use two-step sign-in, and the database grants admin
- * powers only after the code step (202611210005_two_step_sign_in.sql).
- * denied: not signed in, or not an admin. needs-setup: an admin without an authenticator yet.
- * needs-code: an admin who typed the password but not the code yet. granted: full access.
+ * What the admin console may show. Two-step sign-in is optional for admins; an admin who turned it on
+ * gets admin powers only after the code step (202611230001_admin_two_step_optional.sql).
+ * denied: not signed in, or not an admin. needs-code: an admin with an authenticator who typed the
+ * password but not the code yet. granted: full access.
  */
-export type AdminAccess = 'denied' | 'needs-setup' | 'needs-code' | 'granted';
+export type AdminAccess = 'denied' | 'needs-code' | 'granted';
 
 export async function adminAccess(): Promise<AdminAccess> {
   const { data: session } = await supabase.auth.getSession();
   if (!session.session) return 'denied';
   const { data: listed, error } = await supabase.rpc('is_admin_account');
   if (error || listed !== true) return 'denied';
-  const state = await twoStepState(supabase);
-  if (state === 'on') return 'granted';
-  return state === 'needs-code' ? 'needs-code' : 'needs-setup';
+  return await twoStepState(supabase) === 'needs-code' ? 'needs-code' : 'granted';
 }
 
 /** Signs in to the admin console only. An account that is not an admin is signed straight back out. */

@@ -11,9 +11,12 @@ import { ReviewsSection } from '@/components/admin/reviews-section';
 import { TeamSection } from '@/components/admin/team-section';
 import { Field, Notice, PasswordField, PrimaryButton } from '@/components/auth/auth-ui';
 import { AuthenticatorSetupForm, CodeStep } from '@/components/auth/two-step';
+import { TwoStepCard } from '@/components/auth/two-step-card';
 import { adminAccess, adminSignIn, adminSignOut, type AdminAccess } from '@/data/admin';
 import { authErrorMessage, isEmail } from '@/data/auth';
 import type { ApprovalStatus } from '@/data/restaurants';
+import { t } from '@/i18n';
+import { showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { themedStyles } from '@/theme/theme';
 import { adminSupabase } from '../../lib/supabase';
@@ -36,6 +39,8 @@ export default function AdminScreen() {
   const [access, setAccess] = useState<Access>('checking');
   const [section, setSection] = useState<AdminSection>('overview');
   const [reviewTab, setReviewTab] = useState<ApprovalStatus>('pending');
+  // Two-step sign-in is optional for admins: they turn it on from the Admins section.
+  const [settingUp, setSettingUp] = useState(false);
 
   // Checked on every visit, so being removed as admin locks the console.
   useFocusEffect(useCallback(() => {
@@ -59,11 +64,11 @@ export default function AdminScreen() {
     <Text style={styles.title}>Admin sign-in</Text>
     <CodeStep cancelLabel="Cancel and sign out" client={adminSupabase} onCancel={() => void signOut()} onDone={recheck} />
   </Shell>;
-  if (access === 'needs-setup') return <Shell>
+  if (settingUp) return <Shell>
     <Text style={styles.eyebrow}>KWETU ADMIN</Text>
-    <Text style={styles.title}>Set up two-step sign-in</Text>
-    <Text style={styles.helper}>Admins must use a code from an authenticator app as well as their password. Set it up once; after that, the admin sign-in asks for the code each time.</Text>
-    <AuthenticatorSetupForm client={adminSupabase} onCancel={() => void signOut()} onDone={recheck} />
+    <Text style={styles.title}>Turn on two-step sign-in</Text>
+    <Text style={styles.helper}>Optional. After your password, the admin sign-in will also ask for a code from an authenticator app.</Text>
+    <AuthenticatorSetupForm client={adminSupabase} onCancel={() => setSettingUp(false)} onDone={() => { setSettingUp(false); showMessage(t('twoStep.onTitle'), t('twoStep.onBody')); }} />
   </Shell>;
 
   return <Shell>
@@ -77,7 +82,10 @@ export default function AdminScreen() {
     {section === 'restaurants' && <RestaurantsSection onTabChange={setReviewTab} tab={reviewTab} />}
     {section === 'requests' && <RequestsSection />}
     {section === 'reviews' && <ReviewsSection />}
-    {section === 'team' && <TeamSection onLeftTeam={recheck} />}
+    {section === 'team' && <>
+      <TwoStepCard client={adminSupabase} onTurnOn={() => setSettingUp(true)} />
+      <TeamSection onLeftTeam={recheck} />
+    </>}
   </Shell>;
 }
 

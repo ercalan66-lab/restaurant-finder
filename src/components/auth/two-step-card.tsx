@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -11,24 +12,29 @@ import { supabase } from '../../../lib/supabase';
 
 import { ACCENT } from './auth-ui';
 
-/** Profile card for a signed-in customer or owner: shows whether two-step sign-in is on, and turns it on or off. */
-export function TwoStepCard() {
+const openSetupScreen = () => router.push('/two-step-setup' as Href);
+
+/**
+ * Shows whether two-step sign-in is on, and turns it on or off. By default it is the profile card of the
+ * signed-in customer or owner; the admin console passes its own client and shows the setup itself.
+ */
+export function TwoStepCard({ client = supabase, onTurnOn = openSetupScreen }: { client?: SupabaseClient; onTurnOn?: () => void }) {
   // undefined while loading; null when off.
   const [factorId, setFactorId] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
 
   useFocusEffect(useCallback(() => {
     let active = true;
-    authenticatorFactor(supabase)
+    authenticatorFactor(client)
       .then((factor) => { if (active) setFactorId(factor?.id ?? null); })
       .catch(() => { if (active) setFactorId(null); });
     return () => { active = false; };
-  }, []));
+  }, [client]));
 
   const turnOff = (id: string) => confirmAction(t('twoStep.offTitle'), t('twoStep.offBody'), t('twoStep.turnOff'), () => void (async () => {
     setBusy(true);
     try {
-      await removeAuthenticator(supabase, id);
+      await removeAuthenticator(client, id);
       setFactorId(null);
       showMessage(t('twoStep.offDone'), t('twoStep.offBody'));
     } catch (error) {
@@ -50,7 +56,7 @@ export function TwoStepCard() {
     <Pressable
       accessibilityRole="button"
       disabled={busy}
-      onPress={on ? () => turnOff(factorId) : () => router.push('/two-step-setup' as Href)}
+      onPress={on ? () => turnOff(factorId) : onTurnOn}
       style={[styles.button, on && styles.buttonOff, busy && styles.disabled]}>
       <Text style={[styles.buttonText, on && styles.buttonOffText]}>{t(on ? 'twoStep.turnOff' : 'twoStep.turnOnShort')}</Text>
     </Pressable>

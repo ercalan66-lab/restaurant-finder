@@ -4,8 +4,8 @@ import { APP_NAME } from '@/constants/app-info';
 
 /**
  * Two-step sign-in with an authenticator app (Supabase MFA, TOTP). After the password, the person types
- * the 6-digit code that an app such as Google Authenticator shows. Admins must use it; customers and
- * owners can turn it on. The database refuses an account's data to a session that skipped the code
+ * the 6-digit code that an app such as Google Authenticator shows. Optional for everyone: customers,
+ * owners and admins can turn it on. The database refuses an account's data to a session that skipped the code
  * (supabase/migrations/202611210005_two_step_sign_in.sql), so a stolen password alone is not enough.
  *
  * Every function takes the client it works on: the customer client, or the admin console's own client.

@@ -13,7 +13,7 @@ An Expo SDK 58 restaurant discovery and food-ordering app backed by Supabase.
    4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
    5. `202611180004_status_values.sql` (new order, booking, and payment values). Run it on its own and let it finish before the next one: Postgres cannot use new enum values in the transaction that adds them.
    6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
-   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` (see [Two-step sign-in](#two-step-sign-in)).
+   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` and `202611230001_admin_two_step_optional.sql` (see [Two-step sign-in](#two-step-sign-in)).
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
 4. Make yourself a Kwetu admin (see [Kwetu admins](#kwetu-admins)) so you can approve new restaurants.
@@ -89,7 +89,7 @@ To make an account an admin, copy its user UUID from Supabase **Authentication �
 insert into public.admins (user_id) values ('YOUR_USER_UUID');
 ```
 
-The admin console is not shown anywhere customers look. To open it, **press and hold the KWETU logo** at the top of the home screen for 2 seconds, then sign in with the admin account and the code from its authenticator app ([two-step sign-in](#two-step-sign-in) is required for admins). This admin sign-in is separate from the customer account on the phone: signing in or out of one does not affect the other. In the console admins can:
+The admin console is not shown anywhere customers look. To open it, **press and hold the KWETU logo** at the top of the home screen for 2 seconds, then sign in with the admin account (plus the code from its authenticator app if that admin turned on [two-step sign-in](#two-step-sign-in)). This admin sign-in is separate from the customer account on the phone: signing in or out of one does not affect the other. In the console admins can:
 
 - approve a restaurant, or request changes with a reason the owner sees;
 - unpublish a live restaurant;
@@ -101,14 +101,14 @@ When an owner saves changes to a rejected restaurant, it goes back into review a
 
 After the password, people can also be asked for a 6-digit code from a free authenticator app such as Google Authenticator or Microsoft Authenticator. This uses Supabase MFA with TOTP, which is free and on by default in every Supabase project. No SMS provider is needed.
 
-- **Admins must use it.** The first time an admin signs in to the console, it walks them through adding Kwetu to an authenticator app. After that, it asks for the code every time.
+- **Admins can turn it on** in the admin console under **Admins → Two-step sign-in**, and turn it off again from the same place. It is optional, as for everyone else.
 - **Customers and restaurant owners can turn it on** in **Settings → Profile → Two-step sign-in**, and turn it off again from the same place.
 - **To set it up**, tap **Add to my authenticator app**, which opens the installed app. Alternatively, type the setup key into the app, then confirm one code.
 - **When signing in**, the code is asked after the password, and also after opening a sign-in or password-reset link from an email.
 
-**What the database enforces** (`202611210005_two_step_sign_in.sql`):
+**What the database enforces** (`202611210005_two_step_sign_in.sql`, `202611230001_admin_two_step_optional.sql`):
 
-- Admin powers (`is_admin()`) need a session that passed the code step (JWT claim `aal` = `aal2`).
+- Admin powers (`is_admin()`) need `two_step_ok()`: an admin who turned two-step sign-in on must have passed the code step (JWT claim `aal` = `aal2`); an admin without an authenticator needs only the password.
 - Once an account has an authenticator, a password-only session cannot read or change that account's private data. It cannot:
   - read or update orders;
   - edit the restaurant, menu or photos;
@@ -161,7 +161,7 @@ Photos are stored in the public `restaurant-photos` bucket under `<restaurant id
 - New orders always start as waiting requests. The database sets their status and time, and takes every dish's name and price from the menu, so a modified app cannot send a "completed" order (which would allow fake reviews) or change prices. One phone number can have at most 5 orders waiting at a restaurant.
 - The app opens an owner's map link only if it is a Google Maps link, and their menu PDF only if it is stored in Kwetu's own `restaurant-menus` bucket; the database checks new values the same way.
 - Email links use PKCE: they carry a one-time code that works only on the phone that asked for the email. Links that carry sign-in tokens directly are refused.
-- The admin console has its own sign-in, stored separately from the customer account (see [Kwetu admins](#kwetu-admins)). Admins must use [two-step sign-in](#two-step-sign-in), and anyone else can turn it on.
+- The admin console has its own sign-in, stored separately from the customer account (see [Kwetu admins](#kwetu-admins)). Anyone, admins included, can turn on [two-step sign-in](#two-step-sign-in).
 - Android backups are turned off (`allowBackup: false`), so sign-ins saved on the phone cannot be copied out through a backup.
 - Before launch, in the Supabase dashboard: remove `exp://**` from **Authentication → URL Configuration → Redirect URLs** (it is only for testing in Expo Go), and set **Authentication → Providers → Email** to a minimum password length of 8 with letters and digits, matching the app's rule.
 - No payment details are handled: Kwetu is cash only, and only a restaurant's owner can mark its orders paid.
