@@ -17,7 +17,7 @@
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#FDC52B",
-        "foregroundImage": "./assets/images/kwetu-app-icon.png"
+        "foregroundImage": "./assets/images/kwetu-adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
