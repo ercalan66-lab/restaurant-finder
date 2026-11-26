@@ -8,7 +8,7 @@ import { MENU_COLUMNS, RESTAURANT_COLUMNS, toMenuItem, toRestaurant, type MenuIt
 export type RestaurantDetails = Pick<Restaurant,
   'name' | 'cuisine' | 'area' | 'address' | 'description' | 'phone' | 'email' | 'opensAt' | 'closesAt'
   | 'mapUrl' | 'facilities' | 'pricePerPerson'>;
-export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'coverUrl' | 'galleryUrls' | 'isActive' | 'menuPdfUrl' | 'latitude' | 'longitude'>>;
+export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'coverUrl' | 'galleryUrls' | 'isActive' | 'menuPdfUrl' | 'menuPhotoUrls' | 'latitude' | 'longitude'>>;
 export type MenuItemInput = Omit<MenuItem, 'id' | 'createdAt'>;
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -24,8 +24,9 @@ export function restaurantDetailsError(details: RestaurantDetails): string | nul
   return null;
 }
 
+/** Only the name, category and price are required; the description is optional. */
 export function menuItemError(item: MenuItemInput): string | null {
-  if (!item.name.trim() || !item.description.trim()) return t('ownerError.food');
+  if (!item.name.trim()) return t('ownerError.food');
   if (!isMenuCategory(item.category)) return t('ownerError.category');
   if (!Number.isInteger(item.price) || item.price <= 0) return t('ownerError.foodPrice');
   if (!TIME_PATTERN.test(item.availableFrom) || !TIME_PATTERN.test(item.availableUntil)) return t('ownerError.servingHours');
@@ -50,6 +51,7 @@ function restaurantColumns(changes: RestaurantChanges) {
   if (changes.galleryUrls !== undefined) columns.gallery_urls = changes.galleryUrls;
   if (changes.isActive !== undefined) columns.is_active = changes.isActive;
   if (changes.menuPdfUrl !== undefined) columns.menu_pdf_url = changes.menuPdfUrl;
+  if (changes.menuPhotoUrls !== undefined) columns.menu_photo_urls = changes.menuPhotoUrls;
   if (changes.latitude !== undefined) columns.latitude = changes.latitude;
   if (changes.longitude !== undefined) columns.longitude = changes.longitude;
   return columns;

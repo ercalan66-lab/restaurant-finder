@@ -40,7 +40,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Kwetu uses your photos so you can add pictures of your restaurant and dishes.",
-          "cameraPermission": false,
+          "cameraPermission": "Kwetu uses the camera so restaurant owners can take photos of their restaurant, dishes and menu.",
           "microphonePermission": false
         }
       ],

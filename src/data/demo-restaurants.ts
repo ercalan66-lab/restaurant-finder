@@ -19,7 +19,7 @@ const positions: Record<number, [number, number]> = {
   5: [-6.8040, 39.2830], 6: [-6.7520, 39.2700], 7: [-6.8195, 39.2740], 8: [-6.8180, 39.2985],
 };
 
-type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu' | 'approvalStatus' | 'rejectionReason' | 'reviewCount' | 'createdAt' | 'menuPdfUrl' | 'latitude' | 'longitude'> & {
+type DemoInput = Omit<Restaurant, 'ownerId' | 'mapUrl' | 'isActive' | 'galleryUrls' | 'menu' | 'approvalStatus' | 'rejectionReason' | 'reviewCount' | 'createdAt' | 'menuPdfUrl' | 'menuPhotoUrls' | 'latitude' | 'longitude'> & {
   kind: keyof typeof foodPhotos;
   dishes: [string, string, string];
 };
@@ -49,6 +49,7 @@ function demo({ kind, dishes, ...restaurant }: DemoInput): Restaurant {
     // The date of the first migration, which seeds these restaurants.
     createdAt: '2026-11-10T00:00:00Z',
     menuPdfUrl: null,
+    menuPhotoUrls: [],
     latitude: positions[restaurant.id]?.[0] ?? null,
     longitude: positions[restaurant.id]?.[1] ?? null,
     galleryUrls: restaurant.id % 2 === 0 ? [...interiors].reverse() : interiors,

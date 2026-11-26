@@ -13,7 +13,7 @@ An Expo SDK 58 restaurant discovery and food-ordering app backed by Supabase.
    4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
    5. `202611180004_status_values.sql` (new order, booking, and payment values). Run it on its own and let it finish before the next one: Postgres cannot use new enum values in the transaction that adds them.
    6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
-   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` and `202611230001_admin_two_step_optional.sql` (see [Two-step sign-in](#two-step-sign-in)).
+   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` and `202611230001_admin_two_step_optional.sql` (see [Two-step sign-in](#two-step-sign-in)), `202611260001_menu_photos.sql` (photos of the printed menu; see [Restaurant owners](#restaurant-owners)).
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
 4. Make yourself a Kwetu admin (see [Kwetu admins](#kwetu-admins)) so you can approve new restaurants.
@@ -131,12 +131,16 @@ delete from auth.mfa_factors where user_id = (select id from auth.users where em
 
 1. Register in the app and choose **Restaurant owner**.
 2. The dashboard opens with a **Set up your restaurant** form. Submitting it creates the restaurant in Supabase, linked to that account (one restaurant per owner). It stays hidden until a Kwetu admin approves it.
-3. From the dashboard the owner can:
-   - edit details, hours, and price per person;
-   - upload a cover photo, up to eight gallery photos, and food photos;
-   - add, remove, and mark foods in or out of stock;
-   - hide or show the restaurant;
-   - handle orders.
+3. The dashboard has four tabs (**Orders**, **Menu**, **Photos**, **Details**) and, until the listing is complete, a **Get your restaurant ready** checklist that opens the right tab for each missing step (main photo, photos of the place, menu photos, dishes, map location). From it the owner can:
+   - handle orders;
+   - add **photos of the printed menu** (up to eight pages), the quickest way to put a menu online; customers open them full screen;
+   - add dishes with just a name, a price and a type (photo and description optional; serving times default to opening hours), and mark them in or out of stock;
+   - optionally upload the menu as a PDF;
+   - set a main photo and up to eight photos of the place, several at once;
+   - edit details, hours, price per person and map location;
+   - hide or show the restaurant.
+
+Every photo button offers **Take a photo** (camera) or **Choose from phone**. Menu photos need `202611260001_menu_photos.sql`.
 
 Changes are saved to Supabase and appear for every customer. The restaurant list and pages reload whenever a screen is opened.
 

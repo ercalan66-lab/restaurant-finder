@@ -8,13 +8,15 @@ import { OWNER_COLORS, PrimaryButton, Section, TextButton } from '@/components/o
 import { LocationManager } from '@/components/owner/location-manager';
 import { MenuManager } from '@/components/owner/menu-manager';
 import { MenuPdfManager } from '@/components/owner/menu-pdf-manager';
+import { MenuPhotosManager } from '@/components/owner/menu-photos-manager';
 import { PhotoManager } from '@/components/owner/photo-manager';
 import { RestaurantDetailsForm } from '@/components/owner/restaurant-details-form';
+import { SetupChecklist, setupSteps, type OwnerTab } from '@/components/owner/setup-checklist';
 import { OwnerRequests } from '@/components/owner-requests';
 import { createRestaurant, fetchMyRestaurant, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
 import { useTwoStepGuard } from '@/hooks/use-two-step-guard';
-import { t } from '@/i18n';
+import { t, type MessageKey } from '@/i18n';
 import { errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
@@ -58,6 +60,9 @@ export default function OwnerDashboardScreen() {
   const [loadError, setLoadError] = useState('');
   const [owner, setOwner] = useState<Owner | null>(null);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  // Until the owner picks a tab, open the first one that still has setup work, else Orders.
+  const [tab, setTab] = useState<OwnerTab | null>(null);
+  const shownTab: OwnerTab = tab ?? (restaurant ? setupSteps(restaurant).find((step) => !step.done)?.tab : undefined) ?? 'orders';
 
   const apply = useCallback((result: LoadResult) => {
     if (result.kind === 'error') {
@@ -157,20 +162,55 @@ export default function OwnerDashboardScreen() {
           <Switch accessibilityLabel={t('owner.visible')} onValueChange={(value) => void setVisible(value)} thumbColor="#FFF" trackColor={{ false: '#B8B1AA', true: OWNER_COLORS.accent }} value={restaurant.isActive} />
         </View>
 
-        <AlertsCard />
-        <OwnerRequests restaurantId={restaurant.id} />
-        <PhotoManager onUpdated={update} restaurant={restaurant} />
-        <Section title={t('owner.infoSection')}>
-          <RestaurantDetailsForm initial={detailsOf(restaurant)} key={restaurant.id} onSubmit={saveDetails} submitLabel={t('owner.saveInfo')} />
-        </Section>
-        <LocationManager onUpdated={update} restaurant={restaurant} />
-        <MenuPdfManager onUpdated={update} restaurant={restaurant} />
-        <MenuManager onMenuChange={(menu) => update({ menu })} restaurant={restaurant} />
+        <SetupChecklist onOpen={setTab} restaurant={restaurant} />
+        <OwnerTabs onChange={setTab} value={shownTab} />
+        {shownTab === 'orders' && <>
+          <AlertsCard />
+          <OwnerRequests restaurantId={restaurant.id} />
+        </>}
+        {shownTab === 'menu' && <>
+          <MenuPhotosManager onUpdated={update} restaurant={restaurant} />
+          <MenuManager onMenuChange={(menu) => update({ menu })} restaurant={restaurant} />
+          <MenuPdfManager onUpdated={update} restaurant={restaurant} />
+        </>}
+        {shownTab === 'photos' && <PhotoManager onUpdated={update} restaurant={restaurant} />}
+        {shownTab === 'details' && <>
+          <Section title={t('owner.infoSection')}>
+            <RestaurantDetailsForm initial={detailsOf(restaurant)} key={restaurant.id} onSubmit={saveDetails} submitLabel={t('owner.saveInfo')} />
+          </Section>
+          <LocationManager onUpdated={update} restaurant={restaurant} />
+        </>}
       </>}
   </ScrollView></SafeAreaView>;
 }
 
+const TABS: { value: OwnerTab; icon: string; label: MessageKey }[] = [
+  { value: 'orders', icon: '🧾', label: 'owner.tabOrders' },
+  { value: 'menu', icon: '🍽️', label: 'owner.tabMenu' },
+  { value: 'photos', icon: '📷', label: 'owner.tabPhotos' },
+  { value: 'details', icon: '🏪', label: 'owner.tabDetails' },
+];
+
+/** Four big buttons that split the dashboard into Orders, Menu, Photos and Details. */
+function OwnerTabs({ onChange, value }: { onChange: (tab: OwnerTab) => void; value: OwnerTab }) {
+  return <View accessibilityRole="tablist" style={styles.tabs}>
+    {TABS.map((tab) => {
+      const selected = tab.value === value;
+      return <Pressable accessibilityRole="tab" accessibilityState={{ selected }} key={tab.value} onPress={() => onChange(tab.value)} style={[styles.tab, selected && styles.tabSelected]}>
+        <Text style={styles.tabIcon}>{tab.icon}</Text>
+        <Text numberOfLines={1} style={[styles.tabLabel, selected && styles.tabLabelSelected]}>{t(tab.label)}</Text>
+      </Pressable>;
+    })}
+  </View>;
+}
+
 const styles = themedStyles(({ bg, fg, line }) => ({
+  tabs: { flexDirection: 'row', gap: 8, marginTop: 18 },
+  tab: { flex: 1, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4, borderRadius: 16, borderWidth: 1, borderColor: line(OWNER_COLORS.line), backgroundColor: bg('#FFF') },
+  tabSelected: { borderColor: line(OWNER_COLORS.accent), backgroundColor: bg(OWNER_COLORS.accent) },
+  tabIcon: { fontSize: 20 },
+  tabLabel: { color: fg(OWNER_COLORS.ink), fontSize: 12, fontWeight: '900' },
+  tabLabelSelected: { color: fg('#FFF') },
   safeArea: { flex: 1, backgroundColor: bg(OWNER_COLORS.cream) },
   centered: { alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 18, paddingBottom: 70 },

@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PhotoViewer } from '@/components/photo-viewer';
 import { RestaurantReviews } from '@/components/restaurant-reviews';
 import { listEntering, PressableScale } from '@/components/ui/motion';
 import { categoryIcon, categoryLabel, groupByCategory, type MenuCategory } from '@/data/menu-categories';
@@ -30,6 +31,8 @@ export default function RestaurantDetailScreen() {
   // Never asks for permission here; it only uses location the person already allowed on the home screen.
   const { coords } = useUserLocation();
   const [menuFilter, setMenuFilter] = useState<MenuCategory | 'all'>('all');
+  // The photos open full screen: menu pages, or photos of the place.
+  const [viewer, setViewer] = useState<{ photos: string[]; index: number } | null>(null);
 
   if (loading) {
     return <SafeAreaView style={styles.centered}><Text style={styles.sectionCaption}>{t('restaurant.loading')}</Text></SafeAreaView>;
@@ -80,7 +83,7 @@ export default function RestaurantDetailScreen() {
   const callRestaurant = () => openLink(`tel:${restaurant.phone.replace(/\s/g, '')}`, t('restaurant.noCalling'));
   const menuCaption = restaurant.menu.length
     ? t('restaurant.menuCaption', { available: availableNow, total: restaurant.menu.length })
-    : t(menuPdfUrl ? 'restaurant.menuPdfOnly' : 'restaurant.menuSoon');
+    : t(restaurant.menuPhotoUrls.length ? 'restaurant.menuPhotosOnly' : menuPdfUrl ? 'restaurant.menuPdfOnly' : 'restaurant.menuSoon');
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -120,7 +123,9 @@ export default function RestaurantDetailScreen() {
           <Text style={styles.sectionCaption}>{t('restaurant.environmentCaption')}</Text>
           <ScrollView contentContainerStyle={styles.gallery} horizontal showsHorizontalScrollIndicator={false}>
             {restaurant.galleryUrls.map((photo, index) => (
-              <Image contentFit="cover" key={photo} source={photo} style={[styles.environmentPhoto, index === 0 && styles.environmentPhotoFirst]} transition={200} />
+              <Pressable accessibilityLabel={t('restaurant.placePhoto', { index: index + 1 })} accessibilityRole="imagebutton" key={photo} onPress={() => setViewer({ photos: restaurant.galleryUrls, index })}>
+                <Image contentFit="cover" source={photo} style={[styles.environmentPhoto, index === 0 && styles.environmentPhotoFirst]} transition={200} />
+              </Pressable>
             ))}
           </ScrollView>
         </View>}
@@ -128,6 +133,17 @@ export default function RestaurantDetailScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('restaurant.menuTitle')}</Text>
           <Text style={styles.sectionCaption}>{menuCaption}</Text>
+          {restaurant.menuPhotoUrls.length > 0 && <View style={styles.menuPages}>
+            <Text style={styles.menuPagesTitle}>{t('restaurant.menuPhotos')}</Text>
+            <Text style={styles.menuPagesCaption}>{t('restaurant.menuPhotosCaption')}</Text>
+            <ScrollView contentContainerStyle={styles.gallery} horizontal showsHorizontalScrollIndicator={false}>
+              {restaurant.menuPhotoUrls.map((photo, index) => (
+                <Pressable accessibilityLabel={t('restaurant.menuPage', { index: index + 1 })} accessibilityRole="imagebutton" key={photo} onPress={() => setViewer({ photos: restaurant.menuPhotoUrls, index })}>
+                  <Image contentFit="cover" source={photo} style={styles.menuPage} transition={200} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>}
           {menuPdfUrl ? <View style={styles.pdfCard}>
             <Text style={styles.pdfIcon}>📄</Text>
             <View style={styles.pdfCopy}>
@@ -163,7 +179,7 @@ export default function RestaurantDetailScreen() {
                       <Text style={styles.menuName}>{item.name}</Text>
                       <Text style={styles.menuPrice}>{formatTsh(item.price)}</Text>
                     </View>
-                    <Text style={styles.menuDescription}>{item.description}</Text>
+                    {item.description ? <Text style={styles.menuDescription}>{item.description}</Text> : null}
                     <Text style={styles.servingTime}>{t('restaurant.served', { from: item.availableFrom, until: item.availableUntil })}</Text>
                     {!available && <Text style={styles.unavailableBadge}>{t('restaurant.unavailable')}</Text>}
                   </View>
@@ -198,6 +214,7 @@ export default function RestaurantDetailScreen() {
           </View>
         </View>
       </ScrollView>
+      <PhotoViewer onClose={() => setViewer(null)} photos={viewer?.photos ?? []} startIndex={viewer?.index ?? null} />
     </SafeAreaView>
   );
 }
@@ -231,6 +248,10 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   gallery: { gap: 10, paddingRight: 18 },
   environmentPhoto: { width: 260, height: 180, borderRadius: 18, backgroundColor: bg('#DDD4C9') },
   environmentPhotoFirst: { width: 300 },
+  menuPages: { marginBottom: 14 },
+  menuPagesTitle: { color: fg('#171612'), fontSize: 16, fontWeight: '900' },
+  menuPagesCaption: { color: fg('#777268'), fontSize: 12, marginTop: 3, marginBottom: 10 },
+  menuPage: { width: 150, height: 200, borderRadius: 14, borderWidth: 1, borderColor: line('#EEE6DA'), backgroundColor: bg('#DDD4C9') },
   pdfCard: { flexDirection: 'row', gap: 12, padding: 14, marginBottom: 14, borderRadius: 18, borderWidth: 1, borderColor: line('#EEE6DA'), backgroundColor: bg('#FFF') },
   pdfIcon: { fontSize: 32 },
   pdfCopy: { flex: 1 },
