@@ -23,6 +23,7 @@ import { useUserLocation } from '@/data/user-location';
 import { t, tn } from '@/i18n';
 import { distanceTo, type Coords } from '@/utils/distance';
 import Storage from '@/utils/kv-store';
+import { supabase } from '../../lib/supabase';
 import { paint, themedStyles } from '@/theme/theme';
 
 type Restaurant = RestaurantSummary;
@@ -50,6 +51,8 @@ export default function HomeScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const { offline, restaurants } = useRestaurants();
+  // Loaded, but no restaurant is live yet (not just hidden by a search or filter).
+  const noRestaurants = restaurants?.length === 0;
   const location = useUserLocation();
   const userCoords = location.coords;
   const savedDishes = useSavedDishes();
@@ -83,6 +86,11 @@ export default function HomeScreen() {
     return next;
   });
   const showAll = () => { setQuery(''); setFilters(defaultFilters); };
+  // Signed-in owners go to their dashboard; anyone else starts a restaurant-owner account.
+  const joinAsOwner = async () => {
+    const { data } = await supabase.auth.getSession();
+    router.push((data.session ? '/owner' : '/register?role=owner') as Href);
+  };
   const filterCount = Object.values(filters).filter(Boolean).length;
   // The curated rows show only while browsing; searching or filtering shows plain results.
   const browsing = !query.trim() && filterCount === 0;
@@ -128,7 +136,7 @@ export default function HomeScreen() {
         <PressableScale onPress={showAll} style={styles.cta}><Text style={styles.ctaText}>{t('home.heroCta')}</Text><View style={styles.ctaArrow}><Text style={styles.orangeText}>→</Text></View></PressableScale>
       </Animated.View><View style={styles.dots}><View style={styles.activeDot} /><View style={styles.dot} /><View style={styles.dot} /><View style={styles.dot} /></View>
     </PhotoBackground>}
-    {browsing && foods.map((section) => <FoodRow distanceOf={foodDistance} isSaved={(id) => savedDishes.saved.has(id)} key={section.key} onToggleSaved={savedDishes.toggle} section={section} />)}
+    {browsing && !noRestaurants && foods.map((section) => <FoodRow distanceOf={foodDistance} isSaved={(id) => savedDishes.saved.has(id)} key={section.key} onToggleSaved={savedDishes.toggle} section={section} />)}
     {browsing && sections.map((section) => <RestaurantRow isSaved={(id) => saved.has(id)} key={section.key} onToggleSaved={toggleSaved} section={section} userDistanceOf={(restaurant) => distanceTo(userCoords, restaurant)} />)}
     <View style={styles.heading}><View><Text style={styles.sectionTitle}>{listTitle}</Text><Text style={styles.resultCount}>{countText}</Text>{offline && <Text style={styles.offlineNote}>{t('home.offline')}</Text>}</View>{!browsing && <Pressable onPress={showAll}><Text style={styles.viewAll}>{t('home.showAll')} <Text style={styles.orangeText}>→</Text></Text></Pressable>}</View>
   </>;
@@ -141,10 +149,12 @@ export default function HomeScreen() {
       data={hits} key={searching ? 'search' : `grid-${columns}`} keyExtractor={(item) => String(item.restaurant.id)} ListHeaderComponent={header} numColumns={searching ? 1 : columns} showsVerticalScrollIndicator={false}
       ListEmptyComponent={!restaurants
         ? <View style={styles.empty}><Text style={styles.emptyCopy}>{t('home.finding')}</Text></View>
-        : searching
-          ? <View style={styles.empty}><Text style={styles.emptyTitle}>{t('home.nothingFound', { query: query.trim() })}</Text><Text style={styles.emptyCopy}>{t('home.nothingFoundHint')}</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{t('home.clearSearch')}</Text></Pressable></View>
-          : <View style={styles.empty}><Text style={styles.emptyTitle}>{t('home.noMatch')}</Text><Text style={styles.emptyCopy}>{t('home.noMatchHint')}</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{t('home.clearFilters')}</Text></Pressable></View>}
-      ListFooterComponent={searching ? undefined : <PhotoBackground imageStyle={styles.offerImage} source={require('../../assets/images/restaurant-offer.jpg')} style={styles.offer}><View style={styles.offerOverlay} /><View style={styles.offerCopy}><Text style={styles.offerEyebrow}>{t('home.offerEyebrow')}</Text><Text style={styles.offerTitle}>{t('home.offerTitle')}</Text><Text style={styles.offerCaption}>{t('home.offerCaption')}</Text></View></PhotoBackground>}
+        : noRestaurants
+          ? <View style={styles.empty}><Text style={styles.emptyTitle}>{t('home.comingSoon')}</Text><Text style={styles.emptyCopy}>{t('home.comingSoonHint')}</Text><Pressable accessibilityRole="button" onPress={() => void joinAsOwner()} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{t('home.joinAsOwner')}</Text></Pressable></View>
+          : searching
+            ? <View style={styles.empty}><Text style={styles.emptyTitle}>{t('home.nothingFound', { query: query.trim() })}</Text><Text style={styles.emptyCopy}>{t('home.nothingFoundHint')}</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{t('home.clearSearch')}</Text></Pressable></View>
+            : <View style={styles.empty}><Text style={styles.emptyTitle}>{t('home.noMatch')}</Text><Text style={styles.emptyCopy}>{t('home.noMatchHint')}</Text><Pressable onPress={showAll} style={styles.emptyButton}><Text style={styles.emptyButtonText}>{t('home.clearFilters')}</Text></Pressable></View>}
+      ListFooterComponent={searching || noRestaurants ? undefined : <PhotoBackground imageStyle={styles.offerImage} source={require('../../assets/images/restaurant-offer.jpg')} style={styles.offer}><View style={styles.offerOverlay} /><View style={styles.offerCopy}><Text style={styles.offerEyebrow}>{t('home.offerEyebrow')}</Text><Text style={styles.offerTitle}>{t('home.offerTitle')}</Text><Text style={styles.offerCaption}>{t('home.offerCaption')}</Text></View></PhotoBackground>}
       renderItem={({ index, item }) => searching
         ? <SearchResultCard distanceKm={distanceTo(userCoords, item.restaurant)} entering={listEntering(index)} hit={item} onToggleSaved={() => toggleSaved(item.restaurant.id)} saved={saved.has(item.restaurant.id)} />
         : <RestaurantCard distanceKm={distanceTo(userCoords, item.restaurant)} entering={listEntering(index)} onToggleSaved={() => toggleSaved(item.restaurant.id)} restaurant={item.restaurant} saved={saved.has(item.restaurant.id)} style={styles.gridCard} />}
@@ -167,7 +177,7 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   hero: { height: 316, overflow: 'hidden', borderRadius: 28, justifyContent: 'center', paddingHorizontal: 24, backgroundColor: bg('#17130F') }, heroImage: { borderRadius: 28 }, heroOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(16,13,10,0.54)' }, heroContent: { width: '74%', maxWidth: 470 }, pill: { alignSelf: 'flex-start', color: fg('#FFF'), backgroundColor: bg(ORANGE), borderRadius: 20, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, fontSize: 9, fontWeight: '900' }, heroTitle: { color: fg('#FFF'), fontSize: 38, lineHeight: 40, fontWeight: '900', letterSpacing: -1.2, marginTop: 15 }, heroAccent: { color: fg('#FF812D') }, heroDescription: { color: fg('#E3DED8'), fontSize: 13, lineHeight: 19, marginTop: 12 }, cta: { alignSelf: 'flex-start', height: 43, borderRadius: 24, backgroundColor: bg(ORANGE), paddingLeft: 16, paddingRight: 5, flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }, ctaText: { color: fg('#FFF'), fontSize: 10, fontWeight: '900' }, ctaArrow: { width: 32, height: 32, borderRadius: 16, backgroundColor: bg('#FFF'), alignItems: 'center', justifyContent: 'center' }, dots: { position: 'absolute', bottom: 16, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 7 }, dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.55)' }, activeDot: { width: 21, height: 7, borderRadius: 4, backgroundColor: bg(ORANGE) },
   heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 26, marginBottom: 15 }, sectionTitle: { color: fg('#171612'), fontSize: 23, fontWeight: '900', letterSpacing: -0.5 }, resultCount: { color: fg('#777268'), fontSize: 12, marginTop: 4 }, viewAll: { color: fg('#312E29'), fontSize: 12, fontWeight: '800', paddingBottom: 2 },
   cardRow: { gap: 12 }, gridCard: { flex: 1 }, offlineNote: { color: fg('#8E2F1A'), fontSize: 10, fontWeight: '700', marginTop: 4 },
-  empty: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24, backgroundColor: bg('#FFF'), borderRadius: 20, marginBottom: 14 }, emptyTitle: { color: fg('#171612'), fontSize: 18, fontWeight: '900' }, emptyCopy: { color: fg('#777268'), textAlign: 'center', fontSize: 13, marginTop: 6 }, emptyButton: { backgroundColor: bg(ORANGE), borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10, marginTop: 16 }, emptyButtonText: { color: fg('#FFF'), fontSize: 12, fontWeight: '900' },
+  empty: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 24, backgroundColor: bg('#FFF'), borderRadius: 20, marginBottom: 14 }, emptyTitle: { color: fg('#171612'), fontSize: 18, fontWeight: '900', textAlign: 'center' }, emptyCopy: { color: fg('#777268'), textAlign: 'center', fontSize: 13, marginTop: 6 }, emptyButton: { backgroundColor: bg(ORANGE), borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10, marginTop: 16 }, emptyButtonText: { color: fg('#FFF'), fontSize: 12, fontWeight: '900' },
   offer: { height: 155, borderRadius: 22, overflow: 'hidden', justifyContent: 'center', marginTop: 7 }, offerImage: { borderRadius: 22 }, offerOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(20,13,8,0.48)' }, offerCopy: { paddingHorizontal: 21 }, offerEyebrow: { color: fg('#FF9A52'), fontSize: 9, fontWeight: '900' }, offerTitle: { color: fg('#FFF'), fontSize: 24, lineHeight: 25, fontWeight: '900', marginTop: 5 }, offerCaption: { color: fg('#E7DED5'), fontSize: 10, marginTop: 7 },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(18,14,10,0.56)' }, sheetTitle: { flex: 1, color: fg('#171612'), fontSize: 24, fontWeight: '900' }, sheetMeta: { color: fg('#777268'), fontSize: 12, marginTop: 7 },
   filterSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, backgroundColor: bg(CREAM) }, filterHeading: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }, closeFilter: { color: fg('#171612'), fontSize: 30, lineHeight: 30, paddingHorizontal: 8 }, filterLabel: { color: fg('#777268'), fontSize: 9, fontWeight: '900', letterSpacing: 0.8, marginTop: 18, marginBottom: 8 }, filterOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, filterOption: { paddingHorizontal: 13, paddingVertical: 10, borderWidth: 1, borderColor: line('#E6DCCE'), borderRadius: 20, backgroundColor: bg('#FFF') }, filterOptionActive: { borderColor: line(ORANGE), backgroundColor: bg(ORANGE) }, filterOptionText: { color: fg('#4F4A43'), fontSize: 11, fontWeight: '800' }, filterOptionTextActive: { color: fg('#FFF') }, filterActions: { flexDirection: 'row', gap: 10, marginTop: 24 }, clearButton: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 24, borderWidth: 1, borderColor: line('#E6DCCE'), borderRadius: 24, backgroundColor: bg('#FFF') }, clearButtonText: { color: fg('#171612'), fontWeight: '900' }, applyButton: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: bg(ORANGE) }, applyButtonText: { color: fg('#FFF'), fontWeight: '900' },
