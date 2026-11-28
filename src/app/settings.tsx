@@ -1,7 +1,8 @@
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
+import type { User } from '@supabase/supabase-js';
 import { router, type Href } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +12,7 @@ import { t, type MessageKey } from '@/i18n';
 import { showMessage } from '@/utils/feedback';
 import { goBackOrReplace } from '@/utils/navigation';
 import { themedStyles } from '@/theme/theme';
+import { supabase } from '../../lib/supabase';
 
 const ORANGE = '#ED6417';
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -28,8 +30,24 @@ const LANGUAGE_OPTIONS: { value: LanguagePreference; label: string; hint: Messag
 
 const FAQS = ['order', 'pay', 'cancel', 'secure', 'owner', 'location'] as const;
 
+/** The full name given at registration, or null when signed out (or no name was given). */
+function useAccountName() {
+  const [name, setName] = useState<string | null>(null);
+  useEffect(() => {
+    const apply = (user: User | null) => {
+      const fullName: unknown = user?.user_metadata?.full_name;
+      setName(typeof fullName === 'string' && fullName.trim() ? fullName.trim() : null);
+    };
+    // Also fires right away with the current session, and again after sign-in, sign-out or a name change.
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => apply(session?.user ?? null));
+    return () => listener.subscription.unsubscribe();
+  }, []);
+  return name;
+}
+
 export default function SettingsScreen() {
   const { settings, update } = useSettings();
+  const accountName = useAccountName();
 
   const contact = (subject: string) => {
     if (!SUPPORT_EMAIL) return;
@@ -44,7 +62,13 @@ export default function SettingsScreen() {
     <Text accessibilityRole="header" style={styles.title}>{t('settings.title')}</Text>
 
     <Section title={t('settings.account')}>
-      <LinkRow icon="👤" label={t('settings.profile')} note={t('settings.profileNote')} onPress={() => router.push('/profile' as Href)} />
+      {/* Signed in: the person's name, with "Profile" moved to the line below. */}
+      <LinkRow
+        icon="👤"
+        label={accountName ?? t('settings.profile')}
+        note={accountName ? `${t('settings.profile')} · ${t('settings.profileNote')}` : t('settings.profileNote')}
+        onPress={() => router.push('/profile' as Href)}
+      />
     </Section>
 
     <Section title={t('settings.appearance')}>
@@ -100,7 +124,7 @@ function Faq({ answer, question }: { answer: string; question: string }) {
 function LinkRow({ icon, label, note, onPress }: { icon: string; label: string; note: string; onPress: () => void }) {
   return <Pressable accessibilityRole="button" onPress={onPress} style={styles.row}>
     <Text style={styles.icon}>{icon}</Text>
-    <View style={styles.rowCopy}><Text style={styles.rowLabel}>{label}</Text><Text style={styles.rowNote}>{note}</Text></View>
+    <View style={styles.rowCopy}><Text numberOfLines={1} style={styles.rowLabel}>{label}</Text><Text style={styles.rowNote}>{note}</Text></View>
     <Text style={styles.chevron}>›</Text>
   </Pressable>;
 }
