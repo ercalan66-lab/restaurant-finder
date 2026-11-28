@@ -1,4 +1,4 @@
-import { t, type MessageKey } from '@/i18n';
+import { currentLanguage, t, type MessageKey } from '@/i18n';
 import Storage from '@/utils/kv-store';
 
 import { supabase } from '../../lib/supabase';
@@ -130,6 +130,8 @@ const orderRow = (order: OrderRecord) => ({
   items: order.items,
   total: order.total,
   payment_method: 'cash',
+  // The language for the customer's order texts (SMS).
+  language: currentLanguage(),
   // Only sent when there is one, so phones without push keep working against older databases.
   ...(order.pushToken ? { push_token: order.pushToken } : {}),
 });
@@ -165,7 +167,12 @@ const PERMANENT_ERRORS: Record<string, MessageKey | null> = {
 /** Sends one order. A duplicate-reference error means an earlier attempt already arrived, which counts as sent. */
 async function sendOrder(row: Record<string, unknown>): Promise<SendResult> {
   try {
-    const { error } = await supabase.from('orders').insert(row);
+    let { error } = await supabase.from('orders').insert(row);
+    // A database without the order-texts column (202611280003_order_sms.sql) still takes the order.
+    if (error?.code === 'PGRST204' && /language/.test(error.message)) {
+      const { language: _language, ...withoutLanguage } = row;
+      ({ error } = await supabase.from('orders').insert(withoutLanguage));
+    }
     if (!error || error.code === '23505') return 'sent';
     if (error.code && error.code in PERMANENT_ERRORS) {
       const known = PERMANENT_ERRORS[error.code];

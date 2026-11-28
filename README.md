@@ -13,7 +13,7 @@ An Expo SDK 58 restaurant discovery and food-ordering app backed by Supabase.
    4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
    5. `202611180004_status_values.sql` (new order, booking, and payment values). Run it on its own and let it finish before the next one: Postgres cannot use new enum values in the transaction that adds them.
    6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
-   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` and `202611230001_admin_two_step_optional.sql` (see [Two-step sign-in](#two-step-sign-in)), `202611260001_menu_photos.sql` (photos of the printed menu; see [Restaurant owners](#restaurant-owners)), `202611280001_sms_sign_in.sql` (see [Sign-in by SMS](#sign-in-by-sms)), `202611280002_admin_tools.sql` (orders nobody answers, admin cancel and order details, restaurants set up by admins; see [Kwetu admins](#kwetu-admins)).
+   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` and `202611230001_admin_two_step_optional.sql` (see [Two-step sign-in](#two-step-sign-in)), `202611260001_menu_photos.sql` (photos of the printed menu; see [Restaurant owners](#restaurant-owners)), `202611280001_sms_sign_in.sql` (see [Sign-in by SMS](#sign-in-by-sms)), `202611280002_admin_tools.sql` (orders nobody answers, admin cancel and order details, restaurants set up by admins; see [Kwetu admins](#kwetu-admins)), `202611280003_order_sms.sql` (order texts by SMS; see [Order texts by SMS](#order-texts-by-sms)).
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
 4. Make yourself a Kwetu admin (see [Kwetu admins](#kwetu-admins)) so you can approve new restaurants.
@@ -55,6 +55,28 @@ select created, status_code, content from net._http_response order by created de
 ```
 
 A 401 means the login is wrong; a balance error means the account needs a top-up.
+
+### Order texts by SMS
+
+`202611280003_order_sms.sql` (run after `202611280001_sms_sign_in.sql`) also sends order updates by SMS through the same SMS company, next to the push notifications. Nothing is sent until the SMS login is stored (step 3 above).
+
+| When | Who gets an SMS |
+| --- | --- |
+| An order is placed | The customer ("received your order") and the restaurant ("new order") |
+| The order is ready for pickup, or on its way | The customer, with the cash amount to have ready |
+| The restaurant declines the order | The customer |
+| Kwetu cancels the order, or nobody answered within 30 minutes | The customer and the restaurant, with the reason |
+| The customer cancels the order | The restaurant |
+
+- **Customers** get texts in the language they use the app in. Orders from app versions before this change get English.
+- **Restaurants** get short texts in Kiswahili and English, sent to the restaurant's listed phone number, or else the owner's account number.
+
+Every SMS costs money (about TSh 16–25), so a typical order costs about TSh 50–75 in texts. Turn either kind off or on again in the SQL editor:
+
+```sql
+update private.sms_settings set order_sms_customers = false;    -- stop texts to customers
+update private.sms_settings set order_sms_restaurants = false;  -- stop texts to restaurants
+```
 
 ## Push notifications
 
