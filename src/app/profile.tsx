@@ -1,5 +1,5 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,13 +14,23 @@ import { useTwoStepGuard } from '@/hooks/use-two-step-guard';
 import { t } from '@/i18n';
 import { confirmAction, errorMessage, showMessage } from '@/utils/feedback';
 import { goBackOrReplace, goHome } from '@/utils/navigation';
-import { formatAccountPhone } from '@/utils/phone';
+import { formatAccountPhone, toE164 } from '@/utils/phone';
 import { onNotificationReceived, unregisterDevice } from '@/utils/push-notifications';
 import { supabase } from '../../lib/supabase';
 import { themedStyles } from '@/theme/theme';
 
 // Phone sign-in accounts have no email, so fall back to the phone number.
 const accountLabel = (user: User | null) => user ? user.email || formatAccountPhone(user.phone) || t('profile.signedIn') : null;
+
+/** The name, phone and email given at registration (or last saved to the account). */
+function accountDetails(user: User): GuestProfile {
+  const details = user.user_metadata ?? {};
+  return {
+    name: typeof details.full_name === 'string' ? details.full_name.trim() : '',
+    phone: (typeof details.phone === 'string' ? details.phone : '') || formatAccountPhone(user.phone) || '',
+    email: user.email ?? '',
+  };
+}
 
 const ORANGE = '#ED6417';
 const ACTIVITY_REFRESH_MS = 15_000;
@@ -44,10 +54,13 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: 'idle' });
   const saving = saveStatus.kind === 'saving';
-  // The details last saved on this device. While they exist and are not being edited, the form is
-  // locked and shows "✓ Saved" with an "Edit profile" button.
+  // The saved details: the account's registration details when signed in, otherwise the copy kept
+  // on this device. While they exist and are not being edited, the form is locked and shows
+  // "✓ Saved" with an "Edit profile" button.
   const [savedProfile, setSavedProfile] = useState<GuestProfile | null>(null);
   const [editing, setEditing] = useState(false);
+  const editingRef = useRef(false);
+  useEffect(() => { editingRef.current = editing; }, [editing]);
   const locked = savedProfile !== null && !editing;
   const [account, setAccount] = useState<string | null>(null);
   const [accountNotice, setAccountNotice] = useState('');
@@ -61,16 +74,19 @@ export default function ProfileScreen() {
       setName((current) => current || profile.name);
       setPhone((current) => current || profile.phone);
       setEmail((current) => current || profile.email);
-      if (profile.name && profile.phone) setSavedProfile(profile);
+      if (profile.name && profile.phone) setSavedProfile((current) => current ?? profile);
     }).catch(() => undefined);
     const applyUser = (user: User | null) => {
       setAccount(accountLabel(user));
-      if (user) {
-        // Fill empty fields with the details given at registration.
-        const details = user.user_metadata ?? {};
-        setName((current) => current || (typeof details.full_name === 'string' ? details.full_name : ''));
-        setPhone((current) => current || (typeof details.phone === 'string' ? details.phone : '') || formatAccountPhone(user.phone) || '');
-        setEmail((current) => current || user.email || '');
+      // Never overwrite what the person is typing (sessions refresh in the background).
+      if (!user || editingRef.current) return;
+      // The account's details win over this phone's copy, so they match on every phone.
+      const fromAccount = accountDetails(user);
+      setName((current) => fromAccount.name || current);
+      setPhone((current) => fromAccount.phone || current);
+      setEmail((current) => fromAccount.email || current);
+      if (fromAccount.name && fromAccount.phone) {
+        setSavedProfile((current) => ({ ...fromAccount, email: fromAccount.email || current?.email || '' }));
       }
     };
     supabase.auth.getUser().then(({ data }) => applyUser(data.user)).catch(() => undefined);
@@ -128,7 +144,14 @@ export default function ProfileScreen() {
     if (!phone.trim()) return setSaveStatus({ kind: 'error', message: t('profile.phoneRequired') });
     setSaveStatus({ kind: 'saving' });
     try {
-      const saved = await saveGuestProfile({ name: name.trim(), phone: phone.trim(), email: email.trim() });
+      const cleanPhone = toE164(phone) ?? phone.trim();
+      // Signed in: keep the account up to date too, so other phones and Settings show the new details.
+      // (The email here is only a contact email; the sign-in email is not changed.)
+      if (account) {
+        const { error } = await supabase.auth.updateUser({ data: { full_name: name.trim(), phone: cleanPhone } });
+        if (error) throw error;
+      }
+      const saved = await saveGuestProfile({ name: name.trim(), phone: cleanPhone, email: email.trim() });
       setName(saved.name);
       setPhone(saved.phone);
       setEmail(saved.email);
