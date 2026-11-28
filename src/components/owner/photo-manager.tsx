@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { useDashboardDb } from '@/data/dashboard-db';
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
 import type { Restaurant } from '@/data/restaurants';
@@ -17,6 +18,7 @@ type PhotoChanges = Partial<Pick<Restaurant, 'coverUrl' | 'galleryUrls'>>;
 
 /** The main photo (shown in search) and photos of the restaurant itself, inside and outside. */
 export function PhotoManager({ onUpdated, restaurant }: { onUpdated: (changes: PhotoChanges) => void; restaurant: Restaurant }) {
+  const db = useDashboardDb();
   const [busy, setBusy] = useState(false);
 
   const changeCover = async () => {
@@ -26,12 +28,12 @@ export function PhotoManager({ onUpdated, restaurant }: { onUpdated: (changes: P
     setBusy(true);
     let uploaded: string | null = null;
     try {
-      uploaded = await uploadRestaurantPhoto(restaurant.id, asset, 'cover');
-      await updateRestaurant(restaurant.id, { coverUrl: uploaded });
+      uploaded = await uploadRestaurantPhoto(restaurant.id, asset, 'cover', db);
+      await updateRestaurant(restaurant.id, { coverUrl: uploaded }, db);
       onUpdated({ coverUrl: uploaded });
-      void removeRestaurantPhoto(previous);
+      void removeRestaurantPhoto(previous, db);
     } catch (error) {
-      void removeRestaurantPhoto(uploaded);
+      void removeRestaurantPhoto(uploaded, db);
       showMessage(t('photos.uploadFailed'), errorMessage(error));
     } finally {
       setBusy(false);

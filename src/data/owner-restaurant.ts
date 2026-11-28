@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import { t } from '@/i18n';
 import { supabase } from '../../lib/supabase';
 import { isGoogleMapsLink } from '@/utils/safe-links';
@@ -12,6 +14,16 @@ export type RestaurantChanges = Partial<RestaurantDetails & Pick<Restaurant, 'co
 export type MenuItemInput = Omit<MenuItem, 'id' | 'createdAt'>;
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** A blank "set up your restaurant" form. */
+export const EMPTY_DETAILS: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0 };
+
+/** The editable details of a saved restaurant. */
+export const detailsOf = (restaurant: Restaurant): RestaurantDetails => ({
+  name: restaurant.name, cuisine: restaurant.cuisine, area: restaurant.area, address: restaurant.address, description: restaurant.description,
+  phone: restaurant.phone, email: restaurant.email, opensAt: restaurant.opensAt, closesAt: restaurant.closesAt, mapUrl: restaurant.mapUrl,
+  facilities: restaurant.facilities, pricePerPerson: restaurant.pricePerPerson,
+});
 
 /** Returns a message describing the first problem, or null when the details are valid. */
 export function restaurantDetailsError(details: RestaurantDetails): string | null {
@@ -79,23 +91,34 @@ export async function fetchMyRestaurant(ownerId: string): Promise<Restaurant | n
   return data ? toRestaurant(data) : null;
 }
 
-export async function createRestaurant(ownerId: string, details: RestaurantDetails): Promise<Restaurant> {
-  const { data, error } = await supabase
+/** One restaurant with its menu. Admins use it (through their own sign-in) to edit any restaurant. */
+export async function fetchRestaurantById(id: number, db: SupabaseClient = supabase): Promise<Restaurant | null> {
+  const { data, error } = await db.from('restaurants').select(RESTAURANT_WITH_MENU).eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data ? toRestaurant(data) : null;
+}
+
+/**
+ * Creates a restaurant. Owners create their own; admins create one without an owner (ownerId null)
+ * and hand it over later.
+ */
+export async function createRestaurant(ownerId: string | null, details: RestaurantDetails, db: SupabaseClient = supabase): Promise<Restaurant> {
+  const { data, error } = await db
     .from('restaurants')
-    .insert({ owner_id: ownerId, ...restaurantColumns(details) })
+    .insert({ ...(ownerId ? { owner_id: ownerId } : {}), ...restaurantColumns(details) })
     .select(RESTAURANT_WITH_MENU)
     .single();
   if (error) throw error;
   return toRestaurant(data);
 }
 
-export async function updateRestaurant(id: number, changes: RestaurantChanges) {
-  const { error } = await supabase.from('restaurants').update(restaurantColumns(changes)).eq('id', id);
+export async function updateRestaurant(id: number, changes: RestaurantChanges, db: SupabaseClient = supabase) {
+  const { error } = await db.from('restaurants').update(restaurantColumns(changes)).eq('id', id);
   if (error) throw error;
 }
 
-export async function addMenuItem(restaurantId: number, item: MenuItemInput): Promise<MenuItem> {
-  const { data, error } = await supabase
+export async function addMenuItem(restaurantId: number, item: MenuItemInput, db: SupabaseClient = supabase): Promise<MenuItem> {
+  const { data, error } = await db
     .from('menu_items')
     .insert({ restaurant_id: restaurantId, ...menuColumns(item) })
     .select(MENU_COLUMNS)
@@ -104,12 +127,12 @@ export async function addMenuItem(restaurantId: number, item: MenuItemInput): Pr
   return toMenuItem(data as MenuRow);
 }
 
-export async function updateMenuItem(id: string, changes: Partial<MenuItemInput>) {
-  const { error } = await supabase.from('menu_items').update(menuColumns(changes)).eq('id', id);
+export async function updateMenuItem(id: string, changes: Partial<MenuItemInput>, db: SupabaseClient = supabase) {
+  const { error } = await db.from('menu_items').update(menuColumns(changes)).eq('id', id);
   if (error) throw error;
 }
 
-export async function deleteMenuItem(id: string) {
-  const { error } = await supabase.from('menu_items').delete().eq('id', id);
+export async function deleteMenuItem(id: string, db: SupabaseClient = supabase) {
+  const { error } = await db.from('menu_items').delete().eq('id', id);
   if (error) throw error;
 }

@@ -13,7 +13,7 @@ import { PhotoManager } from '@/components/owner/photo-manager';
 import { RestaurantDetailsForm } from '@/components/owner/restaurant-details-form';
 import { SetupChecklist, setupSteps, type OwnerTab } from '@/components/owner/setup-checklist';
 import { OwnerRequests } from '@/components/owner-requests';
-import { createRestaurant, fetchMyRestaurant, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
+import { createRestaurant, detailsOf, EMPTY_DETAILS, fetchMyRestaurant, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
 import { useTwoStepGuard } from '@/hooks/use-two-step-guard';
 import { t, type MessageKey } from '@/i18n';
@@ -22,14 +22,6 @@ import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
 import { themedStyles } from '@/theme/theme';
-
-const emptyDetails: RestaurantDetails = { name: '', cuisine: 'African', area: '', address: '', description: '', phone: '', email: '', opensAt: '08:00', closesAt: '22:00', mapUrl: '', facilities: [], pricePerPerson: 0 };
-
-const detailsOf = (restaurant: Restaurant): RestaurantDetails => ({
-  name: restaurant.name, cuisine: restaurant.cuisine, area: restaurant.area, address: restaurant.address, description: restaurant.description,
-  phone: restaurant.phone, email: restaurant.email, opensAt: restaurant.opensAt, closesAt: restaurant.closesAt, mapUrl: restaurant.mapUrl,
-  facilities: restaurant.facilities, pricePerPerson: restaurant.pricePerPerson,
-});
 
 type Owner = { id: string; email: string; phone: string };
 type LoadResult = { kind: 'redirected' } | { kind: 'error'; message: string } | { kind: 'ready'; owner: Owner; restaurant: Restaurant | null };
@@ -141,7 +133,7 @@ export default function OwnerDashboardScreen() {
         <Text style={styles.title}>{t('owner.setupTitle')}</Text>
         <Text style={styles.subtitle}>{t('owner.setupSubtitle')}</Text>
         <Section title={t('owner.detailsSection')}>
-          <RestaurantDetailsForm initial={{ ...emptyDetails, email: owner?.email ?? '', phone: owner?.phone ?? '' }} onSubmit={create} submitLabel={t('owner.create')} />
+          <RestaurantDetailsForm initial={{ ...EMPTY_DETAILS, email: owner?.email ?? '', phone: owner?.phone ?? '' }} onSubmit={create} submitLabel={t('owner.create')} />
         </Section>
       </>
       : <>

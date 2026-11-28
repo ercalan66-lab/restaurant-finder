@@ -2,7 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { fetchOverview, type AdminOverview } from '@/data/admin';
+import { AUTO_CANCEL_MINUTES, fetchOverview, WAITING_ALERT_MINUTES, type AdminOverview } from '@/data/admin';
 import type { ApprovalStatus } from '@/data/restaurants';
 import { errorMessage } from '@/utils/feedback';
 
@@ -43,7 +43,9 @@ export function OverviewSection({ onOpenRequests, onOpenRestaurants }: Props) {
       <View style={styles.grid}>
         <Tile caption="Orders placed" onPress={onOpenRequests} value={String(state.value.ordersToday)} />
         <Tile caption="Orders in progress" onPress={onOpenRequests} value={String(state.value.ordersInProgress)} />
+        <Tile attention={state.value.ordersWaitingLong > 0} caption={`No answer for ${WAITING_ALERT_MINUTES}+ min`} onPress={onOpenRequests} value={String(state.value.ordersWaitingLong)} />
       </View>
+      <Text style={styles.note}>Orders nobody answers are cancelled after {AUTO_CANCEL_MINUTES} minutes, and the customer is told.</Text>
       <View style={styles.sales}>
         <Text style={styles.salesLabel}>SALES, LAST 7 DAYS</Text>
         <Text style={styles.salesValue}>{formatMoney(state.value.salesLast7Days)}</Text>
@@ -63,6 +65,7 @@ function Tile({ attention, caption, onPress, value }: { attention?: boolean; cap
 const styles = themedStyles(({ bg, fg, line }) => ({
   group: { color: fg('#8A7164'), fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 20, marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  note: { color: fg('#71675F'), fontSize: 11, lineHeight: 16, marginTop: 8 },
   tile: { flexGrow: 1, flexBasis: 100, padding: 14, borderWidth: 1, borderColor: line('#EADFD3'), borderRadius: 16, backgroundColor: bg('#FFF') },
   tileAttention: { borderColor: line('#F0B9A8'), backgroundColor: bg('#FDEEE9') },
   tileValue: { color: fg('#271812'), fontSize: 26, fontWeight: '900' },

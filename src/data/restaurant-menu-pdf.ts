@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import * as DocumentPicker from 'expo-document-picker';
 
 import { t } from '@/i18n';
@@ -15,23 +16,23 @@ export async function pickMenuPdf() {
 }
 
 /** Uploads to `<restaurant id>/…` (the storage policy requires this layout) and returns the public URL. */
-export async function uploadMenuPdf(restaurantId: number, file: DocumentPicker.DocumentPickerAsset) {
+export async function uploadMenuPdf(restaurantId: number, file: DocumentPicker.DocumentPickerAsset, db: SupabaseClient = supabase) {
   const isPdf = file.mimeType === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
   if (!isPdf) throw new Error(t('pdf.notPdf'));
   if (file.size && file.size > MAX_MENU_PDF_MB * 1024 * 1024) throw new Error(t('pdf.tooLarge', { mb: MAX_MENU_PDF_MB }));
   const body = await (await fetch(file.uri)).arrayBuffer();
   const path = `${restaurantId}/menu-${Date.now()}.pdf`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType: 'application/pdf', upsert: false });
+  const { error } = await db.storage.from(BUCKET).upload(path, body, { contentType: 'application/pdf', upsert: false });
   if (error) throw error;
-  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  return db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 /** Deletes a menu PDF this app uploaded. Failures are only logged, so saving the restaurant still works. */
-export async function removeMenuPdf(url: string | null | undefined) {
+export async function removeMenuPdf(url: string | null | undefined, db: SupabaseClient = supabase) {
   const index = url ? url.indexOf(PUBLIC_PATH_MARKER) : -1;
   if (!url || index === -1) return;
   const path = decodeURIComponent(url.slice(index + PUBLIC_PATH_MARKER.length).split('?')[0]);
-  const { error } = await supabase.storage.from(BUCKET).remove([path]);
+  const { error } = await db.storage.from(BUCKET).remove([path]);
   if (error) console.warn('Could not delete old menu PDF:', error.message);
 }
 

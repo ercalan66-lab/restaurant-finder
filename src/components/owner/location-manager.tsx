@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { useDashboardDb } from '@/data/dashboard-db';
 import { updateRestaurant } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
 import { t } from '@/i18n';
@@ -15,6 +16,7 @@ type Changes = Pick<Restaurant, 'latitude' | 'longitude'>;
 
 /** Saves the restaurant's map position, so customers see how far away it is. */
 export function LocationManager({ onUpdated, restaurant }: { onUpdated: (changes: Changes) => void; restaurant: Restaurant }) {
+  const db = useDashboardDb();
   const [busy, setBusy] = useState(false);
   const hasPosition = restaurant.latitude != null && restaurant.longitude != null;
 
@@ -32,7 +34,7 @@ export function LocationManager({ onUpdated, restaurant }: { onUpdated: (changes
         t('loc.confirmTitle'),
         t('loc.confirmBody'),
         t('loc.save'),
-        () => void updateRestaurant(restaurant.id, changes)
+        () => void updateRestaurant(restaurant.id, changes, db)
           .then(() => { onUpdated(changes); showMessage(t('loc.saved'), t('loc.savedBody')); })
           .catch((error: unknown) => showMessage(t('loc.saveFailed'), errorMessage(error))),
       );

@@ -55,19 +55,32 @@ export async function updateListing(id: number, rating: number, tag: string) {
   if (error) throw error;
 }
 
+/** Matches handle_waiting_orders() in 202611280002_admin_tools.sql. */
+export const WAITING_ALERT_MINUTES = 15;
+export const AUTO_CANCEL_MINUTES = 30;
+
+/** Minutes a pending order has waited for the restaurant, or null when it is no longer waiting. */
+export function minutesWaiting(order: { status: string; createdAt: string }, now = Date.now()) {
+  if (order.status !== 'pending') return null;
+  const placed = new Date(order.createdAt).getTime();
+  return Number.isNaN(placed) ? null : Math.max(0, Math.floor((now - placed) / 60_000));
+}
+
 export type AdminOverview = {
   restaurantsWaiting: number;
   restaurantsLive: number;
   restaurantsChangesRequested: number;
   ordersToday: number;
   ordersInProgress: number;
+  /** Orders still waiting for the restaurant after 15 minutes. */
+  ordersWaitingLong: number;
   /** Value of orders completed in the last 7 days, in shillings. */
   salesLast7Days: number;
 };
 
 type OverviewRow = {
   restaurants_waiting: number; restaurants_live: number; restaurants_changes_requested: number;
-  orders_today: number; orders_in_progress: number; sales_last_7_days: number | string;
+  orders_today: number; orders_in_progress: number; orders_waiting_long?: number; sales_last_7_days: number | string;
 };
 
 export async function fetchOverview(): Promise<AdminOverview> {
@@ -79,6 +92,8 @@ export async function fetchOverview(): Promise<AdminOverview> {
     restaurantsChangesRequested: data.restaurants_changes_requested,
     ordersToday: data.orders_today,
     ordersInProgress: data.orders_in_progress,
+    // Missing until 202611280002_admin_tools.sql has been run.
+    ordersWaitingLong: data.orders_waiting_long ?? 0,
     salesLast7Days: Number(data.sales_last_7_days),
   };
 }
@@ -116,6 +131,44 @@ export async function findOrders(search = ''): Promise<AdminOrder[]> {
   const { data, error } = await supabase.rpc('admin_find_requests', { p_search: search.trim(), p_limit: 40 });
   if (error) throw error;
   return ((data ?? []) as RequestRow[]).filter((row) => row.kind === 'order').map(toOrder);
+}
+
+export type AdminOrderDetails = {
+  reference: string; status: string; createdAt: string; updatedAt: string;
+  restaurantId: number; restaurantName: string; restaurantPhone: string;
+  customerName: string; customerPhone: string; customerEmail: string; signedIn: boolean;
+  fulfillment: 'Pickup' | 'Delivery'; deliveryAddress: string;
+  items: { name: string; price: string; quantity: number }[]; total: number;
+  paymentStatus: PaymentStatus; paymentMethod: PaymentMethod; paidAt: string | null;
+  cancelledBy: 'customer' | 'admin' | 'timeout' | null; cancelReason: string; remindedAt: string | null;
+};
+
+/** Everything about one order: dishes, delivery address, email, and how it ended. */
+export async function fetchOrderDetails(reference: string): Promise<AdminOrderDetails> {
+  const { data, error } = await supabase.rpc('admin_order_details', { p_reference: reference });
+  if (error) throw error;
+  const details = data as AdminOrderDetails;
+  return { ...details, items: Array.isArray(details.items) ? details.items : [], cancelReason: details.cancelReason ?? '' };
+}
+
+/** Cancels an order that is not finished yet. The customer and the restaurant are told the reason. */
+export async function cancelOrder(reference: string, reason: string) {
+  const { error } = await supabase.rpc('admin_cancel_order', { p_reference: reference, p_reason: reason.trim() });
+  if (error) throw error;
+}
+
+/** The account that manages a restaurant (email, or phone number), or null when it has no owner yet. */
+export async function fetchRestaurantOwner(restaurantId: number): Promise<string | null> {
+  const { data, error } = await supabase.rpc('admin_restaurant_owner', { p_restaurant_id: restaurantId });
+  if (error) throw error;
+  return typeof data === 'string' && data ? data : null;
+}
+
+/** Hands a restaurant to an existing account (email or phone number). Returns that account as shown. */
+export async function assignOwner(restaurantId: number, account: string): Promise<string> {
+  const { data, error } = await supabase.rpc('admin_assign_owner', { p_restaurant_id: restaurantId, p_account: account.trim() });
+  if (error) throw error;
+  return String(data ?? account.trim());
 }
 
 export type AdminMember = { userId: string; account: string; addedAt: string; isMe: boolean };

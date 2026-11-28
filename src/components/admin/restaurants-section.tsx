@@ -6,7 +6,7 @@ import { fetchRestaurantsForReview, reviewRestaurant, updateListing } from '@/da
 import type { ApprovalStatus, RestaurantSummary } from '@/data/restaurants';
 import { errorMessage, showMessage } from '@/utils/feedback';
 
-import { Action, adminStyles, Chips, Empty, LoadError, SearchField, SectionHeading, type Loadable } from './admin-ui';
+import { Action, adminStyles, Badge, Chips, Empty, LoadError, SearchField, SectionHeading, type Loadable } from './admin-ui';
 import { themedStyles } from '@/theme/theme';
 
 const loadRestaurants = (): Promise<Loadable<RestaurantSummary[]>> =>
@@ -38,7 +38,10 @@ export function RestaurantsSection({ onTabChange, tab }: Props) {
   const visible = restaurants.filter((restaurant) => restaurant.approvalStatus === tab && matches(restaurant, query));
 
   return <View>
-    <SectionHeading helper="Approve new restaurants before customers can see them, and keep ratings and tags up to date." loading={state.kind === 'loading'} onRefresh={reload} title="Restaurants" />
+    <SectionHeading helper="Approve new restaurants before customers can see them, and keep ratings and tags up to date. You can also set up a restaurant for an owner and hand it over." loading={state.kind === 'loading'} onRefresh={reload} title="Restaurants" />
+    <View style={adminStyles.actions}>
+      <Action label="+ Add a restaurant" onPress={() => router.push('/admin-restaurant?id=new' as Href)} />
+    </View>
     <Chips
       onChange={onTabChange}
       options={[
@@ -52,7 +55,7 @@ export function RestaurantsSection({ onTabChange, tab }: Props) {
     {state.kind === 'error' && <LoadError message={state.message} onRetry={reload} />}
     {state.kind === 'ready' && (visible.length === 0
       ? <Empty
-        copy={query.trim() ? 'Try another name, area or number.' : tab === 'pending' ? 'New restaurants appear here when owners create them.' : 'Restaurants move here as you review them.'}
+        copy={query.trim() ? 'Try another name, area or number.' : tab === 'pending' ? 'New restaurants appear here when owners or admins create them.' : 'Restaurants move here as you review them.'}
         title={query.trim() ? 'No matches' : tab === 'pending' ? 'Nothing to review' : 'None here'}
       />
       : visible.map((restaurant) => <ReviewCard key={restaurant.id} onChanged={reload} restaurant={restaurant} />))}
@@ -79,7 +82,10 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
     }
   };
 
-  const approve = () => run(() => reviewRestaurant(restaurant.id, true), `${restaurant.name} is now live. The owner has been notified.`);
+  const hasOwner = restaurant.ownerId !== null;
+  const approve = () => hasOwner
+    ? run(() => reviewRestaurant(restaurant.id, true), `${restaurant.name} is now live. The owner has been notified.`)
+    : showMessage('Hand it to its owner first', 'Open “Set up & hand over” and enter the owner’s account, so someone receives this restaurant’s orders. Then approve it.');
   const requestChanges = () => {
     if (!reason.trim()) return showMessage('Add a reason', 'Tell the owner what needs to change.');
     return run(() => reviewRestaurant(restaurant.id, false, reason.trim()), `The owner of ${restaurant.name} has been asked for changes.`);
@@ -95,13 +101,17 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
   return <View style={adminStyles.card}>
     <View style={adminStyles.cardTop}>
       <View style={adminStyles.cardCopy}><Text style={adminStyles.name}>{restaurant.name}</Text><Text style={adminStyles.meta}>{restaurant.cuisine} · {restaurant.area} · #{restaurant.id}</Text></View>
-      {!restaurant.isActive && <Text style={styles.hidden}>HIDDEN BY OWNER</Text>}
+      <View style={styles.badges}>
+        {!restaurant.isActive && <Text style={styles.hidden}>HIDDEN BY OWNER</Text>}
+        {!hasOwner && <Badge attention label="NO OWNER YET" />}
+      </View>
     </View>
     <Text style={adminStyles.meta}>{restaurant.address}</Text>
     {restaurant.phone || restaurant.email ? <Text selectable style={adminStyles.meta}>{[restaurant.phone, restaurant.email].filter(Boolean).join(' · ')}</Text> : null}
     {restaurant.description ? <Text style={styles.description}>{restaurant.description}</Text> : null}
     {restaurant.approvalStatus === 'rejected' && restaurant.rejectionReason ? <Text style={styles.reason}>Asked for: {restaurant.rejectionReason}</Text> : null}
     <Pressable onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)}><Text style={adminStyles.link}>View the restaurant page ›</Text></Pressable>
+    <Pressable onPress={() => router.push(`/admin-restaurant?id=${restaurant.id}` as Href)}><Text style={adminStyles.link}>{hasOwner ? 'Edit menu, photos & details ›' : 'Set up & hand over to the owner ›'}</Text></Pressable>
 
     {restaurant.approvalStatus === 'approved' && <>
       <View style={styles.listing}>
@@ -124,6 +134,7 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
 }
 
 const styles = themedStyles(({ bg, fg }) => ({
+  badges: { alignItems: 'flex-end', gap: 4 },
   description: { color: fg('#4E453F'), fontSize: 12, lineHeight: 18, marginTop: 8 },
   reason: { color: fg('#8E2F1A'), fontSize: 12, lineHeight: 18, marginTop: 8, padding: 10, borderRadius: 10, backgroundColor: bg('#FBE9E5') },
   hidden: { color: fg('#6B5A30'), backgroundColor: bg('#FFF7DE'), borderRadius: 9, overflow: 'hidden', paddingHorizontal: 7, paddingVertical: 4, fontSize: 8, fontWeight: '900' },

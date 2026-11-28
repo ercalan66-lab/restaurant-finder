@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Platform } from 'react-native';
 
@@ -81,40 +82,40 @@ function contentTypeOf(asset: ImagePicker.ImagePickerAsset) {
 }
 
 /** Uploads to `<restaurant id>/<folder>/…` (the storage policy requires this layout) and returns the public URL. */
-export async function uploadRestaurantPhoto(restaurantId: number, asset: ImagePicker.ImagePickerAsset, folder: PhotoFolder) {
+export async function uploadRestaurantPhoto(restaurantId: number, asset: ImagePicker.ImagePickerAsset, folder: PhotoFolder, db: SupabaseClient = supabase) {
   const contentType = contentTypeOf(asset);
   const extension = EXTENSIONS[contentType];
   if (!extension) throw new Error(t('photos.badType'));
   const body = await (await fetch(asset.uri)).arrayBuffer();
   const path = `${restaurantId}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType, upsert: false });
+  const { error } = await db.storage.from(BUCKET).upload(path, body, { contentType, upsert: false });
   if (error) throw error;
-  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  return db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 /**
  * Uploads several photos one after another, reporting progress as (done, total). If one fails, the
  * photos already uploaded in this batch are deleted again and the error is passed on.
  */
-export async function uploadRestaurantPhotos(restaurantId: number, assets: ImagePicker.ImagePickerAsset[], folder: PhotoFolder, onProgress?: (done: number, total: number) => void) {
+export async function uploadRestaurantPhotos(restaurantId: number, assets: ImagePicker.ImagePickerAsset[], folder: PhotoFolder, onProgress?: (done: number, total: number) => void, db: SupabaseClient = supabase) {
   const urls: string[] = [];
   try {
     for (const asset of assets) {
       onProgress?.(urls.length, assets.length);
-      urls.push(await uploadRestaurantPhoto(restaurantId, asset, folder));
+      urls.push(await uploadRestaurantPhoto(restaurantId, asset, folder, db));
     }
     return urls;
   } catch (error) {
-    await Promise.all(urls.map((url) => removeRestaurantPhoto(url)));
+    await Promise.all(urls.map((url) => removeRestaurantPhoto(url, db)));
     throw error;
   }
 }
 
 /** Deletes a photo this app uploaded. Other URLs (such as demo photos) are left alone. Failures are only logged. */
-export async function removeRestaurantPhoto(url: string | null | undefined) {
+export async function removeRestaurantPhoto(url: string | null | undefined, db: SupabaseClient = supabase) {
   const index = url ? url.indexOf(PUBLIC_PATH_MARKER) : -1;
   if (!url || index === -1) return;
   const path = decodeURIComponent(url.slice(index + PUBLIC_PATH_MARKER.length).split('?')[0]);
-  const { error } = await supabase.storage.from(BUCKET).remove([path]);
+  const { error } = await db.storage.from(BUCKET).remove([path]);
   if (error) console.warn('Could not delete old photo:', error.message);
 }

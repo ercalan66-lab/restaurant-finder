@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { PhotoViewer } from '@/components/photo-viewer';
+import { useDashboardDb } from '@/data/dashboard-db';
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { pickPhotos, removeRestaurantPhoto, uploadRestaurantPhotos, type PhotoFolder } from '@/data/restaurant-photos';
 import type { Restaurant } from '@/data/restaurants';
@@ -34,6 +35,7 @@ type Props = {
  * at once; each is uploaded in turn with a "2 of 5" progress line. Tapping a photo shows it full size.
  */
 export function PhotoStrip({ addLabel, field, folder, max, onUpdated, removeBody, removeTitle, restaurant, shape }: Props) {
+  const db = useDashboardDb();
   const [progress, setProgress] = useState<string | null>(null);
   const [viewing, setViewing] = useState<number | null>(null);
   const urls = restaurant[field];
@@ -48,12 +50,12 @@ export function PhotoStrip({ addLabel, field, folder, max, onUpdated, removeBody
     setProgress(t('photos.uploadingCount', { done: 1, total: assets.length }));
     let uploaded: string[] = [];
     try {
-      uploaded = await uploadRestaurantPhotos(restaurant.id, assets, folder, (done, total) => setProgress(t('photos.uploadingCount', { done: done + 1, total })));
+      uploaded = await uploadRestaurantPhotos(restaurant.id, assets, folder, (done, total) => setProgress(t('photos.uploadingCount', { done: done + 1, total })), db);
       const changes = changeTo([...urls, ...uploaded]);
-      await updateRestaurant(restaurant.id, changes);
+      await updateRestaurant(restaurant.id, changes, db);
       onUpdated(changes);
     } catch (error) {
-      await Promise.all(uploaded.map((url) => removeRestaurantPhoto(url)));
+      await Promise.all(uploaded.map((url) => removeRestaurantPhoto(url, db)));
       showMessage(t('photos.uploadFailed'), errorMessage(error));
     } finally {
       setProgress(null);
@@ -62,8 +64,8 @@ export function PhotoStrip({ addLabel, field, folder, max, onUpdated, removeBody
 
   const remove = (url: string) => confirmAction(removeTitle, removeBody, t('menu.remove'), () => {
     const changes = changeTo(urls.filter((item) => item !== url));
-    updateRestaurant(restaurant.id, changes)
-      .then(() => { onUpdated(changes); void removeRestaurantPhoto(url); })
+    updateRestaurant(restaurant.id, changes, db)
+      .then(() => { onUpdated(changes); void removeRestaurantPhoto(url, db); })
       .catch((error: unknown) => showMessage(t('photos.removeFailed'), errorMessage(error)));
   });
 

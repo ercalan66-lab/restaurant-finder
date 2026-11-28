@@ -3,6 +3,7 @@ import type { ImagePickerAsset } from 'expo-image-picker';
 import { useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 
+import { useDashboardDb } from '@/data/dashboard-db';
 import { categoryHint, categoryIcon, categoryLabel, MENU_CATEGORIES, type MenuCategory } from '@/data/menu-categories';
 import { addMenuItem, deleteMenuItem, menuItemError, updateMenuItem, type MenuItemInput } from '@/data/owner-restaurant';
 import { pickPhoto, removeRestaurantPhoto, uploadRestaurantPhoto } from '@/data/restaurant-photos';
@@ -14,6 +15,7 @@ import { ChoiceChips, Field, formStyles, OWNER_COLORS, PrimaryButton, Section, T
 import { themedStyles } from '@/theme/theme';
 
 export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu: MenuItem[]) => void; restaurant: Restaurant }) {
+  const db = useDashboardDb();
   const [busyItem, setBusyItem] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const replaceItem = (id: string, changes: Partial<MenuItem>) => onMenuChange(restaurant.menu.map((item) => item.id === id ? { ...item, ...changes } : item));
@@ -21,7 +23,7 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
   const setInStock = async (item: MenuItem, inStock: boolean) => {
     replaceItem(item.id, { inStock });
     try {
-      await updateMenuItem(item.id, { inStock });
+      await updateMenuItem(item.id, { inStock }, db);
     } catch (error) {
       replaceItem(item.id, { inStock: item.inStock });
       showMessage(t('menu.stockFailed'), errorMessage(error));
@@ -34,12 +36,12 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
     setBusyItem(item.id);
     let uploaded: string | null = null;
     try {
-      uploaded = await uploadRestaurantPhoto(restaurant.id, asset, 'menu');
-      await updateMenuItem(item.id, { photoUrl: uploaded });
+      uploaded = await uploadRestaurantPhoto(restaurant.id, asset, 'menu', db);
+      await updateMenuItem(item.id, { photoUrl: uploaded }, db);
       replaceItem(item.id, { photoUrl: uploaded });
-      void removeRestaurantPhoto(item.photoUrl);
+      void removeRestaurantPhoto(item.photoUrl, db);
     } catch (error) {
-      void removeRestaurantPhoto(uploaded);
+      void removeRestaurantPhoto(uploaded, db);
       showMessage(t('photos.uploadFailed'), errorMessage(error));
     } finally {
       setBusyItem(null);
@@ -48,8 +50,8 @@ export function MenuManager({ onMenuChange, restaurant }: { onMenuChange: (menu:
 
   const remove = (item: MenuItem) => confirmAction(t('menu.removeTitle'), t('menu.removeBody', { name: item.name }), t('menu.remove'), () => {
     setBusyItem(item.id);
-    deleteMenuItem(item.id)
-      .then(() => { onMenuChange(restaurant.menu.filter((food) => food.id !== item.id)); void removeRestaurantPhoto(item.photoUrl); })
+    deleteMenuItem(item.id, db)
+      .then(() => { onMenuChange(restaurant.menu.filter((food) => food.id !== item.id)); void removeRestaurantPhoto(item.photoUrl, db); })
       .catch((error: unknown) => showMessage(t('menu.removeFailed'), errorMessage(error)))
       .finally(() => setBusyItem(null));
   });
@@ -112,6 +114,7 @@ function CategoryPicker({ onChange, value }: { onChange: (category: MenuCategory
 }
 
 function EditFoodForm({ item, onCancel, onSaved }: { item: MenuItem; onCancel: () => void; onSaved: (changes: EditableFields) => void }) {
+  const db = useDashboardDb();
   const [name, setName] = useState(item.name);
   const [ingredients, setIngredients] = useState(item.description);
   const [category, setCategory] = useState<MenuCategory>(item.category);
@@ -126,7 +129,7 @@ function EditFoodForm({ item, onCancel, onSaved }: { item: MenuItem; onCancel: (
     if (problem) return showMessage(t('menu.checkTitle'), problem);
     setSaving(true);
     try {
-      await updateMenuItem(item.id, changes);
+      await updateMenuItem(item.id, changes, db);
       onSaved(changes);
     } catch (error) {
       showMessage(t('menu.saveFailed'), errorMessage(error));
@@ -166,6 +169,7 @@ function PriceField({ onChange, value }: { onChange: (value: string) => void; va
  * part on a phone; the description and serving times are optional (times default to opening hours).
  */
 function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => void; restaurant: Restaurant }) {
+  const db = useDashboardDb();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   // Kept after adding a dish, since owners often add several dishes of the same category in a row.
@@ -193,12 +197,12 @@ function AddFoodForm({ onAdded, restaurant }: { onAdded: (item: MenuItem) => voi
     setSaving(true);
     let uploaded: string | null = null;
     try {
-      if (photo) uploaded = await uploadRestaurantPhoto(restaurant.id, photo, 'menu');
-      onAdded(await addMenuItem(restaurant.id, { ...input, photoUrl: uploaded }));
+      if (photo) uploaded = await uploadRestaurantPhoto(restaurant.id, photo, 'menu', db);
+      onAdded(await addMenuItem(restaurant.id, { ...input, photoUrl: uploaded }, db));
       setLastAdded(t('menu.added', { name: name.trim(), price: formatTsh(Number(price)) }));
       setName(''); setDescription(''); setPrice(''); setPhoto(null);
     } catch (error) {
-      void removeRestaurantPhoto(uploaded);
+      void removeRestaurantPhoto(uploaded, db);
       showMessage(t('menu.addFailed'), errorMessage(error));
     } finally {
       setSaving(false);

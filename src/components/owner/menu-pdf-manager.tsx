@@ -2,6 +2,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { useDashboardDb } from '@/data/dashboard-db';
 import { updateRestaurant } from '@/data/owner-restaurant';
 import { MAX_MENU_PDF_MB, pickMenuPdf, removeMenuPdf, uploadMenuPdf } from '@/data/restaurant-menu-pdf';
 import type { Restaurant } from '@/data/restaurants';
@@ -15,6 +16,7 @@ type Changes = Pick<Restaurant, 'menuPdfUrl'>;
 
 /** Lets the owner publish their full menu as a PDF that customers can view or download. */
 export function MenuPdfManager({ onUpdated, restaurant }: { onUpdated: (changes: Changes) => void; restaurant: Restaurant }) {
+  const db = useDashboardDb();
   const [busy, setBusy] = useState(false);
   const current = restaurant.menuPdfUrl;
 
@@ -24,13 +26,13 @@ export function MenuPdfManager({ onUpdated, restaurant }: { onUpdated: (changes:
     setBusy(true);
     let uploaded: string | null = null;
     try {
-      uploaded = await uploadMenuPdf(restaurant.id, file);
-      await updateRestaurant(restaurant.id, { menuPdfUrl: uploaded });
+      uploaded = await uploadMenuPdf(restaurant.id, file, db);
+      await updateRestaurant(restaurant.id, { menuPdfUrl: uploaded }, db);
       onUpdated({ menuPdfUrl: uploaded });
-      void removeMenuPdf(current);
+      void removeMenuPdf(current, db);
       showMessage(t('pdf.published'), t('pdf.publishedBody', { file: file.name }));
     } catch (error) {
-      void removeMenuPdf(uploaded);
+      void removeMenuPdf(uploaded, db);
       showMessage(t('pdf.uploadFailed'), errorMessage(error));
     } finally {
       setBusy(false);
@@ -39,8 +41,8 @@ export function MenuPdfManager({ onUpdated, restaurant }: { onUpdated: (changes:
 
   const remove = () => confirmAction(t('pdf.removeTitle'), t('pdf.removeBody'), t('menu.remove'), () => {
     setBusy(true);
-    updateRestaurant(restaurant.id, { menuPdfUrl: null })
-      .then(() => { onUpdated({ menuPdfUrl: null }); void removeMenuPdf(current); })
+    updateRestaurant(restaurant.id, { menuPdfUrl: null }, db)
+      .then(() => { onUpdated({ menuPdfUrl: null }); void removeMenuPdf(current, db); })
       .catch((error: unknown) => showMessage(t('pdf.removeFailed'), errorMessage(error)))
       .finally(() => setBusy(false));
   });
