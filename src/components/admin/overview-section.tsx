@@ -37,7 +37,7 @@ export function OverviewSection({ onOpenRequests, onOpenRestaurants }: Props) {
       <View style={styles.grid}>
         <Tile attention={state.value.restaurantsWaiting > 0} caption="Waiting for review" onPress={() => onOpenRestaurants('pending')} value={String(state.value.restaurantsWaiting)} />
         <Tile caption="Live" onPress={() => onOpenRestaurants('approved')} value={String(state.value.restaurantsLive)} />
-        <Tile caption="Changes requested" onPress={() => onOpenRestaurants('rejected')} value={String(state.value.restaurantsChangesRequested)} />
+        <Tile caption="Declined" onPress={() => onOpenRestaurants('rejected')} value={String(state.value.restaurantsChangesRequested)} />
       </View>
       <Text style={styles.group}>TODAY</Text>
       <View style={styles.grid}>

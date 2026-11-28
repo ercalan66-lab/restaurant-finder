@@ -47,7 +47,7 @@ export function RestaurantsSection({ onTabChange, tab }: Props) {
       options={[
         { value: 'pending', label: `Waiting (${count('pending')})` },
         { value: 'approved', label: `Live (${count('approved')})` },
-        { value: 'rejected', label: `Changes requested (${count('rejected')})` },
+        { value: 'rejected', label: `Declined (${count('rejected')})` },
       ]}
       value={tab}
     />
@@ -85,10 +85,10 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
   const hasOwner = restaurant.ownerId !== null;
   const approve = () => hasOwner
     ? run(() => reviewRestaurant(restaurant.id, true), `${restaurant.name} is now live. The owner has been notified.`)
-    : showMessage('Hand it to its owner first', 'Open “Set up & hand over” and enter the owner’s account, so someone receives this restaurant’s orders. Then approve it.');
+    : showMessage('Hand it to its owner first', 'Open the restaurant and enter the owner’s account under Owner, so someone receives its orders. Then approve it.');
   const requestChanges = () => {
     if (!reason.trim()) return showMessage('Add a reason', 'Tell the owner what needs to change.');
-    return run(() => reviewRestaurant(restaurant.id, false, reason.trim()), `The owner of ${restaurant.name} has been asked for changes.`);
+    return run(() => reviewRestaurant(restaurant.id, false, reason.trim()), `The owner of ${restaurant.name} has been told why.`);
   };
   // Once customers have reviewed the restaurant, its rating is their average and only the tag is editable.
   const ratedByCustomers = restaurant.reviewCount > 0;
@@ -109,10 +109,8 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
     <Text style={adminStyles.meta}>{restaurant.address}</Text>
     {restaurant.phone || restaurant.email ? <Text selectable style={adminStyles.meta}>{[restaurant.phone, restaurant.email].filter(Boolean).join(' · ')}</Text> : null}
     {restaurant.description ? <Text style={styles.description}>{restaurant.description}</Text> : null}
-    {restaurant.approvalStatus === 'rejected' && restaurant.rejectionReason ? <Text style={styles.reason}>Asked for: {restaurant.rejectionReason}</Text> : null}
-    <Pressable onPress={() => router.push(`/restaurant/${restaurant.id}` as Href)}><Text style={adminStyles.link}>View the restaurant page ›</Text></Pressable>
-    <Pressable onPress={() => router.push(`/admin-restaurant?id=${restaurant.id}` as Href)}><Text style={adminStyles.link}>{hasOwner ? 'Edit menu, photos & details ›' : 'Set up & hand over to the owner ›'}</Text></Pressable>
-
+    {restaurant.approvalStatus === 'rejected' && restaurant.rejectionReason ? <Text style={styles.reason}>Declined because: {restaurant.rejectionReason}</Text> : null}
+    <Pressable onPress={() => router.push(`/admin-restaurant?id=${restaurant.id}` as Href)}><Text style={adminStyles.link}>Open restaurant: orders, menu, contact, location ›</Text></Pressable>
     {restaurant.approvalStatus === 'approved' && <>
       <View style={styles.listing}>
         <View style={styles.listingField}><Text style={adminStyles.label}>RATING (0–5)</Text><TextInput editable={!busy && !ratedByCustomers} keyboardType="decimal-pad" onChangeText={setRating} placeholder="4.6" style={[adminStyles.input, ratedByCustomers && adminStyles.disabled]} value={ratedByCustomers ? String(restaurant.rating) : rating} /></View>
@@ -121,14 +119,14 @@ function ReviewCard({ onChanged, restaurant }: { onChanged: () => void; restaura
       {ratedByCustomers && <Text style={adminStyles.meta}>The rating is the average of {restaurant.reviewCount} customer {restaurant.reviewCount === 1 ? 'review' : 'reviews'}. Hide unfair reviews in the Reviews section.</Text>}
     </>}
 
-    {asking && <View><Text style={adminStyles.label}>WHAT NEEDS TO CHANGE?</Text><TextInput editable={!busy} multiline onChangeText={setReason} placeholder="For example: add a cover photo and at least three dishes." style={[adminStyles.input, adminStyles.multiline]} value={reason} /></View>}
+    {asking && <View><Text style={adminStyles.label}>{restaurant.approvalStatus === 'approved' ? 'WHY ARE YOU UNPUBLISHING IT?' : 'WHY IS IT DECLINED? THE OWNER SEES THIS.'}</Text><TextInput editable={!busy} multiline onChangeText={setReason} placeholder="For example: add a cover photo and at least three dishes." style={[adminStyles.input, adminStyles.multiline]} value={reason} /></View>}
 
     <View style={adminStyles.actions}>
       {restaurant.approvalStatus !== 'approved' && !asking && <Action disabled={busy} label="Approve" onPress={() => void approve()} />}
       {restaurant.approvalStatus === 'approved' && <Action disabled={busy} label={ratedByCustomers ? 'Save tag' : 'Save rating & tag'} onPress={() => void saveListing()} />}
       {asking
-        ? <><Action disabled={busy} label="Send to owner" onPress={() => void requestChanges()} /><Action disabled={busy} label="Cancel" onPress={() => setAsking(false)} secondary /></>
-        : restaurant.approvalStatus !== 'rejected' && <Action disabled={busy} label={restaurant.approvalStatus === 'approved' ? 'Unpublish' : 'Request changes'} onPress={() => setAsking(true)} secondary />}
+        ? <><Action disabled={busy} label={restaurant.approvalStatus === 'approved' ? 'Unpublish' : 'Decline'} onPress={() => void requestChanges()} /><Action disabled={busy} label="Cancel" onPress={() => setAsking(false)} secondary /></>
+        : restaurant.approvalStatus !== 'rejected' && <Action disabled={busy} label={restaurant.approvalStatus === 'approved' ? 'Unpublish' : 'Decline'} onPress={() => setAsking(true)} secondary />}
     </View>
   </View>;
 }

@@ -157,6 +157,33 @@ export async function cancelOrder(reference: string, reason: string) {
   if (error) throw error;
 }
 
+export type RestaurantOwnerInfo = {
+  name: string | null; email: string | null; phone: string | null; registeredPhone: string | null;
+  createdAt: string; lastSignInAt: string | null;
+};
+export type RestaurantStats = {
+  ordersTotal: number; ordersToday: number; inProgress: number; waitingLong: number;
+  completed: number; cancelled: number; declined: number;
+  salesTotal: number; sales7Days: number; lastOrderAt: string | null;
+};
+export type RestaurantActivity = { owner: RestaurantOwnerInfo | null; stats: RestaurantStats; orders: AdminOrder[] };
+
+/** One restaurant's owner account, order counts and sales, and its latest 50 orders. */
+export async function fetchRestaurantActivity(restaurantId: number): Promise<RestaurantActivity> {
+  const { data, error } = await supabase.rpc('admin_restaurant_activity', { p_restaurant_id: restaurantId });
+  if (error) throw error;
+  const result = data as { owner: RestaurantOwnerInfo | null; stats: RestaurantStats; orders: RequestRow[] | null };
+  return {
+    owner: result.owner,
+    stats: {
+      ...result.stats,
+      salesTotal: Number(result.stats.salesTotal),
+      sales7Days: Number(result.stats.sales7Days),
+    },
+    orders: (result.orders ?? []).map(toOrder),
+  };
+}
+
 /** The account that manages a restaurant (email, or phone number), or null when it has no owner yet. */
 export async function fetchRestaurantOwner(restaurantId: number): Promise<string | null> {
   const { data, error } = await supabase.rpc('admin_restaurant_owner', { p_restaurant_id: restaurantId });

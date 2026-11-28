@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Action, ACCENT, adminStyles, Badge, Chips, type Loadable } from '@/components/admin/admin-ui';
+import { Action, ACCENT, adminStyles, Badge, Chips, Empty, formatWhen, type Loadable } from '@/components/admin/admin-ui';
+import { OrderCard } from '@/components/admin/requests-section';
+import { ApprovalCard, RestaurantOverview } from '@/components/admin/restaurant-overview';
 import { Section } from '@/components/owner/form-controls';
 import { LocationManager } from '@/components/owner/location-manager';
 import { MenuManager } from '@/components/owner/menu-manager';
@@ -12,7 +14,7 @@ import { MenuPhotosManager } from '@/components/owner/menu-photos-manager';
 import { PhotoManager } from '@/components/owner/photo-manager';
 import { RestaurantDetailsForm } from '@/components/owner/restaurant-details-form';
 import { SetupChecklist } from '@/components/owner/setup-checklist';
-import { adminAccess, assignOwner, fetchRestaurantOwner } from '@/data/admin';
+import { adminAccess, assignOwner, fetchRestaurantActivity, fetchRestaurantOwner, type RestaurantActivity, type RestaurantOwnerInfo } from '@/data/admin';
 import { DashboardDbContext } from '@/data/dashboard-db';
 import { createRestaurant, detailsOf, EMPTY_DETAILS, fetchRestaurantById, updateRestaurant, type RestaurantDetails } from '@/data/owner-restaurant';
 import type { Restaurant } from '@/data/restaurants';
@@ -21,21 +23,19 @@ import { goBackOrReplace } from '@/utils/navigation';
 import { themedStyles } from '@/theme/theme';
 import { adminSupabase } from '../../lib/supabase';
 
-type Tab = 'details' | 'menu' | 'photos';
+type Tab = 'overview' | 'orders' | 'menu' | 'photos' | 'details';
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'details', label: 'Details' },
+  { value: 'overview', label: 'Overview' },
+  { value: 'orders', label: 'Orders' },
   { value: 'menu', label: 'Menu' },
   { value: 'photos', label: 'Photos' },
+  { value: 'details', label: 'Details' },
 ];
-const STATUS_TEXT = {
-  pending: 'Waiting for approval: customers cannot see it yet.',
-  approved: 'Live: customers can see it and order.',
-  rejected: 'Changes requested: customers cannot see it.',
-} as const;
 
 /**
- * An admin sets up a restaurant (details, menu, photos) for an owner who will not do it themselves,
- * then hands it to the owner's account. It saves through the admin console's own sign-in.
+ * Everything about one restaurant for admins: approve or decline it, see its contact details,
+ * location, orders and menu, and edit it (for owners who want Kwetu to set it up). Editing saves
+ * through the admin console's own sign-in.
  */
 export default function AdminRestaurantScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -44,7 +44,10 @@ export default function AdminRestaurantScreen() {
   const [access, setAccess] = useState<'checking' | 'denied' | 'granted'>('checking');
   const [state, setState] = useState<Loadable<Restaurant>>({ kind: 'loading' });
   const [owner, setOwner] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>('details');
+  const [activity, setActivity] = useState<RestaurantActivity | null>(null);
+  // Bumped to load the owner and the orders again (after a hand-over or a cancelled order).
+  const [activityVersion, setActivityVersion] = useState(0);
+  const [tab, setTab] = useState<Tab>('overview');
 
   useEffect(() => {
     let active = true;
@@ -66,6 +69,17 @@ export default function AdminRestaurantScreen() {
       .catch((error: unknown) => { if (active) setState({ kind: 'error', message: errorMessage(error) }); });
     return () => { active = false; };
   }, [access, isNew, params.id, restaurantId]);
+
+  useEffect(() => {
+    if (access !== 'granted' || isNew) return;
+    let active = true;
+    fetchRestaurantActivity(restaurantId)
+      .then((result) => { if (active) setActivity(result); })
+      // Before 202611280004_admin_restaurant_view.sql is run, the page still works without the numbers.
+      .catch((error: unknown) => console.warn('Restaurant activity unavailable:', errorMessage(error)));
+    return () => { active = false; };
+  }, [access, isNew, restaurantId, activityVersion]);
+  const reloadActivity = () => setActivityVersion((current) => current + 1);
 
   const update = (changes: Partial<Restaurant>) => setState((current) => current.kind === 'ready' ? { kind: 'ready', value: { ...current.value, ...changes } } : current);
 
@@ -123,34 +137,48 @@ export default function AdminRestaurantScreen() {
           </View>
           : <>
             <Text style={styles.title}>{state.value.name}</Text>
-            <Text style={styles.subtitle}>{STATUS_TEXT[state.value.approvalStatus]}</Text>
-            <Pressable onPress={() => router.push(`/restaurant/${state.value.id}` as Href)}><Text style={adminStyles.link}>View the restaurant page ›</Text></Pressable>
+            <Text style={styles.subtitle}>#{state.value.id} · {state.value.area || 'No area'}</Text>
+            <Pressable onPress={() => router.push(`/restaurant/${state.value.id}` as Href)}><Text style={adminStyles.link}>View it as customers see it ›</Text></Pressable>
 
-            <OwnerCard onAssigned={setOwner} owner={owner} restaurant={state.value} />
+            <Chips onChange={setTab} options={TABS} value={tab} />
+
+            {tab === 'overview' && <>
+              <ApprovalCard hasOwner={owner !== null || state.value.ownerId !== null} onChanged={update} restaurant={state.value} />
+              <OwnerCard info={activity?.owner ?? null} onAssigned={(account) => { setOwner(account); reloadActivity(); }} owner={owner} restaurant={state.value} />
+              <RestaurantOverview activity={activity} onOpenMenu={() => setTab('menu')} onOpenOrders={() => setTab('orders')} restaurant={state.value} />
+            </>}
+
+            {tab === 'orders' && <>
+              <Text style={adminStyles.meta}>The newest 50 orders at this restaurant. Tap one to see everything in it, or to cancel it.</Text>
+              {!activity
+                ? <ActivityIndicator color={ACCENT} style={styles.spinner} />
+                : activity.orders.length === 0
+                  ? <Empty copy="Orders appear here as customers place them." title="No orders yet" />
+                  : activity.orders.map((order) => <OrderCard key={order.reference} onChanged={reloadActivity} order={order} />)}
+            </>}
 
             {/* The owner's own editing screens, saving through the admin's sign-in. */}
             <DashboardDbContext value={adminSupabase}>
-              <SetupChecklist onOpen={(next) => setTab(next === 'orders' ? 'menu' : next)} restaurant={state.value} />
-              <Chips onChange={setTab} options={TABS} value={tab} />
-              {tab === 'details' && <>
-                <Section title="Restaurant details">
-                  <RestaurantDetailsForm initial={detailsOf(state.value)} key={state.value.id} onSubmit={saveDetails} submitLabel="Save details" />
-                </Section>
-                <LocationManager onUpdated={update} restaurant={state.value} />
-              </>}
+              {(tab === 'menu' || tab === 'photos' || tab === 'details') && <SetupChecklist onOpen={setTab} restaurant={state.value} />}
               {tab === 'menu' && <>
                 <MenuPhotosManager onUpdated={update} restaurant={state.value} />
                 <MenuManager onMenuChange={(menu) => update({ menu })} restaurant={state.value} />
                 <MenuPdfManager onUpdated={update} restaurant={state.value} />
               </>}
               {tab === 'photos' && <PhotoManager onUpdated={update} restaurant={state.value} />}
+              {tab === 'details' && <>
+                <Section title="Restaurant details">
+                  <RestaurantDetailsForm initial={detailsOf(state.value)} key={state.value.id} onSubmit={saveDetails} submitLabel="Save details" />
+                </Section>
+                <LocationManager onUpdated={update} restaurant={state.value} />
+              </>}
             </DashboardDbContext>
           </>}
   </ScrollView></SafeAreaView>;
 }
 
-/** Who manages the restaurant, and the form that hands it to an account (by email or phone number). */
-function OwnerCard({ onAssigned, owner, restaurant }: { onAssigned: (account: string) => void; owner: string | null; restaurant: Restaurant }) {
+/** Who manages the restaurant (with their contact details), and the form that hands it to an account. */
+function OwnerCard({ info, onAssigned, owner, restaurant }: { info: RestaurantOwnerInfo | null; onAssigned: (account: string) => void; owner: string | null; restaurant: Restaurant }) {
   const [account, setAccount] = useState('');
   const [changing, setChanging] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -169,7 +197,7 @@ function OwnerCard({ onAssigned, owner, restaurant }: { onAssigned: (account: st
           onAssigned(label);
           setAccount('');
           setChanging(false);
-          showMessage('Handed over', `${label} can now open the restaurant dashboard (Settings → Profile → Open restaurant dashboard). ${restaurant.approvalStatus === 'approved' ? '' : 'Approve the restaurant in Restaurants when it is ready.'}`);
+          showMessage('Handed over', `${label} can now open the restaurant dashboard (Settings → Profile → Open restaurant dashboard). ${restaurant.approvalStatus === 'approved' ? '' : 'Approve the restaurant when it is ready.'}`);
         } catch (error) {
           showMessage('Could not hand it over', errorMessage(error));
         } finally {
@@ -183,10 +211,17 @@ function OwnerCard({ onAssigned, owner, restaurant }: { onAssigned: (account: st
     <View style={adminStyles.cardTop}>
       <View style={adminStyles.cardCopy}>
         <Text style={adminStyles.eyebrow}>OWNER</Text>
-        <Text style={adminStyles.name}>{hasOwner ? owner ?? 'An owner account' : 'No owner yet'}</Text>
+        <Text style={adminStyles.name}>{hasOwner ? info?.name || owner || 'An owner account' : 'No owner yet'}</Text>
       </View>
       {!hasOwner && <Badge attention label="CANNOT RECEIVE ORDERS" />}
     </View>
+    {hasOwner && info
+      ? <>
+        {info.email ? <Text selectable style={adminStyles.meta}>Email: {info.email}</Text> : null}
+        {info.phone || info.registeredPhone ? <Text selectable style={adminStyles.meta}>Phone: {info.phone || info.registeredPhone}</Text> : null}
+        <Text style={adminStyles.meta}>Account since {formatWhen(info.createdAt)} · last signed in {info.lastSignInAt ? formatWhen(info.lastSignInAt) : 'never'}</Text>
+      </>
+      : hasOwner && owner ? <Text selectable style={adminStyles.meta}>{owner}</Text> : null}
     <Text style={adminStyles.meta}>{hasOwner
       ? 'This account receives the orders and can edit the restaurant from its own dashboard.'
       : 'Nobody receives this restaurant’s orders until you hand it to the owner’s account. It cannot be approved before that.'}</Text>

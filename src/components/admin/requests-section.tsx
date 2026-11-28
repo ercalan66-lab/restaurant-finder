@@ -77,7 +77,8 @@ function RestaurantLink({ id, name }: { id: number; name: string }) {
   return <Pressable onPress={() => router.push(`/restaurant/${id}` as Href)}><Text style={adminStyles.link}>{name} ›</Text></Pressable>;
 }
 
-function OrderCard({ onChanged, order }: { onChanged: () => void; order: AdminOrder }) {
+/** One order: tap to open its dishes, address and history, and to cancel it. Also used on the admin restaurant page. */
+export function OrderCard({ onChanged, order }: { onChanged: () => void; order: AdminOrder }) {
   const [open, setOpen] = useState(false);
   const waited = minutesWaiting(order);
   const late = waited !== null && waited >= WAITING_ALERT_MINUTES;
