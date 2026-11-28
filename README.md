@@ -13,22 +13,48 @@ An Expo SDK 58 restaurant discovery and food-ordering app backed by Supabase.
    4. `202611180003_push_notifications.sql` (enables `pg_net` and the notification triggers)
    5. `202611180004_status_values.sql` (new order, booking, and payment values). Run it on its own and let it finish before the next one: Postgres cannot use new enum values in the transaction that adds them.
    6. `202611180005_launch_readiness.sql` (restaurant approval, booking capacity, cancel, pay on delivery, account deletion)
-   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` and `202611230001_admin_two_step_optional.sql` (see [Two-step sign-in](#two-step-sign-in)), `202611260001_menu_photos.sql` (photos of the printed menu; see [Restaurant owners](#restaurant-owners)).
+   7. The rest in filename order: `202611180006_admin_console.sql`, `202611200001_api_access_grants.sql`, `202611200002_rename_to_kwetu.sql`, `202611200003_customer_reviews.sql`, `202611200004_menu_pdf.sql`, `202611200005_restaurant_location.sql`, `202611200006_popular_dishes.sql`, `202611210001_menu_categories.sql` (food categories such as Pizza, Baga and Vinywaji; existing dishes get a best guess from their name), `202611210002_request_safety.sql` (the database sets each new order's status and prices itself, limits waiting requests per phone number, and checks owners' map and menu-PDF links), `202611210003_cash_only.sql` (switches off the old simulated mobile money payment; notifications mention cash), `202611210004_no_table_booking.sql` (table booking was removed; new bookings are refused), `202611210005_two_step_sign_in.sql` and `202611230001_admin_two_step_optional.sql` (see [Two-step sign-in](#two-step-sign-in)), `202611260001_menu_photos.sql` (photos of the printed menu; see [Restaurant owners](#restaurant-owners)), `202611280001_sms_sign_in.sql` (see [Sign-in by SMS](#sign-in-by-sms)).
 
    Run new migrations before shipping an app build that depends on them. Until they are installed, order sync fails and customers see the bundled sample restaurants with an "Offline" note.
 4. Make yourself a Kwetu admin (see [Kwetu admins](#kwetu-admins)) so you can approve new restaurants.
 5. Fill in `SUPPORT_EMAIL` in `src/constants/app-info.ts`. It is shown in the privacy policy.
 6. Start the app with `npx expo start`. Expo Go runs everything except push notifications on Android, which need a development build.
 
-## Phone sign-in
+## Sign-in by SMS
 
-Customers and owners can sign in with an SMS code as well as email and password. To turn it on:
+Customers and owners can sign up and sign in with their phone number and a 6-digit code sent by SMS. Email and password remain as a second way in. Supabase creates and checks the codes. A Tanzanian SMS company delivers them: NextSMS (`nextsms.co.tz`) or Beem (`beem.africa`), at about TSh 16–25 per SMS.
 
-1. In the Supabase dashboard, open **Authentication → Sign In / Providers → Phone** and enable it.
-2. Connect an SMS provider (Twilio, MessageBird, Vonage, or Textlocal) and paste its credentials there. Each code sent is billed by that provider.
-3. For development without SMS costs, add test numbers and fixed codes under the same settings.
+- **Sign in:** only numbers that already belong to an account get a code. Accounts created with email keep signing in with email.
+- **Sign up with phone:** name, phone number and "I am a customer / restaurant owner". The account is created when the code is confirmed. No password is needed.
+- Numbers typed in local Tanzanian format (`0712 345 678`) are converted to `+255…` automatically.
 
-Until a provider is configured, the app shows "Phone sign-in is not enabled" when someone requests a code. Numbers typed in local Tanzanian format (`0712 345 678`) are converted to `+255…` automatically.
+To turn it on:
+
+1. **Open an account with the SMS company** and top it up. Ask them to register the sender name **KWETU**; Tanzanian sender names need approval, which takes a few days. Until then, use their default name (`NEXTSMS` or `INFO`).
+2. **Run `supabase/migrations/202611280001_sms_sign_in.sql`** in the SQL editor.
+3. **Store the SMS company's login** in the SQL editor (it is kept encrypted in Supabase Vault and never reaches the app):
+
+   ```sql
+   -- NextSMS: username and password of the NextSMS account
+   select private.configure_sms('nextsms', 'NEXTSMS', 'your-username', 'your-password');
+   -- or Beem: API key and secret key from the Beem dashboard
+   select private.configure_sms('beem', 'INFO', 'your-api-key', 'your-secret-key');
+   ```
+
+   Run it again with `'KWETU'` as the second value once the sender name is approved.
+4. **Dashboard → Authentication → Hooks:** add the **Send SMS** hook, type **Postgres**, function `public.send_sms_code`.
+5. **Dashboard → Authentication → Sign In / Providers → Phone:** enable it.
+6. **Dashboard → Authentication → Rate Limits:** raise "SMS messages per hour" (default 30) before launch.
+
+**Test numbers (no SMS cost):** under **Sign In / Providers → Phone → Test Phone Numbers and OTPs**, add pairs such as `255700000001=123456`. Such a number signs in with that fixed code. Use one for Google Play's reviewer account, and remove the others before launch: anyone who knows a test number and its code can sign in as that user.
+
+**If no SMS arrives,** check the SMS company's replies (kept for six hours) in the SQL editor:
+
+```sql
+select created, status_code, content from net._http_response order by created desc limit 5;
+```
+
+A 401 means the login is wrong; a balance error means the account needs a top-up.
 
 ## Push notifications
 

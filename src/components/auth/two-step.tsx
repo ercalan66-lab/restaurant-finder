@@ -20,8 +20,8 @@ import { ACCENT, authStyles, Field, Notice, PrimaryButton, TextLink } from './au
 const CODE_LENGTH = 6;
 const cleanCode = (value: string) => value.replace(/\D/g, '').slice(0, CODE_LENGTH);
 
-/** The 6-digit code box with its button and error message. */
-function CodeInput({ busy, buttonLabel, onSubmit, problem }: { busy: boolean; buttonLabel: string; onSubmit: (code: string) => void; problem: string }) {
+/** The 6-digit code box with its button and error message. Also used for codes sent by SMS. */
+export function CodeInput({ busy, buttonLabel, onSubmit, problem }: { busy: boolean; buttonLabel: string; onSubmit: (code: string) => void; problem: string }) {
   const [code, setCode] = useState('');
   const submit = () => { if (code.length === CODE_LENGTH) onSubmit(code); };
   return <>

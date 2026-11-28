@@ -51,6 +51,62 @@ export function authErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : t('common.tryAgain');
 }
 
+/** Supabase error codes from SMS sign-in, where a code is typed instead of a link being opened. */
+const PHONE_MESSAGES: Record<string, MessageKey> = {
+  otp_expired: 'phone.wrongCode',
+  otp_disabled: 'phone.noAccount',
+  phone_provider_disabled: 'phone.notReady',
+  sms_send_failed: 'phone.sendFailed',
+  over_sms_send_rate_limit: 'phone.tooManyCodes',
+};
+
+export function phoneAuthErrorMessage(error: unknown) {
+  if (isAuthError(error)) {
+    const known = error.code ? PHONE_MESSAGES[error.code] : undefined;
+    if (known) return t(known);
+    if (/signups not allowed for otp/i.test(error.message)) return t('phone.noAccount');
+    if (/unsupported phone provider/i.test(error.message)) return t('phone.notReady');
+  }
+  return authErrorMessage(error);
+}
+
+/**
+ * Sends a 6-digit sign-in code by SMS and returns the number in `+255…` form.
+ * Without `newAccount`, only numbers that already belong to an account get a code.
+ * With it, a new number gets an account with these details once the code is confirmed.
+ */
+export async function sendPhoneCode(phone: string, newAccount?: { name: string; role: AccountRole }) {
+  const e164 = toE164(phone);
+  if (!e164) throw new Error(t('form.invalidPhone'));
+  const { error } = await supabase.auth.signInWithOtp({
+    phone: e164,
+    options: newAccount
+      ? { channel: 'sms', shouldCreateUser: true, data: { full_name: newAccount.name.trim(), phone: e164, role: newAccount.role } }
+      : { channel: 'sms', shouldCreateUser: false },
+  });
+  if (error) throw error;
+  return e164;
+}
+
+/** Signs the person in with the code from the SMS. */
+export async function verifyPhoneCode(e164: string, code: string): Promise<User | null> {
+  const { data, error } = await supabase.auth.verifyOtp({ phone: e164, token: code, type: 'sms' });
+  if (error) throw error;
+  return data.user;
+}
+
+export type NewPhoneAccountField = 'name' | 'phone' | 'agreed';
+
+/** Problems with the sign-up-by-phone form, by field. Empty when the code can be sent. */
+export function newPhoneAccountProblems(account: { name: string; phone: string; agreed: boolean }) {
+  const problems: Partial<Record<NewPhoneAccountField, string>> = {};
+  if (account.name.trim().length < 2) problems.name = t('form.enterName');
+  if (!account.phone.trim()) problems.phone = t('form.enterPhone');
+  else if (!toE164(account.phone)) problems.phone = t('form.invalidPhone');
+  if (!account.agreed) problems.agreed = t('form.agree');
+  return problems;
+}
+
 export async function signInWithEmail(email: string, password: string): Promise<User> {
   const { data, error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
   if (error) throw error;

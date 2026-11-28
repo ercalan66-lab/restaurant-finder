@@ -22,6 +22,12 @@ export function toE164(input: string): string | null {
   return /^[1-9]\d{7,14}$/.test(international) ? `+${international}` : null;
 }
 
+/** `+255712345678` → `+255 712 345 678`; other numbers are returned unchanged. */
+export function formatPhoneForDisplay(e164: string) {
+  const match = /^\+255(\d{3})(\d{3})(\d{3})$/.exec(e164);
+  return match ? `+255 ${match[1]} ${match[2]} ${match[3]}` : e164;
+}
+
 /** Supabase stores `user.phone` without the leading plus sign. */
 export function formatAccountPhone(phone: string | undefined | null) {
   if (!phone) return null;

@@ -30,7 +30,7 @@ const POLICY: Record<Language, Policy> = {
         body: [
           'Your name, phone number and, if you give it, your email address, so restaurants can confirm your order.',
           'Your delivery address for delivery orders, and the dishes, totals and times of your orders.',
-          'Account details if you register: your full name, phone number, email address and a password (stored only as a secure hash by our hosting provider), and whether you are a customer or a restaurant owner.',
+          'Account details if you register: your full name, phone number, whether you are a customer or a restaurant owner and, if you sign up with email, your email address and a password (stored only as a secure hash by our hosting provider).',
           'A notification token for your phone if you allow notifications, so we can tell you when your order is ready.',
           'For restaurant owners: restaurant details, menus, the photos and menu PDF you upload, and the restaurant’s map location if you add it.',
           'Ratings and comments you choose to leave about restaurants after a completed order.',
@@ -50,7 +50,7 @@ const POLICY: Record<Language, Policy> = {
           'The restaurant you order from sees your name, phone number, email, delivery address and order.',
           'If you review a restaurant, your star rating, comment and first name are shown publicly on its page. Deleting your account removes your name from your reviews.',
           `${APP_NAME} administrators can see restaurant listings to review them, and can look up orders (including the customer’s name and phone number) to help customers and restaurants with problems.`,
-          'Data is stored with our hosting provider (Supabase) and notifications are delivered through Expo. They process it only to run the app.',
+          'Data is stored with our hosting provider (Supabase) and notifications are delivered through Expo. Sign-in codes are sent by a Tanzanian SMS company, which receives only your phone number and the code. They process it only to run the app.',
         ],
       },
       {
@@ -81,7 +81,7 @@ const POLICY: Record<Language, Policy> = {
         body: [
           'Jina lako, namba yako ya simu na, ukiitoa, barua pepe yako, ili migahawa iweze kuthibitisha oda yako.',
           'Anwani yako ya kuletewa kwa oda za kuletewa, pamoja na vyakula, jumla na saa za oda zako.',
-          'Taarifa za akaunti ukijisajili: jina lako kamili, namba ya simu, barua pepe na nenosiri (linalohifadhiwa na mtoa huduma wetu wa uhifadhi kwa njia salama iliyosimbwa tu), na kama wewe ni mteja au mmiliki wa mgahawa.',
+          'Taarifa za akaunti ukijisajili: jina lako kamili, namba ya simu, kama wewe ni mteja au mmiliki wa mgahawa na, ukijisajili kwa barua pepe, barua pepe yako na nenosiri (linalohifadhiwa na mtoa huduma wetu wa uhifadhi kwa njia salama iliyosimbwa tu).',
           'Alama ya taarifa (notification token) ya simu yako ukiruhusu taarifa, ili tukujulishe oda yako ikiwa tayari.',
           'Kwa wamiliki wa migahawa: maelezo ya mgahawa, menyu, picha na PDF ya menyu unazopakia, na eneo la mgahawa kwenye ramani ukiliongeza.',
           'Ukadiriaji na maoni unayochagua kuacha kuhusu migahawa baada ya oda kukamilika.',
@@ -101,7 +101,7 @@ const POLICY: Record<Language, Policy> = {
           'Mgahawa unaoagiza kwake unaona jina lako, namba ya simu, barua pepe, anwani ya kuletewa na oda yako.',
           'Ukitoa maoni kuhusu mgahawa, ukadiriaji wako wa nyota, maoni na jina lako la kwanza vinaonekana hadharani kwenye ukurasa wake. Ukifuta akaunti yako, jina lako linaondolewa kwenye maoni yako.',
           `Wasimamizi wa ${APP_NAME} wanaweza kuona matangazo ya migahawa ili kuyakagua, na wanaweza kutafuta oda (pamoja na jina na namba ya simu ya mteja) ili kusaidia wateja na migahawa wanapopata matatizo.`,
-          'Taarifa zinahifadhiwa na mtoa huduma wetu wa uhifadhi (Supabase) na taarifa za simu zinatumwa kupitia Expo. Wanazishughulikia kwa ajili ya kuendesha programu tu.',
+          'Taarifa zinahifadhiwa na mtoa huduma wetu wa uhifadhi (Supabase) na taarifa za simu zinatumwa kupitia Expo. Misimbo ya kuingia inatumwa na kampuni ya SMS ya Tanzania, inayopokea namba yako ya simu na msimbo tu. Wanazishughulikia kwa ajili ya kuendesha programu tu.',
         ],
       },
       {
