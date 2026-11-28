@@ -18,7 +18,6 @@ import type { Restaurant } from '@/data/restaurants';
 import { useTwoStepGuard } from '@/hooks/use-two-step-guard';
 import { t, type MessageKey } from '@/i18n';
 import { errorMessage, showMessage } from '@/utils/feedback';
-import { goBackOrReplace } from '@/utils/navigation';
 import { formatAccountPhone } from '@/utils/phone';
 import { supabase } from '../../lib/supabase';
 import { themedStyles } from '@/theme/theme';
@@ -125,7 +124,8 @@ export default function OwnerDashboardScreen() {
   }
 
   return <SafeAreaView style={styles.safeArea}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Pressable onPress={() => goBackOrReplace('/profile')}><Text style={styles.back}>{t('common.back')}</Text></Pressable>
+    {/* This dashboard is a restaurant account's home screen, so it leads to Settings instead of back. */}
+    <Pressable accessibilityRole="button" onPress={() => router.push('/settings' as Href)}><Text style={styles.back}>⚙ {t('nav.settings')}</Text></Pressable>
     <Text style={styles.eyebrow}>{t('owner.eyebrow')}</Text>
 
     {!restaurant

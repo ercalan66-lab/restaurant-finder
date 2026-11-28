@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
-import { router, type Href, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, type Href, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -14,6 +14,7 @@ import { categoryIcon, categoryLabel, groupByCategory, type MenuCategory } from 
 import { menuPdfDownloadUrl } from '@/data/restaurant-menu-pdf';
 import { formatHours, formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
 import { useUserLocation } from '@/data/user-location';
+import { useAccountRole } from '@/hooks/use-account-role';
 import { t, tn } from '@/i18n';
 import { distanceTo, formatDistance } from '@/utils/distance';
 import { isGoogleMapsLink, isKwetuMenuPdf } from '@/utils/safe-links';
@@ -33,6 +34,7 @@ export default function RestaurantDetailScreen() {
   const [menuFilter, setMenuFilter] = useState<MenuCategory | 'all'>('all');
   // The photos open full screen: menu pages, or photos of the place.
   const [viewer, setViewer] = useState<{ photos: string[]; index: number } | null>(null);
+  const account = useAccountRole();
 
   if (loading) {
     return <SafeAreaView style={styles.centered}><Text style={styles.sectionCaption}>{t('restaurant.loading')}</Text></SafeAreaView>;
@@ -48,6 +50,10 @@ export default function RestaurantDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  // A restaurant account may look at its own page (as customers see it), but not at other restaurants.
+  const ownerView = account?.role === 'owner';
+  if (ownerView && restaurant.ownerId !== account.userId) return <Redirect href={'/owner' as Href} />;
 
   const openLink = async (url: string, errorMessage: string) => {
     try {
@@ -103,11 +109,13 @@ export default function RestaurantDetailScreen() {
 
         <View style={styles.section}>
           {restaurant.description ? <Text style={styles.description}>{restaurant.description}</Text> : null}
-          <View style={styles.orderActions}>
-            <PressableScale onPress={() => router.push(`/order/${restaurant.id}` as Href)} style={styles.orderButton}>
-              <Text style={styles.orderButtonText}>{t('restaurant.order')}</Text>
-            </PressableScale>
-          </View>
+          {ownerView
+            ? <Text style={styles.ownerNote}>{t('restaurant.ownerView')}</Text>
+            : <View style={styles.orderActions}>
+              <PressableScale onPress={() => router.push(`/order/${restaurant.id}` as Href)} style={styles.orderButton}>
+                <Text style={styles.orderButtonText}>{t('restaurant.order')}</Text>
+              </PressableScale>
+            </View>}
           <View style={styles.quickActions}>
             {restaurant.phone ? <PressableScale onPress={callRestaurant} style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>{t('restaurant.call')}</Text>
@@ -239,6 +247,7 @@ const styles = themedStyles(({ bg, fg, line }) => ({
   sectionCaption: { color: fg('#777268'), fontSize: 12, marginTop: 4, marginBottom: 14 },
   quickActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   orderActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  ownerNote: { color: fg('#5A4A40'), fontSize: 12, lineHeight: 18, marginTop: 20, padding: 12, borderRadius: 12, backgroundColor: bg('#FFF1DE') },
   primaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, backgroundColor: bg(ORANGE) },
   primaryButtonText: { color: fg('#FFF'), fontSize: 13, fontWeight: '900' },
   secondaryButton: { flex: 1, minHeight: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderWidth: 1, borderColor: line('#E6DCCE'), backgroundColor: bg('#FFF') },

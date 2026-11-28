@@ -158,6 +158,7 @@ const PERMANENT_ERRORS: Record<string, MessageKey | null> = {
   FB010: 'request.checkDetails', // details too long or missing (202611210002_request_safety.sql)
   FB011: 'request.menuChanged', // a dish was removed or sold out
   FB012: 'request.tooMany', // too many orders waiting from this phone number
+  FB013: 'request.ownerCannotOrder', // a restaurant account tried to order (202611280005_role_separation.sql)
   '42501': 'request.notTaking',
   '23503': 'request.noRestaurant',
   '23514': null,

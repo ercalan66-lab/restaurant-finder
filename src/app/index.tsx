@@ -1,4 +1,4 @@
-import { router, type Href } from 'expo-router';
+import { Redirect, router, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
@@ -20,6 +20,7 @@ import { isMenuItemAvailable, useRestaurants, type RestaurantSummary } from '@/d
 import { useSavedDishes } from '@/data/saved-dishes';
 import { searchRestaurants } from '@/data/search';
 import { useUserLocation } from '@/data/user-location';
+import { useAccountRole } from '@/hooks/use-account-role';
 import { t, tn } from '@/i18n';
 import { distanceTo, type Coords } from '@/utils/distance';
 import Storage from '@/utils/kv-store';
@@ -57,6 +58,7 @@ export default function HomeScreen() {
   const userCoords = location.coords;
   const savedDishes = useSavedDishes();
   const popular = usePopularDishes();
+  const account = useAccountRole();
 
   useEffect(() => {
     let active = true;
@@ -140,6 +142,9 @@ export default function HomeScreen() {
     {browsing && sections.map((section) => <RestaurantRow isSaved={(id) => saved.has(id)} key={section.key} onToggleSaved={toggleSaved} section={section} userDistanceOf={(restaurant) => distanceTo(userCoords, restaurant)} />)}
     <View style={styles.heading}><View><Text style={styles.sectionTitle}>{listTitle}</Text><Text style={styles.resultCount}>{countText}</Text>{offline && <Text style={styles.offlineNote}>{t('home.offline')}</Text>}</View>{!browsing && <Pressable onPress={showAll}><Text style={styles.viewAll}>{t('home.showAll')} <Text style={styles.orangeText}>→</Text></Text></Pressable>}</View>
   </>;
+
+  // Restaurant accounts only use their own dashboard; the customer side is not for them.
+  if (account?.role === 'owner') return <Redirect href={'/owner' as Href} />;
 
   return <SafeAreaView edges={['top']} style={styles.safeArea}>
     <FlatList

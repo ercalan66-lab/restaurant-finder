@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { categoryIcon, categoryLabel, groupByCategory } from '@/data/menu-categories';
 import { fulfillmentLabel, getGuestProfile, newReference, saveGuestProfile, saveOrder } from '@/data/guest-storage';
 import { formatTsh, isMenuItemAvailable, useRestaurant } from '@/data/restaurants';
+import { useAccountRole } from '@/hooks/use-account-role';
 import { t } from '@/i18n';
 import { goBackOrReplace } from '@/utils/navigation';
 import { getPushToken } from '@/utils/push-notifications';
@@ -41,7 +42,10 @@ export default function OrderScreen() {
     : [], [restaurant]);
   // Quantities are keyed by menu item id; unavailable items never count toward the total.
   const total = useMemo(() => menu.reduce((sum, item) => sum + (item.available ? item.price * (quantities[item.id] ?? 0) : 0), 0), [menu, quantities]);
+  const account = useAccountRole();
 
+  // Restaurant accounts cannot order (the database refuses it too); they go back to their dashboard.
+  if (account?.role === 'owner') return <Redirect href={'/owner' as Href} />;
   if (loading) return <SafeAreaView style={styles.confirmation}><Text style={styles.subtitle}>{t('order.loading')}</Text></SafeAreaView>;
   if (!restaurant) {
     return <SafeAreaView style={styles.confirmation}>
