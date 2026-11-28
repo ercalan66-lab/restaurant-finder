@@ -1,6 +1,6 @@
 -- Order texts by SMS (2026-11-28), through the same SMS company as the sign-in codes
--- (202611280001_sms_sign_in.sql must be run first). Push notifications keep working as before;
--- the SMS also reaches people without the app's notifications.
+-- (202611280001_sms_sign_in.sql must be run first: it defines private.send_sms). Push notifications
+-- keep working as before; the SMS also reaches people without the app's notifications.
 --
 --   Customers, in the language they use the app in: order received, ready for pickup / on its way,
 --   declined by the restaurant, cancelled by Kwetu or because nobody answered (with the reason).
@@ -9,7 +9,7 @@
 -- Each SMS costs money (about TSh 16–25), so either kind can be switched off in the SQL editor:
 --   update private.sms_settings set order_sms_customers = false;    -- no texts to customers
 --   update private.sms_settings set order_sms_restaurants = false;  -- no texts to restaurants
--- Nothing is sent until private.configure_sms(...) has stored the SMS company's login.
+-- Nothing is sent until private.configure_nextsms(...) has stored the SMS company's login.
 -- Safe to run more than once.
 
 alter table private.sms_settings
@@ -19,72 +19,6 @@ alter table private.sms_settings
 -- The app sends the customer's language with each order ('en' for orders from older app versions).
 alter table public.orders
   add column if not exists language text not null default 'en' check (language in ('en', 'sw'));
-
--- Sends one SMS through the SMS company. Returns false, without sending, when SMS is not set up or
--- the number is not valid. Never raises: a failed SMS must not stop an order.
-create or replace function private.send_sms(p_phone text, p_text text)
-returns boolean language plpgsql security definer set search_path = '' as $$
-declare
-  v_provider text;
-  v_sender text;
-  v_basic text;
-  v_phone text := regexp_replace(coalesce(p_phone, ''), '\D', '', 'g');
-  v_headers jsonb;
-begin
-  -- Local Tanzanian numbers: 0712345678 and 712345678 become 255712345678.
-  if v_phone like '0%' and length(v_phone) = 10 then v_phone := '255' || substr(v_phone, 2);
-  elsif length(v_phone) = 9 then v_phone := '255' || v_phone;
-  end if;
-  if v_phone !~ '^[1-9][0-9]{7,14}$' or coalesce(btrim(p_text), '') = '' then
-    return false;
-  end if;
-
-  select s.provider, s.sender_id into v_provider, v_sender from private.sms_settings s where s.id;
-  select d.decrypted_secret into v_basic from vault.decrypted_secrets d where d.name = 'kwetu_sms_basic_auth';
-  if v_provider is null or v_basic is null then
-    return false;
-  end if;
-
-  v_headers := jsonb_build_object('Authorization', 'Basic ' || v_basic, 'Content-Type', 'application/json', 'Accept', 'application/json');
-  if v_provider = 'nextsms' then
-    perform net.http_post(
-      url := 'https://messaging-service.co.tz/api/sms/v1/text/single',
-      body := jsonb_build_object('from', v_sender, 'to', v_phone, 'text', p_text),
-      headers := v_headers
-    );
-  else
-    perform net.http_post(
-      url := 'https://apisms.beem.africa/v1/send',
-      body := jsonb_build_object(
-        'source_addr', v_sender, 'schedule_time', '', 'encoding', 0, 'message', p_text,
-        'recipients', jsonb_build_array(jsonb_build_object('recipient_id', 1, 'dest_addr', v_phone))
-      ),
-      headers := v_headers
-    );
-  end if;
-  return true;
-exception when others then
-  raise warning 'SMS not sent: %', sqlerrm;
-  return false;
-end;
-$$;
-revoke execute on function private.send_sms(text, text) from public, anon, authenticated;
-
--- The sign-in hook now sends through private.send_sms (same message as before).
-create or replace function public.send_sms_code(event jsonb)
-returns jsonb language plpgsql security definer set search_path = '' as $$
-declare
-  v_code text := event #>> '{sms,otp}';
-begin
-  if v_code is null or not private.send_sms(event #>> '{user,phone}',
-       format('Kwetu: namba yako ya uthibitisho ni %s. Your Kwetu code is %s. Usimpe mtu yeyote.', v_code, v_code)) then
-    return jsonb_build_object('error', jsonb_build_object('http_code', 500, 'message', 'The SMS could not be sent. SMS sign-in may not be set up yet.'));
-  end if;
-  return '{}'::jsonb;
-end;
-$$;
-revoke execute on function public.send_sms_code(jsonb) from public, anon, authenticated;
-grant execute on function public.send_sms_code(jsonb) to supabase_auth_admin;
 
 -- Order texts. Runs after each new order and each status change (next to the push notifications).
 create or replace function public.sms_order_event()

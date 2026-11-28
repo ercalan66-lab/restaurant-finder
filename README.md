@@ -30,18 +30,22 @@ Customers and owners can sign up and sign in with their phone number and a 6-dig
 
 To turn it on:
 
-1. **Open an account with the SMS company** and top it up. Ask them to register the sender name **KWETU**; Tanzanian sender names need approval, which takes a few days. Until then, use their default name (`NEXTSMS` or `INFO`).
+1. **Open an account with the SMS company** and top it up. Choose a sender name:
+   - **Custom name:** ask the company to register **KWETU**. Tanzanian sender names need approval, which takes a few days.
+   - **Until then:** register one of the company's shared names. On NextSMS: *Register Sender Name*. Kwetu uses **TAHARIFA**.
 2. **Run `supabase/migrations/202611280001_sms_sign_in.sql`** in the SQL editor.
-3. **Store the SMS company's login** in the SQL editor (it is kept encrypted in Supabase Vault and never reaches the app):
+3. **Store the SMS company's login** in the SQL editor. It is kept encrypted in Supabase Vault and never reaches the app:
 
    ```sql
-   -- NextSMS: username and password of the NextSMS account
-   select private.configure_sms('nextsms', 'NEXTSMS', 'your-username', 'your-password');
+   -- NextSMS (API v2): the token from Customer Profile → Customization → API Keys
+   select private.configure_nextsms('TAHARIFA', 'your-api-token');
    -- or Beem: API key and secret key from the Beem dashboard
-   select private.configure_sms('beem', 'INFO', 'your-api-key', 'your-secret-key');
+   select private.configure_beem('INFO', 'your-api-key', 'your-secret-key');
    ```
 
-   Run it again with `'KWETU'` as the second value once the sender name is approved.
+   The first value is the sender name, exactly as registered (capital letters matter). Once KWETU is approved, run `select private.set_sms_sender('KWETU');`.
+
+   **Free check of a NextSMS token:** run `select private.send_test_sms('0712345678');`. This uses NextSMS's test address, so nothing is delivered or charged. A few seconds later, run `select status_code, content from net._http_response order by created desc limit 1;`. **200** means the token works; **401** means it is wrong.
 4. **Dashboard → Authentication → Hooks:** add the **Send SMS** hook, type **Postgres**, function `public.send_sms_code`.
 5. **Dashboard → Authentication → Sign In / Providers → Phone:** enable it.
 6. **Dashboard → Authentication → Rate Limits:** raise "SMS messages per hour" (default 30) before launch.
